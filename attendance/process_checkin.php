@@ -110,23 +110,24 @@ try {
             $minutes = ceil($time_diff / 60);
             throw new Exception("$member_name checked out recently ($minutes minutes ago). Please wait a moment before checking in again.");
         }
-    }
-
-    // Record the check-in
+    }    // Record the check-in
     $checkin_stmt = $conn->prepare("
         INSERT INTO attendance_records (
             user_id, 
+            user_type,
+            attendance_type,
             check_in_time, 
             location, 
-            checked_in_by, 
+            scanned_by_user_id, 
             ip_address,
-            user_agent
-        ) VALUES (?, NOW(), ?, ?, ?, ?)
+            device_info
+        ) VALUES (?, ?, 'gym_entry', NOW(), ?, ?, ?, ?)
     ");
     
     $location = 'Main Entrance';
     $checkin_stmt->execute([
         $member_user_id,
+        $member['Role'],
         $location,
         $scanner_user_id,
         $ip_address,
