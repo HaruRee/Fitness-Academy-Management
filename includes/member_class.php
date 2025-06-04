@@ -383,6 +383,29 @@ function getStatusBadgeClass($status)
         color: #666;
     }
 
+    .text-center.py-4 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 120px;
+        padding: 32px 10px !important;
+    }
+
+    .text-center.py-4 i {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 2.5rem;
+        color: #888 !important;
+    }
+
+    .text-center.py-4 p {
+        margin: 0;
+        color: #bbb !important;
+        font-size: 1.08em;
+        text-align: center;
+    }
+
     @media (max-width: 768px) {
         .container {
             padding: 10px;

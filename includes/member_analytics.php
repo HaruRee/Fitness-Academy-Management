@@ -1,5 +1,40 @@
 <?php
+// --- Chart API block must be at the very top, before any HTML output ---
 session_start();
+if (isset($_GET['action']) && $_GET['action'] === 'progress_chart') {
+    require '../config/database.php';
+    $userId = $_SESSION['user_id'] ?? null;
+    header('Content-Type: application/json');
+    if (!$userId) {
+        echo json_encode(['labels' => [], 'weights' => []]);
+        exit;
+    }
+
+    $range = $_GET['range'] ?? 'all';
+    $whereClause = "WHERE UserID = ?";
+    $params = [$userId];
+    
+    if ($range !== 'all') {
+        $whereClause .= " AND RecordedAt >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+        $params[] = $range;
+    }
+
+    try {
+        $stmt = $conn->prepare("SELECT Weight, RecordedAt FROM memberprogress $whereClause ORDER BY RecordedAt ASC");
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $labels = [];
+        $weights = [];
+        foreach ($rows as $row) {
+            $labels[] = date('M d, Y', strtotime($row['RecordedAt']));
+            $weights[] = round($row['Weight'], 2);
+        }
+        echo json_encode(['labels' => $labels, 'weights' => $weights]);
+    } catch (Exception $e) {
+        echo json_encode(['labels' => [], 'weights' => []]);
+    }    exit;
+}
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Member') {
     header('Location: login.php');
     exit;
@@ -29,34 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bmi = round($weight / ($height * $height), 2);
     } else {
         $bmi = null;
-    }
-
-    try {
+    }    try {
         $stmt = $conn->prepare("INSERT INTO memberprogress (UserID, Weight, Height, Goal, RecordedAt) VALUES (?, ?, ?, ?, NOW())");
         $stmt->execute([$userId, $weight, $height, $goal]);
     } catch (PDOException $e) {
-        $progressMessage = "Error saving data: " . $e->getMessage();
+        echo "<p style='color:red'>Error saving data: " . $e->getMessage() . "</p>";
     }
-}
-
-// For AJAX: return chart data as JSON
-if (isset($_GET['action']) && $_GET['action'] === 'progress_chart') {
-    header('Content-Type: application/json');
-    try {
-        $stmt = $conn->prepare("SELECT Weight, RecordedAt FROM memberprogress WHERE UserID = ? ORDER BY RecordedAt ASC");
-        $stmt->execute([$userId]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $labels = [];
-        $weights = [];
-        foreach ($rows as $row) {
-            $labels[] = date('M d, Y', strtotime($row['RecordedAt']));
-            $weights[] = round($row['Weight'], 2);
-        }
-        echo json_encode(['labels' => $labels, 'weights' => $weights]);
-    } catch (Exception $e) {
-        echo json_encode(['labels' => [], 'weights' => []]);
-    }
-    exit;
 }
 
 // Fetch last two progress records for message
@@ -104,18 +117,16 @@ include '../assets/format/member_header.php';
         color: white;
         padding: 20px;
         box-sizing: border-box;
-    }
-
-    .analytics-card {
+    }    .analytics-card {
         background: #1e1e1e;
         padding: 20px;
         border-radius: 20px;
         color: white;
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
-        flex: 1 1 320px;
+        flex: 1 1 45%;
         margin-bottom: 20px;
         min-width: 300px;
-        max-width: 400px;
+        max-width: 600px;
         box-sizing: border-box;
         transition: box-shadow 0.2s;
     }
@@ -182,10 +193,27 @@ include '../assets/format/member_header.php';
         font-weight: bold;
         margin-top: 10px;
         transition: background 0.2s;
+    }    .analytics-form button:hover {
+        background-color: #c00;
     }
 
-    .analytics-form button:hover {
-        background-color: #c00;
+    .date-filter-btn {
+        padding: 8px 15px;
+        background: #232323;
+        border: 1px solid #444;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s;
+    }
+
+    .date-filter-btn:hover {
+        background: #2a2a2a;
+        border-color: #666;
+    }    .date-filter-btn.active {
+        background: #eb3636;
+        border-color: #eb3636;
     }
 
     @media (max-width: 900px) {
@@ -239,213 +267,372 @@ include '../assets/format/member_header.php';
             box-sizing: border-box;
         }
     }
-</style>
+</style>    <div class="analytics-container">
+        <div class="analytics-card">
+            <div>
+                <h3>My details</h3>
+                <form method="POST" class="analytics-form">
+                    <label>Weight:</label>
+                    <div class="form-row">
+                        <input type="number" step="0.1" name="weight" required>
+                        <select name="weight_unit">
+                            <option value="kg">kg</option>
+                            <option value="lbs">lbs</option>
+                        </select>
+                    </div>
 
-<div class="analytics-container">
-    <div class="analytics-card">
-        <h3>My details</h3>
-        <form method="POST" class="analytics-form">
-            <label>Weight:</label>
-            <div class="form-row">
-                <input type="number" step="0.1" name="weight" required>
-                <select name="weight_unit">
-                    <option value="kg">kg</option>
-                    <option value="lbs">lbs</option>
-                </select>
-            </div>
-
-            <label>Height:</label>
-            <div class="form-row">
+                    <label>Height:</label><div class="form-row">
                 <input type="number" step="0.01" name="height" required>
                 <select name="height_unit">
-                    <option value="m">m</option>
                     <option value="ft">ft</option>
+                    <option value="m">m</option>
                 </select>
             </div>
 
             <label>Goal:</label>
-            <select name="goal">
+            <select name="goal" required>
+                <option value="" disabled selected>Select goal</option>
                 <option>Weight Loss</option>
                 <option>Muscle Gain</option>
                 <option>Maintenance</option>
-            </select>
-
-            <button type="submit">Save</button>
+            </select>            <button type="submit">Save</button>
         </form>
-
-        <div style="margin-top: 15px;">
-            <h3 style="margin-top: 20px;">BMI</h3>
-            <p><strong><?php echo $bmi ?? 'N/A'; ?></strong></p>
-            <p>
-                <?php
-                if ($bmi !== null) {
-                    if ($bmi < 18.5) echo "Underweight";
-                    elseif ($bmi < 24.9) echo "Normal";
-                    elseif ($bmi < 29.9) echo "Overweight";
-                    else echo "Obese";
-                } else echo "No data yet.";
-                ?>
-            </p>
+            </div>            <div style="margin-top: 30px;">
+                <h3>My Progress</h3>
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="date-filter-btn active" data-range="7">Last 7 Days</button>
+                    <button type="button" class="date-filter-btn" data-range="30">Last 30 Days</button>
+                    <button type="button" class="date-filter-btn" data-range="90">Last 3 Months</button>
+                    <button type="button" class="date-filter-btn" data-range="all">All Time</button>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="analytics-card">
-        <h3>Recommendations</h3>
+        <div class="analytics-card">
+            <h3>Recommendations</h3>
         <div>
-            <?php
-            // Define recommendations for each BMI category
+            <?php            // Define recommendations based on BMI category and goal
             $recommendations = [
                 'underweight' => [
-                    "Focus on resistance training to build muscle mass, and incorporate calorie-dense, nutritious foods into your meals.",
-                    "Consider consulting a nutritionist for a personalized meal plan and avoid excessive cardio to prevent further weight loss.",
-                    "Consume protein-rich foods like eggs, chicken, and legumes to support muscle growth and recovery.",
-                    "Add healthy fats like avocados, nuts, and olive oil to your diet to increase calorie intake.",
-                    "Engage in strength training exercises like weightlifting to promote muscle gain.",
-                    "Eat small, frequent meals throughout the day to maintain a steady calorie intake.",
-                    "Drink smoothies or shakes with fruits, nuts, and protein powder to boost calorie intake.",
-                    "Include whole-grain bread, pasta, and cereals in your diet for sustained energy.",
-                    "Snack on nuts, seeds, and dried fruits between meals to increase calorie consumption.",
-                    "Avoid skipping meals and aim to eat every 3-4 hours to maintain a steady calorie intake.",
-                    "Incorporate dairy products like milk, cheese, and yogurt for additional protein and calories.",
-                    "Stay consistent with your workout routine to ensure gradual and healthy weight gain.",
-                    // Three additional recommendations for underweight
-                    "Increase your intake of nutrient-dense snacks throughout the day for additional energy.",
-                    "Incorporate smoothies with peanut butter or almonds to further boost your calorie intake.",
-                    "Consider small protein shakes as supplemental snacks between meals."
+                    'Weight Loss' => [
+                        "Focus on body recomposition rather than weight loss - build muscle while maintaining current weight",
+                        "Prioritize resistance training with proper form over cardio exercises",
+                        "Consume adequate protein (1.6-2.2g per kg of body weight) to preserve muscle mass",
+                        "Eat nutrient-dense foods instead of reducing portions",
+                        "Consider consulting a healthcare professional as weight loss may not be advisable",
+                        "Focus on strength training 3-4 times per week with proper rest periods"
+                    ],
+                    'Muscle Gain' => [
+                        "Implement a progressive overload strength training program",
+                        "Eat in a caloric surplus of 300-500 calories above maintenance",
+                        "Consume 1.6-2.2g of protein per kg of body weight",
+                        "Include complex carbohydrates to fuel workouts and support muscle growth",
+                        "Add healthy fats like nuts, avocados, and olive oil for extra calories",
+                        "Drink calorie-dense smoothies between meals"
+                    ],
+                    'Maintenance' => [
+                        "Focus on reaching a healthy BMI through muscle gain",
+                        "Maintain a balanced diet with adequate protein and calories",
+                        "Incorporate both strength training and light cardio",
+                        "Track your food intake to ensure you're eating enough",
+                        "Get adequate sleep to support recovery and muscle growth",
+                        "Consider working with a nutritionist for a personalized plan"
+                    ]
                 ],
                 'normal' => [
-                    "Maintain your healthy lifestyle with a balanced mix of strength training, cardio, and flexibility exercises.",
-                    "Continue monitoring your progress and adjust your routine as needed to stay fit and healthy.",
-                    "Incorporate activities like yoga or pilates to improve flexibility and mental well-being.",
-                    "Focus on maintaining a balanced diet with a mix of protein, carbs, and healthy fats.",
-                    "Stay consistent with your workout routine to maintain your current fitness level.",
-                    "Include active recovery days, such as light walking or stretching, to prevent burnout.",
-                    "Drink plenty of water throughout the day to stay hydrated and support overall health.",
-                    "Experiment with new workout routines or sports to keep your fitness journey exciting.",
-                    "Track your food intake to ensure you're meeting your nutritional needs.",
-                    "Get at least 7-8 hours of sleep per night to support recovery and overall well-being.",
-                    "Incorporate mindfulness practices like meditation to reduce stress and improve focus.",
-                    "Challenge yourself with progressive overload in strength training to build muscle.",
-                    // Three additional recommendations for normal
-                    "Explore new recipes that incorporate lean proteins and whole grains.",
-                    "Balance indulgent meals by planning lighter, nutrient-rich options.",
-                    "Monitor your hydration levels and adjust your fluid intake based on your activity."
+                    'Weight Loss' => [
+                        "Create a moderate caloric deficit of 300-500 calories",
+                        "Maintain high protein intake to preserve muscle mass",
+                        "Include both strength training and cardio in your routine",
+                        "Focus on nutrient-dense, whole foods",
+                        "Practice portion control without extreme restrictions",
+                        "Track progress through measurements and photos, not just weight"
+                    ],
+                    'Muscle Gain' => [
+                        "Eat in a slight caloric surplus (200-300 calories)",
+                        "Focus on progressive overload in strength training",
+                        "Prioritize compound exercises for maximum muscle growth",
+                        "Ensure adequate protein intake (1.6-2.2g per kg)",
+                        "Get 7-9 hours of quality sleep for recovery",
+                        "Plan your meals around your training schedule"
+                    ],
+                    'Maintenance' => [
+                        "Balance your calorie intake with activity level",
+                        "Maintain a consistent exercise routine",
+                        "Mix up workouts to prevent plateaus",
+                        "Focus on whole, nutrient-dense foods",
+                        "Regular monitoring of weight and measurements",
+                        "Adjust intake based on activity levels"
+                    ]
                 ],
                 'overweight' => [
-                    "Prioritize regular cardio workouts, such as brisk walking, cycling, or swimming, and combine them with strength training.",
-                    "Focus on portion control and a balanced diet to help manage your weight.",
-                    "Set realistic goals and track your progress to boost motivation.",
-                    "Incorporate high-intensity interval training (HIIT) to burn calories efficiently.",
-                    "Reduce sugar and processed food intake to support weight loss.",
-                    "Stay hydrated and ensure you're getting enough sleep to aid recovery and weight management.",
-                    "Plan your meals ahead of time to avoid unhealthy food choices.",
-                    "Include more vegetables and fruits in your meals to increase fiber intake.",
-                    "Limit your intake of sugary beverages and replace them with water or herbal teas.",
-                    "Find a workout buddy to stay motivated and accountable.",
-                    "Practice mindful eating by savoring each bite and avoiding distractions during meals.",
-                    "Reward yourself for reaching milestones with non-food-related treats, like a new book or workout gear.",
-                    // Three additional recommendations for overweight
-                    "Consider intermittent fasting to help manage your calorie intake if appropriate.",
-                    "Replace high-calorie snacks with fiber-rich alternatives like fruits and vegetables.",
-                    "Seek advice on portion size control from a nutrition expert to fine-tune your diet."
+                    'Weight Loss' => [
+                        "Create a sustainable caloric deficit of 500-750 calories",
+                        "Combine strength training with regular cardio",
+                        "Focus on high-protein, low-calorie foods",
+                        "Implement portion control strategies",
+                        "Track food intake and exercise consistently",
+                        "Set realistic weekly weight loss goals (0.5-1kg)"
+                    ],
+                    'Muscle Gain' => [
+                        "Focus on body recomposition through strength training",
+                        "Maintain current calorie intake while increasing protein",
+                        "Prioritize compound exercises with progressive overload",
+                        "Include moderate cardio for heart health",
+                        "Track measurements and progress photos",
+                        "Get adequate rest between training sessions"
+                    ],
+                    'Maintenance' => [
+                        "Focus on gradual weight loss while maintaining muscle",
+                        "Balance strength training and cardio activities",
+                        "Monitor portion sizes and food quality",
+                        "Maintain consistent meal timing",
+                        "Track progress through multiple metrics",
+                        "Adjust routine based on progress"
+                    ]
                 ],
                 'obese' => [
-                    "Consult with a healthcare professional or coach for a tailored weight-loss program.",
-                    "Start with low-impact cardio exercises and gradually increase intensity.",
-                    "Adopt a healthy, calorie-controlled diet and seek support from fitness professionals.",
-                    "Focus on small, achievable goals to build momentum and stay motivated.",
-                    "Incorporate strength training to preserve muscle mass while losing fat.",
-                    "Join a fitness community or group to stay accountable and motivated.",
-                    "Limit your intake of high-calorie, low-nutrient foods like fast food and desserts.",
-                    "Track your daily steps and aim to gradually increase your activity level.",
-                    "Replace sedentary activities with light physical activities, like gardening or cleaning.",
-                    "Practice portion control by using smaller plates and measuring your food.",
-                    "Incorporate healthy snacks like raw veggies, nuts, and yogurt into your diet.",
-                    "Celebrate small victories to maintain a positive mindset and stay on track.",
-                    // Three additional recommendations for obese
-                    "Incorporate daily walking routines to gradually build endurance.",
-                    "Focus on reducing stress through practices like meditation or therapy, which can help with better eating habits.",
-                    "Regularly review your progress and consult with professionals to adjust your diet plan as needed."
+                    'Weight Loss' => [
+                        "Begin with low-impact activities like walking or swimming",
+                        "Create a moderate caloric deficit with professional guidance",
+                        "Focus on whole, unprocessed foods",
+                        "Start strength training with bodyweight exercises",
+                        "Track progress with multiple metrics including how clothes fit",
+                        "Set small, achievable weekly goals"
+                    ],
+                    'Muscle Gain' => [
+                        "Focus on fat loss while building strength",
+                        "Start with bodyweight and machine exercises",
+                        "Maintain high protein intake while in a deficit",
+                        "Include regular low-impact cardio",
+                        "Work with a trainer for proper form",
+                        "Progress gradually to prevent injury"
+                    ],
+                    'Maintenance' => [
+                        "Focus on establishing healthy, sustainable habits",
+                        "Combine strength training with regular cardio",
+                        "Work with healthcare providers on a safe plan",
+                        "Monitor progress through various metrics",
+                        "Build a support system for accountability",
+                        "Make gradual, sustainable changes"
+                    ]
                 ]
             ];
-
-            // Generate random recommendations based on BMI
-            $randomRecommendations = [];
-            if ($bmi !== null) {
+            
+            // Get recommendations based on BMI and goal
+            if ($bmi !== null && isset($latest['Goal'])) {
+                $bmiCategory = '';
                 if ($bmi < 18.5) {
-                    $randomRecommendations = array_rand(array_flip($recommendations['underweight']), 6);
+                    $bmiCategory = 'underweight';
                 } elseif ($bmi < 24.9) {
-                    $randomRecommendations = array_rand(array_flip($recommendations['normal']), 6);
+                    $bmiCategory = 'normal';
                 } elseif ($bmi < 29.9) {
-                    $randomRecommendations = array_rand(array_flip($recommendations['overweight']), 6);
+                    $bmiCategory = 'overweight';
                 } else {
-                    $randomRecommendations = array_rand(array_flip($recommendations['obese']), 6);
+                    $bmiCategory = 'obese';
                 }
-            }
 
-            if ($bmi !== null) {
-                foreach ($randomRecommendations as $recommendation) {
-                    echo "<p>" . htmlspecialchars($recommendation) . "</p>";
+                $goal = $latest['Goal'];
+                
+                if (isset($recommendations[$bmiCategory][$goal])) {
+                    echo "<div class='recommendations-container' style='margin-top: 15px;'>";
+                    echo "<p class='recommendation-intro' style='color: #fff; margin-bottom: 20px;'><strong>Your Personalized Fitness Plan</strong></p>";                    echo "<div style='background: #282828; padding: 15px; border-radius: 10px; margin-bottom: 20px;'>";
+                    echo "<p style='margin-bottom: 10px;'><strong>Current Status:</strong></p>";
+                    echo "<p style='margin-left: 15px; margin-bottom: 5px;'>• BMI: <strong>" . $bmi . "</strong></p>";
+                    echo "<p style='margin-left: 15px; margin-bottom: 5px;'>• BMI Category: <strong>" . ucfirst($bmiCategory) . "</strong></p>";
+                    echo "<p style='margin-left: 15px; margin-bottom: 15px;'>• Goal: <strong>" . $goal . "</strong></p>";
+                    echo "</div>";
+                    
+                    echo "<div class='recommendation-list'>";
+                    foreach ($recommendations[$bmiCategory][$goal] as $index => $recommendation) {
+                        $number = $index + 1;
+                        echo "<div style='background: #232323; margin-bottom: 10px; padding: 12px; border-radius: 8px;'>";
+                        echo "<strong style='color: #eb3636;'>" . $number . ".</strong> " . htmlspecialchars($recommendation);
+                        echo "</div>";
+                    }
+                    echo "</div></div>";
+                } else {
+                    echo "<p>Enter your weight and height to get personalized advice based on your BMI and goals.</p>";
                 }
             } else {
-                echo "<p>Enter your weight and height to get personalized advice based on your BMI.</p>";
+                echo "<p>Enter your weight and height to get personalized advice based on your BMI and goals.</p>";
             }
             ?>
         </div>
-    </div>
-
-    <div class="analytics-card">
-        <h3>My Progress</h3>
-        <canvas id="progressChart" style="max-width: 100%;"></canvas>
-    </div>
-</div>
+    </div>    </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    fetch('../includes/member_analytics.php?action=progress_chart')
-        .then(res => res.json())
-        .then(data => {
-            if (!data || !data.labels || data.labels.length === 0) {
-                document.getElementById('progressChart').style.display = 'none';
-                return;
-            }
-            new Chart(document.getElementById('progressChart'), {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Weight (kg)',
-                        data: data.weights,
-                        borderColor: '#36a2eb',
-                        backgroundColor: 'rgba(54,162,235,0.15)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: true
-                        },
-                        title: {
-                            display: false
-                        }
+    let myChart = null;
+    const ctx = document.getElementById('progressChart');
+    
+    function loadChart(range = '7') {
+        if (!ctx) {
+            console.error('Could not find progressChart canvas element');
+            return;
+        }
+
+        // If there's an existing chart, destroy it
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        // Remove any existing message
+        const parent = ctx.parentElement.parentElement;
+        const existingMessage = parent.querySelector('p');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        fetch(`../includes/member_analytics.php?action=progress_chart&range=${range}`)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data || !data.labels || !data.weights || data.labels.length === 0) {
+                    const message = document.createElement('p');
+                    message.textContent = 'No progress data available for this time period.';
+                    message.style.textAlign = 'center';
+                    message.style.marginTop = '20px';
+                    message.style.color = '#fff';
+                    parent.appendChild(message);
+                    return;
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Weight (kg)',
+                            data: data.weights,
+                            borderColor: '#36a2eb',
+                            backgroundColor: 'rgba(54,162,235,0.15)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 750,
+                            easing: 'easeInOutQuart'
+                        },
+                        plugins: {
+                            legend: {
                                 display: true,
-                                text: 'Weight (kg)'
+                                position: 'top',
+                                labels: {
+                                    color: '#fff',
+                                    font: {
+                                        size: 12
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 13
+                                },
+                                padding: 12,
+                                displayColors: false
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#fff',
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Weight (kg)',
+                                    color: '#fff',
+                                    font: {
+                                        size: 13,
+                                        weight: 'normal'
+                                    },
+                                    padding: {
+                                        bottom: 10
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false,
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#fff',
+                                    maxRotation: 45,
+                                    minRotation: 45,
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading progress chart:', error);
+                const message = document.createElement('p');
+                message.textContent = 'Unable to load progress chart. Please try again later.';
+                message.style.color = 'red';
+                message.style.textAlign = 'center';
+                message.style.marginTop = '20px';
+                parent.appendChild(message);
             });
-        });
-</script>
+    }
+    
+    // Initial chart load
+    loadChart('7');
 
+    // Add click handlers for filter buttons
+    document.querySelectorAll('.date-filter-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            // Update active state
+            document.querySelectorAll('.date-filter-btn').forEach(btn => 
+                btn.classList.remove('active')
+            );
+            e.target.classList.add('active');
+            
+            // Load chart with selected range
+            loadChart(e.target.dataset.range);
+        });
+    });
+</script>
 <?php include '../assets/format/member_footer.php'; ?>
