@@ -78,7 +78,7 @@ $progressData = [];
 if (count($clients) > 0) {
     $clientIds = array_column($clients, 'UserID');
     $placeholders = implode(',', array_fill(0, count($clientIds), '?'));    $stmt = $conn->prepare("
-        SELECT p.user_id, p.date, p.weight, p.bmi, p.body_fat, p.workout_duration_min, p.data_source
+        SELECT p.user_id, p.date, p.weight, p.height, p.bmi, p.body_fat, p.workout_duration_min, p.notes, p.data_source
         FROM clientprogress p
         JOIN (
             SELECT user_id, MAX(date) AS latest_date
@@ -529,29 +529,30 @@ if (count($clients) > 0) {
                         <?php
                         $p = $progressData[$client['UserID']] ?? null;
                         ?>                        <?php if ($p): ?>
-                            <div class="progress-stats">
-                                <div class="stat-box">
+                            <div class="progress-stats">                                <div class="stat-box">
                                     <div class="stat-label">Weight (kg)</div>
-                                    <div class="stat-value"><?= htmlspecialchars($p['weight']) ?></div>
+                                    <div class="stat-value"><?= isset($p['weight']) ? htmlspecialchars($p['weight']) : 'N/A' ?></div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="stat-label">BMI</div>
-                                    <div class="stat-value"><?= htmlspecialchars($p['bmi']) ?></div>
+                                    <div class="stat-value"><?= isset($p['bmi']) ? htmlspecialchars($p['bmi']) : 'N/A' ?></div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="stat-label">Body Fat (%)</div>
-                                    <div class="stat-value"><?= htmlspecialchars($p['body_fat']) ?></div>
+                                    <div class="stat-value"><?= isset($p['body_fat']) && $p['body_fat'] ? htmlspecialchars($p['body_fat']) : 'N/A' ?></div>
                                 </div>
                                 <div class="stat-box">
                                     <div class="stat-label">Workout Duration (min)</div>
-                                    <div class="stat-value"><?= htmlspecialchars($p['workout_duration_min']) ?></div>
+                                    <div class="stat-value"><?= isset($p['workout_duration_min']) && $p['workout_duration_min'] ? htmlspecialchars($p['workout_duration_min']) : 'N/A' ?></div>
                                 </div>
                             </div>                            <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                                Last updated: <?= date('M d, Y', strtotime($p['date'])) ?>
+                                Last updated: <?= isset($p['date']) ? date('M d, Y', strtotime($p['date'])) : 'Unknown' ?>
+                                <?php if (isset($p['data_source'])): ?>
                                 <span style="margin-left: 10px; color: <?= $p['data_source'] === 'member_self' ? '#28a745' : '#007bff' ?>;">
                                     <i class="fas <?= $p['data_source'] === 'member_self' ? 'fa-user' : 'fa-user-tie' ?>"></i>
                                     <?= $p['data_source'] === 'member_self' ? 'Self-reported' : 'Coach input' ?>
                                 </span>
+                                <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div style="margin-top: 15px; color: #888; font-style: italic;">
@@ -569,17 +570,16 @@ if (count($clients) > 0) {
                             <form method="POST" action="">
                                 <input type="hidden" name="action" value="add_progress">
                                 <input type="hidden" name="client_id" value="<?= $client['UserID'] ?>">
-                                
-                                <div class="form-row">
+                                  <div class="form-row">
                                     <div class="form-group">
                                         <label for="weight-<?= $client['UserID'] ?>">Weight (kg)</label>
                                         <input type="number" step="0.1" name="weight" id="weight-<?= $client['UserID'] ?>" 
-                                               value="<?= $p ? htmlspecialchars($p['weight']) : '' ?>" required>
+                                               value="<?= $p && isset($p['weight']) ? htmlspecialchars($p['weight']) : '' ?>" required>
                                     </div>
                                     <div class="form-group">
                                         <label for="height-<?= $client['UserID'] ?>">Height (cm)</label>
                                         <input type="number" step="0.1" name="height" id="height-<?= $client['UserID'] ?>" 
-                                               value="<?= $p ? htmlspecialchars($p['height']) : '' ?>" required>
+                                               value="<?= $p && isset($p['height']) ? htmlspecialchars($p['height']) : '' ?>" required>
                                     </div>
                                 </div>
                                 
@@ -587,19 +587,19 @@ if (count($clients) > 0) {
                                     <div class="form-group">
                                         <label for="body_fat-<?= $client['UserID'] ?>">Body Fat (%)</label>
                                         <input type="number" step="0.1" name="body_fat" id="body_fat-<?= $client['UserID'] ?>" 
-                                               value="<?= $p ? htmlspecialchars($p['body_fat']) : '' ?>">
+                                               value="<?= $p && isset($p['body_fat']) ? htmlspecialchars($p['body_fat']) : '' ?>">
                                     </div>
                                     <div class="form-group">
                                         <label for="workout_duration-<?= $client['UserID'] ?>">Workout Duration (min)</label>
                                         <input type="number" name="workout_duration" id="workout_duration-<?= $client['UserID'] ?>" 
-                                               value="<?= $p ? htmlspecialchars($p['workout_duration_min']) : '' ?>">
+                                               value="<?= $p && isset($p['workout_duration_min']) ? htmlspecialchars($p['workout_duration_min']) : '' ?>">
                                     </div>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="notes-<?= $client['UserID'] ?>">Notes</label>
                                     <textarea name="notes" id="notes-<?= $client['UserID'] ?>" 
-                                              placeholder="Optional notes about client's progress..."><?= $p ? htmlspecialchars($p['notes']) : '' ?></textarea>
+                                              placeholder="Optional notes about client's progress..."><?= $p && isset($p['notes']) ? htmlspecialchars($p['notes']) : '' ?></textarea>
                                 </div>
                                 
                                 <div class="form-actions">
