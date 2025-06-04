@@ -295,9 +295,7 @@ try {
             margin-left: var(--sidebar-width);
             display: flex;
             flex-direction: column;
-        }
-
-        .header {
+        }        .header {
             height: var(--header-height);
             background: white;
             border-bottom: 1px solid #e5e7eb;
@@ -311,6 +309,19 @@ try {
             z-index: 90;
         }
 
+        .header-left h2 {
+            margin: 0;
+            color: var(--dark-color);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .header-search {
             display: flex;
             align-items: center;
@@ -318,13 +329,21 @@ try {
         }
 
         .header-search input {
-            border: none;
-            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
             padding: 0.6rem 1rem 0.6rem 2.5rem;
             border-radius: 8px;
-            width: 300px;
+            width: 320px;
             font-size: 0.9rem;
             color: var(--dark-color);
+            transition: all 0.2s;
+        }
+
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .header-search i {
@@ -332,28 +351,6 @@ try {
             left: 0.75rem;
             color: var(--gray-color);
             z-index: 1;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-        }
-
-        .notification-bell {
-            background: #f3f4f6;
-            height: 40px;
-            width: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            margin-right: 1rem;
-            position: relative;
-        }
-
-        .notification-bell i {
-            color: var(--gray-color);
         }
 
         .content {
@@ -601,9 +598,7 @@ try {
         .status-unknown {
             background: rgba(245, 158, 11, 0.1);
             color: #f59e0b;
-        }
-
-        .header {
+        }        .header {
             height: var(--header-height);
             background: white;
             border-bottom: 1px solid #e5e7eb;
@@ -617,63 +612,48 @@ try {
             z-index: 90;
         }
 
-        .header-search {
-            display: flex;
-            align-items: center;
-        }
-
-        .header-search input {
-            border: none;
-            background: #f3f4f6;
-            padding: 0.6rem 1rem 0.6rem 2.5rem;
-            border-radius: 8px;
-            width: 300px;
-            font-size: 0.9rem;
+        .header-left h2 {
+            margin: 0;
             color: var(--dark-color);
-        }
-
-        .header-search i {
-            position: absolute;
-            left: 3rem;
-            color: var(--gray-color);
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .header-actions {
             display: flex;
             align-items: center;
+            gap: 1rem;
         }
 
-        .notification-bell {
-            background: #f3f4f6;
-            height: 40px;
-            width: 40px;
-            border-radius: 50%;
+        .header-search {
             display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            margin-right: 1rem;
             position: relative;
         }
 
-        .notification-bell i {
-            color: var(--gray-color);
-            font-size: 1.1rem;
+        .header-search input {
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border-radius: 8px;
+            width: 320px;
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            transition: all 0.2s;
         }
 
-        .notification-badge {
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .header-search i {
             position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger-color);
-            color: white;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            left: 0.75rem;
+            color: var(--gray-color);
+            z-index: 1;
         }
 
         .main-content {
@@ -1460,20 +1440,15 @@ try {
     </aside>
 
     <!-- Main Content -->
-    <div class="main-wrapper">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-search">
-                <i class="fas fa-search"></i>
-                <input type="text" id="userSearch" placeholder="Search users...">
+    <div class="main-wrapper">        <!-- Header -->
+        <div class="header">            <div class="header-left">
+                <h2>User Management</h2>
             </div>
             <div class="header-actions">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="userSearch" placeholder="Search users...">
                 </div>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                    <i class="fas fa-user-plus"></i> Add User
-                </button>
             </div>
         </div>
 
@@ -1597,9 +1572,11 @@ try {
                 </div>
             </div>
             <!-- Users Table -->
-            <div class="table-card">
-                <div class="table-header">
+            <div class="table-card">                <div class="table-header">
                     <h3>Users</h3>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-user-plus"></i> Add User
+                    </button>
                 </div>
                 <div class="table-responsive">
                     <table class="table" id="usersTable">

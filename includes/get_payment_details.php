@@ -96,16 +96,74 @@ try {
                     </a>
                 </div>
             </div>
-        </div>';
-
-    // Display payment details if available
+        </div>';    // Display payment details if available
     if ($paymentDetails) {
         echo '<div class="row">
                 <div class="col-12">
                     <h5 class="border-bottom pb-2">Payment Details</h5>
-                    <div class="bg-light p-3 rounded">
-                        <pre class="mb-0" style="white-space: pre-wrap;">' . json_encode($paymentDetails, JSON_PRETTY_PRINT) . '</pre>
-                    </div>
+                    <div class="bg-light p-3 rounded">';
+        
+        // Format specific payment details based on type
+        if (isset($paymentDetails['type'])) {
+            echo '<table class="table table-borderless">';
+            
+            // Common fields first
+            foreach ($paymentDetails as $key => $value) {
+                if ($key != 'items' && !is_array($value)) {
+                    $formattedKey = str_replace('_', ' ', ucfirst($key));
+                    echo '<tr>
+                            <th width="30%">' . $formattedKey . ':</th>
+                            <td>' . htmlspecialchars($value) . '</td>
+                          </tr>';
+                }
+            }
+            
+            // If there's a subscription type
+            if ($paymentDetails['type'] == 'subscription') {
+                if (isset($paymentDetails['coach_id'])) {
+                    echo '<tr class="table-info">
+                            <th colspan="2">Coach Information</th>
+                          </tr>
+                          <tr>
+                            <th>Coach ID:</th>
+                            <td>' . htmlspecialchars($paymentDetails['coach_id']) . '</td>
+                          </tr>
+                          <tr>
+                            <th>Coach Name:</th>
+                            <td>' . htmlspecialchars($paymentDetails['coach_name']) . '</td>
+                          </tr>';
+                }
+            }
+            
+            // If there are line items
+            if (isset($paymentDetails['items']) && is_array($paymentDetails['items'])) {
+                echo '<tr class="table-info">
+                        <th colspan="2">Items</th>
+                      </tr>';
+                
+                foreach ($paymentDetails['items'] as $item) {
+                    echo '<tr>
+                            <td colspan="2">
+                                <div class="d-flex justify-content-between">
+                                    <span>' . htmlspecialchars($item['name']) . '</span>
+                                    <span>₱ ' . number_format($item['price'], 2) . '</span>
+                                </div>';
+                    
+                    if (isset($item['description'])) {
+                        echo '<small class="text-muted">' . htmlspecialchars($item['description']) . '</small>';
+                    }
+                    
+                    echo '</td>
+                          </tr>';
+                }
+            }
+            
+            echo '</table>';
+        } else {
+            // Fallback if the structure doesn't match expected format
+            echo '<pre class="mb-0" style="white-space: pre-wrap;">' . json_encode($paymentDetails, JSON_PRETTY_PRINT) . '</pre>';
+        }
+          echo '    </div>
                 </div>
             </div>';
     }

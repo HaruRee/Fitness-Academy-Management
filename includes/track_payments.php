@@ -95,6 +95,7 @@ try {
     <link rel="stylesheet" href="../assets/css/admin-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="../assets/js/auto-logout.js" defer></script>
     <style>
@@ -551,13 +552,48 @@ try {
                 margin-bottom: 1rem;
             }
 
-            .card {
-                margin-bottom: 1rem;
+            .pagination {
+                flex-wrap: wrap;
             }
+        }
 
-            .filter-form {
-                grid-template-columns: 1fr;
-            }
+        /* Modal and clickable row styles */
+        .clickable-row {
+            cursor: pointer !important;
+            transition: background-color 0.2s ease;
+        }
+
+        .clickable-row:hover {
+            background-color: #f8f9fa !important;
+        }
+
+        .modal-dialog {
+            max-width: 800px;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1.5rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 1rem 1.5rem;
         }
     </style>
 </head>
@@ -762,7 +798,7 @@ try {
                             </thead>
                             <tbody>
                                 <?php foreach ($payments as $payment): ?>
-                                    <tr data-payment-id="<?php echo $payment['id']; ?>">
+                                    <tr data-payment-id="<?php echo $payment['id']; ?>" class="clickable-row">
                                         <td>
                                             <?php echo htmlspecialchars((string)($payment['First_Name'] . ' ' . $payment['Last_Name'])); ?>
                                             <br>
@@ -789,20 +825,38 @@ try {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                    </div>                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Details Modal -->
+    <div class="modal fade" id="paymentDetailsModal" tabindex="-1" aria-labelledby="paymentDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentDetailsModalLabel">Payment Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="payment-details-container">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="text-center mt-4">
-                <a href="admin_dashboard.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() { // Initialize DataTable
             $('#paymentsTable').DataTable({
@@ -816,11 +870,15 @@ try {
                 ]
             });
 
-            // Handle view payment details
-            $('.view-payment').click(function() {
-                var paymentId = $(this).data('id');
-                $('#payment-details-container').html('<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+            // Add cursor pointer style to clickable rows
+            $('.clickable-row').css('cursor', 'pointer');
 
+            // Handle row click to show payment details modal
+            $('.clickable-row').click(function() {
+                var paymentId = $(this).data('payment-id');
+                $('#payment-details-container').html('<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                $('#paymentDetailsModal').modal('show');
+                
                 // Make an AJAX request to get payment details
                 $.ajax({
                     url: 'get_payment_details.php',

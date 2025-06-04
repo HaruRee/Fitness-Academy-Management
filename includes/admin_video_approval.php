@@ -269,40 +269,9 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             position: absolute;
             left: 1rem;
             color: var(--gray-color);
-        }
-
-        .header-actions {
+        }        .header-actions {
             display: flex;
             align-items: center;
-        }
-
-        .notification-bell {
-            background: #f3f4f6;
-            height: 40px;
-            width: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            margin-right: 1rem;
-            position: relative;
-        }
-
-        .notification-bell i {
-            color: var(--gray-color);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger-color);
-            color: white;
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 600;
         }
 
         .main-content {
@@ -792,20 +761,13 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Main Content -->
     <div class="main-wrapper">
-        <!-- Header -->
-        <header class="header">
+        <!-- Header -->        <header class="header">
             <div class="header-search">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="Search...">
             </div>
             <div class="header-actions">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                </div>
-                <a href="logout.php" class="btn btn-outline">
-                    <i class="fas fa-sign-out-alt"></i>
-                    Logout
-                </a>
+                <!-- Removed logout button -->
             </div>
         </header>
 

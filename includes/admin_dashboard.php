@@ -277,44 +277,9 @@ try {
             position: absolute;
             left: 3rem;
             color: var(--gray-color);
-        }
-
-        .header-actions {
+        }        .header-actions {
             display: flex;
             align-items: center;
-        }
-
-        .notification-bell {
-            background: #f3f4f6;
-            height: 40px;
-            width: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            margin-right: 1rem;
-            position: relative;
-        }
-
-        .notification-bell i {
-            color: var(--gray-color);
-            font-size: 1.1rem;
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger-color);
-            color: white;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .main-content {
@@ -816,13 +781,7 @@ try {
             <div class="header-search">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="Search...">
-            </div>
-
-            <div class="header-actions">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </div>
+            </div>            <div class="header-actions">
                 <span><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></span>
             </div>
         </header>

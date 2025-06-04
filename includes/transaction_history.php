@@ -748,21 +748,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             font-weight: 500;
         }
 
-        .json-view {
-            background: #f9fafb;
-            border-radius: 6px;
-            padding: 1rem;
-            font-family: monospace;
-            font-size: 0.85rem;
-            overflow-x: auto;
-            margin-top: 1.5rem;
-        }
-
-        .json-view pre {
-            margin: 0;
-            white-space: pre-wrap;
-        }
-
         .footer {
             background: white;
             padding: 1.5rem 2rem;
@@ -882,6 +867,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <i class="fas fa-user-tie"></i>
                 <span>Coach Applications</span>
             </a>
+            <a href="admin_video_approval.php">
+                <i class="fas fa-video"></i>
+                <span>Video Approval</span>
+            </a>
             <a href="track_payments.php">
                 <i class="fas fa-credit-card"></i>
                 <span>Payment Status</span>
@@ -905,12 +894,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <span>Attendance Reports</span>
             </a>
 
-            <div class="sidebar-menu-header">Content</div>
-            <a href="admin_video_approval.php">
-                <i class="fas fa-video"></i>
-                <span>Video Approval</span>
-            </a>
-
             <div class="sidebar-menu-header">Point of Sale</div>
             <a href="pos_system.php">
                 <i class="fas fa-cash-register"></i>
@@ -929,6 +912,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             <a href="audit_trail.php">
                 <i class="fas fa-history"></i>
                 <span>Audit Trail</span>
+            </a>
+
+            <div class="sidebar-menu-header">Database</div>
+            <a href="database_management.php">
+                <i class="fas fa-database"></i>
+                <span>Backup & Restore</span>
             </a>
 
             <div class="sidebar-menu-header">Account</div>
@@ -977,10 +966,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'csv'])) ?>" class="btn btn-outline">
                         <i class="fas fa-download"></i>
                         Export to CSV
-                    </a>
-                    <a href="admin_dashboard.php" class="btn btn-primary">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Dashboard
                     </a>
                 </div>
             </div>
@@ -1335,44 +1320,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                     <div class="detail-label">Transaction Source ID</div>
                     <div id="detail-transaction-id" class="detail-value">src_gfdh348hfsdaoeh</div>
                 </div>
-                <div class="detail-group">
-                    <div class="detail-label">Payment Details</div>
-                    <div class="json-view">
-                        <pre id="detail-json"></pre>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Function to format JSON for better display
-        function syntaxHighlight(json) {
-            if (!json) return "";
-            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
-                var cls = 'number';
-                if (/^"/.test(match)) {
-                    if (/:$/.test(match)) {
-                        cls = 'key';
-                        match = '<span style="color: #2563eb; font-weight: bold;">' + match + '</span>';
-                    } else {
-                        cls = 'string';
-                        match = '<span style="color: #059669;">' + match + '</span>';
-                    }
-                } else if (/true|false/.test(match)) {
-                    cls = 'boolean';
-                    match = '<span style="color: #7c3aed;">' + match + '</span>';
-                } else if (/null/.test(match)) {
-                    cls = 'null';
-                    match = '<span style="color: #db2777;">' + match + '</span>';
-                } else {
-                    match = '<span style="color: #b45309;">' + match + '</span>';
-                }
-                return match;
-            });
-        }
-        
         // Dynamic filtering - automatically submit form when filters change
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners to all filter controls
@@ -1564,19 +1516,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             }
             
             document.getElementById('detail-product').textContent = planInfo || 'General Payment';
-
-            // Format JSON safely
-            try {
-                let paymentDetails = {};
-                if (transaction.payment_details) {
-                    paymentDetails = typeof transaction.payment_details === 'string' ?
-                        JSON.parse(transaction.payment_details) :
-                        transaction.payment_details;
-                }
-                document.getElementById('detail-json').innerHTML = syntaxHighlight(JSON.stringify(paymentDetails, null, 2));
-            } catch (e) {
-                document.getElementById('detail-json').textContent = 'Error parsing JSON: ' + e.message;
-            }
 
             // Show modal
             document.getElementById('transactionDetailsModal').style.display = 'flex';

@@ -236,28 +236,7 @@ try {
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-        }
-
-        .notification-bell {
-            position: relative;
-            cursor: pointer;
-        }
-
-        .notification-bell i {
-            font-size: 1.2rem;
-            color: var(--gray-color);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -6px;
-            right: -8px;
-            background: var(--secondary-color);
-            color: white;
-            font-size: 0.7rem;
-            border-radius: 50%;
-            padding: 2px 6px;
+            gap: 1.5rem;        }
         }
 
         .main-content {
@@ -609,12 +588,7 @@ try {
             <div class="header-search">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="Search...">
-            </div>
-            <div class="header-actions">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">1</span>
-                </div>
+            </div>            <div class="header-actions">
                 <span><?= htmlspecialchars($_SESSION['user_name'] ?? 'Staff') ?></span>
             </div>
         </header>

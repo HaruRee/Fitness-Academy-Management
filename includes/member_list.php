@@ -765,13 +765,9 @@ try {
 
         <!-- Actions Button and Filters -->
         <div class="page-actions">
-            <div class="action-buttons">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+            <div class="action-buttons">                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                     <i class="fas fa-user-plus"></i> Add New Member
                 </button>
-                <a href="admin_dashboard.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
             </div>
             <div class="filter-controls">
                 <div class="form-group">
@@ -854,12 +850,7 @@ try {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <div class="text-center mt-4">
-            <a href="admin_dashboard.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-        </div>
+            </div>        </div>
     </div>
 
     <!-- Add Member Modal -->

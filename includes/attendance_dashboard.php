@@ -595,12 +595,7 @@ switch ($date_range_filter) {
     <!-- Main Content -->
     <div class="main-wrapper">
         <header class="header">
-            <h1>Attendance Dashboard</h1>
-            <div class="header-actions">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </div>
+            <h1>Attendance Dashboard</h1>            <div class="header-actions">
                 <span><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></span>
             </div>
         </header>
