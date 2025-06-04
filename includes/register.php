@@ -199,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 // Function to send verification email
 function sendVerificationEmail($email, $verification_code)
 {
+    require_once 'email_templates.php';
+    
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -210,16 +212,25 @@ function sendVerificationEmail($email, $verification_code)
         $mail->Port = SMTP_PORT;
         $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
         $mail->addAddress($email);
+        $mail->addReplyTo(SMTP_FROM_EMAIL, SMTP_FROM_NAME . ' Support');
+        
         $mail->isHTML(true);
-        $mail->Subject = 'Email Verification';
-        $mail->Body = "
-            <h2>Verify Your Email</h2>
-            <p>Your verification code is: <strong>{$verification_code}</strong></p>
-            <p>Enter this code to complete your registration.</p>
-        ";
+        $mail->Subject = 'Email Verification - ' . (defined('APP_NAME') ? APP_NAME : 'Fitness Academy');
+        
+        // Get username from email if available, otherwise use 'Member'
+        $username = explode('@', $email)[0];
+        $username = ucfirst($username);
+        
+        $mail->Body = EmailTemplates::emailVerification($username, $verification_code);
+        $mail->AltBody = EmailTemplates::getPlainTextVersion(
+            "Your verification code is: {$verification_code}. Enter this code to complete your registration.",
+            'Email Verification'
+        );
+        
         $mail->send();
         return true;
     } catch (Exception $e) {
+        error_log("Verification email error: " . $mail->ErrorInfo);
         return false;
     }
 }

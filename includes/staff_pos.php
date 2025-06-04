@@ -293,8 +293,10 @@ function generateStrongPassword($length = 12) {
 
 // Function to send receipt email with account details
 function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId, $cashReceived, $changeGiven, $username = null, $password = null) {
+    require_once 'email_templates.php';
+    
     $mail = new PHPMailer(true);
-      try {
+    try {
         $mail->isSMTP();
         $mail->Host = SMTP_HOST;
         $mail->SMTPAuth = true;
@@ -306,90 +308,56 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
         // Recipients
         $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
         $mail->addAddress($email);
+        $mail->addReplyTo(SMTP_FROM_EMAIL, SMTP_FROM_NAME . ' Support');
 
         // Content
         $mail->isHTML(true);
-        $mail->Subject = 'Welcome to Fitness Academy - Payment Receipt and Account Details';
         
-        $receiptDate = date('F d, Y \a\t h:i A');
-        
-        // Account details section if credentials are provided
-        $accountSection = '';
         if ($username && $password) {
-            $accountSection = "                <div style='background: #fdf9e8; padding: 20px; border-radius: 5px; margin: 20px 0;'>
-                <h3 style='color: #333; margin-bottom: 15px;'>Your Account Details</h3>
-                <p><strong>Login Email:</strong> {$email}</p>
-                <p><strong>Temporary Password:</strong> {$password}</p>
-                <p style='color: #e41e26; font-weight: bold;'>Please log in and change your password immediately!</p>
-                <p>You can log in at: <a href='https://fitnessacademyph.xyz/includes/login.php'>https://fitnessacademyph.xyz/includes/login.php</a></p>
-            </div>";
+            // Welcome email with credentials
+            $mail->Subject = 'Welcome to Fitness Academy - Your Account is Ready!';
+            
+            $planDetails = [
+                'name' => $plan['name'],
+                'duration' => $plan['duration'] ?? 'N/A'
+            ];
+            
+            $mail->Body = EmailTemplates::welcomeWithCredentials($customerName, $email, $password, $planDetails);
+            $mail->AltBody = EmailTemplates::getPlainTextVersion(
+                "Welcome to Fitness Academy! Your account details: Email: {$email}, Temporary Password: {$password}. Please log in and change your password immediately.",
+                'Welcome to Fitness Academy'
+            );
         }
         
-        $mail->Body = "
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; color: #333; }
-                .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; }
-                .receipt-details { background: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px; }
-                .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
-                .amount { font-size: 18px; font-weight: bold; color: #2563eb; }
-                .welcome-message { font-size: 16px; color: #333; margin: 20px 0; line-height: 1.6; }
-            </style>
-        </head>
-        <body>
-            <div class='header'>
-                <h2>WELCOME TO FITNESS ACADEMY!</h2>
-            </div>
-            
-            <div class='content'>
-                <div class='welcome-message'>
-                    <p>Dear {$customerName},</p>
-                    <p>Welcome to Fitness Academy! We're excited to have you as a member. Your payment has been processed successfully.</p>
-                </div>
-                
-                {$accountSection}
-                
-                <div class='receipt-details'>
-                    <h3>Transaction Details</h3>
-                    <p><strong>Transaction ID:</strong> {$transactionId}</p>
-                    <p><strong>Date & Time:</strong> {$receiptDate}</p>
-                    <p><strong>Membership Plan:</strong> {$plan['name']}</p>
-                    <p><strong>Amount:</strong> <span class='amount'>₱" . number_format($amount, 2) . "</span></p>
-                    <p><strong>Payment Method:</strong> Cash</p>
-                    <p><strong>Cash Received:</strong> ₱" . number_format($cashReceived, 2) . "</p>
-                    <p><strong>Change Given:</strong> ₱" . number_format($changeGiven, 2) . "</p>
-                </div>
-                
-                <p>Your membership is now active! You can start using our facilities immediately.</p>
-                
-                <p><strong>Next Steps:</strong></p>
-                <ol>
-                    <li>Log in to your account using the credentials above</li>
-                    <li>Change your password for security</li>
-                    <li>Complete your profile information</li>
-                    <li>Download our mobile app or bookmark our website for easy access</li>
-                </ol>
-                  <p>If you have any questions or need assistance, please don't hesitate to:</p>
-                <ul>
-                    <li>Visit us at our gym location</li>
-                    <li>Contact us at +63 917 145 9059</li>
-                    <li>Email us at " . SMTP_FROM_EMAIL . "</li>
-                </ul>
-                
-                <p>Thank you for choosing Fitness Academy!</p>
-            </div>
-            
-            <div class='footer'>
-                <p>This is an automated email. Please do not reply to this email.</p>
-                <p>© " . date('Y') . " Fitness Academy PH. All rights reserved.</p>
-            </div>
-        </body>
-        </html>
-        ";
-
+        // Send additional receipt email
+        $transactionDetails = [
+            'id' => $transactionId,
+            'plan' => $plan['name'],
+            'amount' => $amount,
+            'method' => 'Cash',
+            'cash_received' => $cashReceived,
+            'change' => $changeGiven
+        ];
+        
+        $receiptBody = EmailTemplates::paymentReceipt($customerName, $transactionDetails);
+        $receiptAltBody = EmailTemplates::getPlainTextVersion(
+            "Payment Receipt - Transaction ID: {$transactionId}, Amount: ₱" . number_format($amount, 2) . ", Payment Method: Cash",
+            'Payment Receipt'
+        );
+        
+        // Send the main email (welcome or receipt)
         $mail->send();
+        
+        // If it was a welcome email, send a separate receipt email
+        if ($username && $password) {
+            $mail->clearAddresses();
+            $mail->addAddress($email);
+            $mail->Subject = 'Payment Receipt - Fitness Academy';
+            $mail->Body = $receiptBody;
+            $mail->AltBody = $receiptAltBody;
+            $mail->send();
+        }
+        
         return true;
     } catch (Exception $e) {
         error_log("Email receipt error: " . $mail->ErrorInfo);

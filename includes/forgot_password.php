@@ -24,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Insert token and expiry into the password_resets table
         $stmt = $conn->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))");
-        $stmt->execute([$email, $token]);
-
-        // Send email
+        $stmt->execute([$email, $token]);        // Send email
+        require_once 'email_templates.php';
+        
         $mail = new PHPMailer(true);
 
         try {
@@ -48,116 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Content
             $mail->isHTML(true);
             $mail->Subject = 'Password Reset Request - ' . APP_NAME;
-            $mail->Body    = "
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='UTF-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>Password Reset - " . APP_NAME . "</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
-                        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-                        .header { background: linear-gradient(135deg, #e41e26, #c81a21); padding: 30px; text-align: center; }
-                        .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
-                        .content { padding: 40px 30px; }
-                        .greeting { font-size: 18px; color: #333; margin-bottom: 20px; }
-                        .message { font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 30px; }
-                        .reset-button { text-align: center; margin: 30px 0; }
-                        .reset-button a { 
-                            background: #e41e26; 
-                            color: #ffffff !important; 
-                            padding: 15px 30px; 
-                            text-decoration: none; 
-                            border-radius: 6px; 
-                            font-weight: 600; 
-                            font-size: 16px;
-                            display: inline-block;
-                            transition: background 0.3s;
-                        }
-                        .reset-button a:hover { background: #c81a21; }
-                        .security-note { 
-                            background: #fff3cd; 
-                            border: 1px solid #ffeaa7; 
-                            border-radius: 6px; 
-                            padding: 15px; 
-                            margin: 20px 0; 
-                            font-size: 14px; 
-                            color: #856404; 
-                        }
-                        .footer { 
-                            background: #f8f9fa; 
-                            padding: 20px 30px; 
-                            text-align: center; 
-                            border-top: 1px solid #e9ecef; 
-                            font-size: 14px; 
-                            color: #6c757d; 
-                        }
-                        .logo { color: #e41e26; font-weight: 700; font-size: 20px; margin-bottom: 10px; }
-                        .link-fallback { 
-                            word-break: break-all; 
-                            background: #f8f9fa; 
-                            padding: 10px; 
-                            border-radius: 4px; 
-                            font-family: monospace; 
-                            font-size: 12px; 
-                            color: #495057; 
-                            margin-top: 15px; 
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class='container'>
-                        <div class='header'>
-                            <h1>🏋️‍♂️ " . APP_NAME . "</h1>
-                        </div>
-                        <div class='content'>
-                            <div class='greeting'>Hello <strong>" . htmlspecialchars($user['username'] ?? 'Member') . "</strong>,</div>
-                            
-                            <div class='message'>
-                                We received a request to reset your password for your " . APP_NAME . " account. 
-                                If you made this request, click the button below to set a new password:
-                            </div>
-                            
-                            <div class='reset-button'>
-                                <a href='$resetLink'>Reset My Password</a>
-                            </div>
-                            
-                            <div class='security-note'>
-                                <strong>⚠️ Security Notice:</strong><br>
-                                • This link will expire in 1 hour for your security<br>
-                                • If you didn't request this reset, please ignore this email<br>
-                                • Never share this link with anyone
-                            </div>
-                            
-                            <div class='link-fallback'>
-                                If the button doesn't work, copy and paste this link into your browser:<br>
-                                $resetLink
-                            </div>
-                        </div>
-                        <div class='footer'>
-                            <div class='logo'>" . APP_NAME . "</div>
-                            <div>This is an automated message. Please don't reply to this email.</div>
-                            <div>© " . date('Y') . " " . APP_NAME . ". All rights reserved.</div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            ";
-            $mail->AltBody = "Hello " . htmlspecialchars($user['username'] ?? 'Member') . ",
-
-We received a request to reset your password for your " . APP_NAME . " account.
-
-Reset your password here: $resetLink
-
-This link will expire in 1 hour for your security.
-
-If you didn't request this reset, please ignore this email.
-
---
-" . APP_NAME . " Team
-© " . date('Y') . " " . APP_NAME . ". All rights reserved.";
-
+              // Use the new email template
+            $mail->Body = EmailTemplates::passwordReset($user['username'] ?? 'Member', $resetLink);
+            $mail->AltBody = EmailTemplates::getPlainTextVersion(
+                "We received a request to reset your password. Reset your password here: {$resetLink}. This link will expire in 1 hour for your security.",
+                'Password Reset Request'
+            );
+            
             $mail->send();
             $message = "A password reset link has been sent to your email.";
         } catch (Exception $e) {
