@@ -167,7 +167,7 @@ $user_id = $_SESSION['user_id'];
                     if (data.success) {
                         let html = '<div class="success">Recent check-outs loaded!</div><ul>';
                         data.checkouts.forEach(checkout => {
-                            html += `<li>${checkout.first_name} ${checkout.last_name} - ${checkout.check_out_time}</li>`;
+                            html += `<li>${checkout.user_name} - ${checkout.formatted_time}</li>`;
                         });
                         html += '</ul>';
                         resultDiv.innerHTML = html;

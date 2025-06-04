@@ -21,7 +21,7 @@ try {    // Get recent check-outs from today
             ar.id,
             ar.user_id,
             ar.check_in_time,
-            ar.time_out as check_out_time,
+            ar.time_out,
             ar.location,
             ar.duration_minutes,
             u.First_Name,
@@ -32,7 +32,7 @@ try {    // Get recent check-outs from today
         JOIN users u ON ar.user_id = u.UserID
         WHERE DATE(ar.time_out) = CURDATE()
         AND ar.time_out IS NOT NULL
-        ORDER BY ar.check_out_time DESC
+        ORDER BY ar.time_out DESC
         LIMIT 10
     ");
     
@@ -59,7 +59,7 @@ try {    // Get recent check-outs from today
             'role' => $checkout['Role'],
             'location' => $checkout['location'] ?? 'Main Exit',
             'formatted_time' => $checkout['formatted_time'],
-            'check_out_time' => $checkout['check_out_time'],
+            'check_out_time' => $checkout['time_out'],
             'duration' => $duration_text,
             'duration_minutes' => $checkout['duration_minutes']
         ];

@@ -84,11 +84,9 @@ try {
         $warning = "";
     }
 
-    $member_name = $member['First_Name'] . ' ' . $member['Last_Name'];
-
-    // Check if member already checked in today
+    $member_name = $member['First_Name'] . ' ' . $member['Last_Name'];    // Check if member already checked in today
     $existing_checkin_stmt = $conn->prepare("
-        SELECT id, check_in_time, check_out_time 
+        SELECT id, check_in_time, time_out 
         FROM attendance_records 
         WHERE user_id = ? AND DATE(check_in_time) = CURDATE()
         ORDER BY check_in_time DESC 
@@ -98,13 +96,13 @@ try {
     $existing_checkin = $existing_checkin_stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing_checkin) {
-        if (!$existing_checkin['check_out_time']) {
+        if (!$existing_checkin['time_out']) {
             throw new Exception("$member_name is already checked in today. Please check out first.");
         }
         
         // If they checked out, allow another check-in
         // But warn if it's been less than 5 minutes
-        $checkout_time = new DateTime($existing_checkin['check_out_time']);
+        $checkout_time = new DateTime($existing_checkin['time_out']);
         $current_time = new DateTime();
         $time_diff = $current_time->getTimestamp() - $checkout_time->getTimestamp();
         

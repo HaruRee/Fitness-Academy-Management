@@ -26,7 +26,7 @@ try {
             u.Last_Name,
             u.Role,
             DATE_FORMAT(ar.check_in_time, '%h:%i %p') as formatted_time,
-            ar.time_out as check_out_time
+            ar.time_out
         FROM attendance_records ar
         JOIN users u ON ar.user_id = u.UserID
         WHERE DATE(ar.check_in_time) = CURDATE()
@@ -46,7 +46,7 @@ try {
             'role' => $checkin['Role'],
             'location' => $checkin['location'] ?? 'Main Entrance',
             'formatted_time' => $checkin['formatted_time'],            'check_in_time' => $checkin['check_in_time'],
-            'is_checked_out' => !empty($checkin['check_out_time'])
+            'is_checked_out' => !empty($checkin['time_out'])
         ];
     }
     
