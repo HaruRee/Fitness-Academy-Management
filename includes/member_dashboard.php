@@ -31,29 +31,28 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
-<div class="container">
-    <!-- QR Check-in Section -->
+<div class="container">    <!-- QR Attendance Section -->
     <div style="background: #333; padding: 25px; border-radius: 6px; border: 1px solid #444; margin-bottom: 30px;">
         <h3 style="margin-bottom: 20px; color: #eee; border-bottom: 2px solid #d62328; padding-bottom: 6px;">
-            <i class="fas fa-qrcode" style="margin-right: 10px; color: #d62328;"></i>Quick Check-in
+            <i class="fas fa-qrcode" style="margin-right: 10px; color: #d62328;"></i>My Attendance QR Code
         </h3>
 
-        <div style="text-align: center; margin-bottom: 20px;">
+        <p style="color: #bbb; margin-bottom: 20px; text-align: center;">
+            Generate your personal QR code for gym attendance. Show this QR code at the gym entrance/exit scanners.
+        </p><div style="text-align: center; margin-bottom: 20px;">
             <button onclick="generateMemberQR()" style="padding: 15px 30px; background: #d62328; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
                 <i class="fas fa-qrcode"></i>
-                Generate Check-in QR Code
-            </button>
-        </div>
+                Generate My QR Code
+            </button>        </div>
 
         <!-- QR Code Display -->
         <div id="memberQrDisplay" style="display: none; text-align: center; padding: 20px; background: #222; border-radius: 6px; border: 1px solid #444; margin-top: 20px;">
-            <h4 style="margin-bottom: 15px; color: #eee;">Your Check-in QR Code</h4>
+            <h4 style="margin-bottom: 15px; color: #eee;">Your Attendance QR Code</h4>
             <div id="memberQrCodeContainer" style="margin: 20px auto; display: flex; justify-content: center; align-items: center;">
                 <!-- QR code will be generated here -->
-            </div>
-            <p id="memberQrMessage" style="margin-bottom: 15px; font-weight: 600; color: #eee;"></p>
+            </div>            <p id="memberQrMessage" style="margin-bottom: 15px; font-weight: 600; color: #eee;"></p>
             <p style="color: #888; font-size: 0.9rem;">
-                <i class="fas fa-clock"></i> This QR code expires in <span id="memberCountdown">5:00</span>
+                <i class="fas fa-info-circle"></i> Show this QR code at gym entrance/exit scanners
             </p>
             <button onclick="hideMemberQRDisplay()" style="padding: 8px 16px; background: #555; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;">Close</button>
         </div>
@@ -177,26 +176,20 @@ try {
 
 <?php include '../assets/format/member_footer.php'; ?>
 
-<script>
-    // Member QR Generation Functions
+<script>    // Member Static QR Generation Functions
     async function generateMemberQR() {
         try {
-            const requestData = {
-                type: 'member'
-            };
-
-            const response = await fetch('../includes/generate_checkin_qr.php', {
+            const response = await fetch('../attendance/generate_static_qr.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData)
+                }
             });
 
             const data = await response.json();
 
             if (data.success) {
-                displayMemberQRCode(data.qr_data, data.session_name, data.type);
+                displayMemberQRCode(data.qr_code_url, data.user_name, data.instructions);
             } else {
                 alert('Failed to generate QR code: ' + data.message);
             }
@@ -204,57 +197,30 @@ try {
             console.error('Error generating QR code:', error);
             alert('Failed to generate QR code. Please try again.');
         }
-    }
-
-    function displayMemberQRCode(qrData, sessionName, type) {
+    }    function displayMemberQRCode(qrImageUrl, userName, instructions) {
         // Clear previous QR code if any
         const qrContainer = document.getElementById('memberQrCodeContainer');
         qrContainer.innerHTML = '';
 
-        // Create new QR code
-        const qrcode = new QRCode(qrContainer, {
-            text: qrData,
-            width: 200,
-            height: 200,
-            colorDark: "#FFFFFF",
-            colorLight: "#000000",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        // Create QR code image element
+        const qrImage = document.createElement('img');
+        qrImage.src = qrImageUrl;
+        qrImage.style.width = '200px';
+        qrImage.style.height = '200px';
+        qrImage.style.border = '3px solid #1e40af';
+        qrImage.style.borderRadius = '10px';
+        qrImage.alt = 'Your Attendance QR Code';
+        
+        qrContainer.appendChild(qrImage);
 
         // Show QR display container
         document.getElementById('memberQrDisplay').style.display = 'block';
-        document.getElementById('memberQrMessage').textContent = sessionName || 'Gym Entry QR Code';
-
-        // Start countdown
-        startMemberCountdown();
-    }
-
+        document.getElementById('memberQrMessage').innerHTML = `
+            <strong>${userName}'s Attendance QR Code</strong><br>
+            <small style="color: #666;">${instructions}</small>
+        `;    }
+    
     function hideMemberQRDisplay() {
         document.getElementById('memberQrDisplay').style.display = 'none';
-        stopMemberCountdown();
-    }
-
-    let memberCountdownInterval;
-
-    function startMemberCountdown() {
-        let timeLeft = 300; // 5 minutes in seconds
-        const countdownElement = document.getElementById('memberCountdown');
-
-        clearInterval(memberCountdownInterval);
-        memberCountdownInterval = setInterval(() => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-            if (timeLeft <= 0) {
-                hideMemberQRDisplay();
-                clearInterval(memberCountdownInterval);
-            }
-            timeLeft--;
-        }, 1000);
-    }
-
-    function stopMemberCountdown() {
-        clearInterval(memberCountdownInterval);
     }
 </script>

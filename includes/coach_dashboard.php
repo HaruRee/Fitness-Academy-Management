@@ -872,31 +872,39 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                     <p><?= date('l, F j, Y') ?> · Have a great day ahead!</p>
                 </div>
 
-                <!-- QR Check-in Section -->
-                <div class="qr-checkin-section" style="background: #fff; padding: 25px; border-radius: 10px; box-shadow: var(--shadow-md); margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 20px; color: var(--secondary-color);"><i class="fas fa-qrcode" style="margin-right: 10px; color: var(--primary-color);"></i>Quick Check-in</h3>
-
-                    <div style="text-align: center;">
-                        <button class="btn btn-primary" onclick="generateQR('work')" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 30px; font-size: 16px;">
-                            <i class="fas fa-qrcode"></i>
-                            Generate Check-in QR Code
-                        </button>
+                <!-- Quick Actions Section -->
+                <div class="dashboard-section">
+                    <div class="section-title">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
                     </div>
-
-                    <!-- QR Code Display -->
-                    <div id="qrDisplay" style="display: none; margin-top: 20px; text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                        <h4 style="margin-bottom: 15px;">Your Check-in QR Code</h4>
-                        <div id="qrCodeContainer" style="margin: 20px auto; display: flex; justify-content: center; align-items: center;">
-                            <!-- QR code will be generated here -->
-                        </div>
-                        <div id="sessionInfo">
-                            <!-- Session info will be displayed here -->
-                        </div>
-                        <div id="qrMessage" style="margin-bottom: 15px; font-weight: 600;"></div>
-                        <p style="color: var(--gray-color); font-size: 0.9rem;">
-                            <i class="fas fa-clock"></i> This QR code expires in <span id="countdown">5:00</span>
-                        </p>
-                        <button class="btn btn-sm" onclick="hideQRDisplay()">Close</button>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                        <!-- QR Code Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-qrcode"></i> My QR Code</h3>
+                            </div>
+                            <div class="card-body" style="text-align: center;">
+                                <p style="color: var(--gray-color); margin-bottom: 20px;">Generate your personal QR code for gym entrance/exit scanners</p>
+                                <button class="btn btn-primary" onclick="generateStaticQR()" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 30px; font-size: 16px;">
+                                    <i class="fas fa-qrcode"></i>
+                                    Generate My QR Code
+                                </button>
+                                
+                                <!-- QR Code Display -->
+                                <div id="qrDisplay" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                    <h4 style="margin-bottom: 15px;">Your Attendance QR Code</h4>
+                                    <div id="qrCodeContainer" style="margin: 20px auto;">
+                                        <!-- QR code will be generated here -->
+                                    </div>
+                                    <div id="qrMessage" style="margin-bottom: 15px; font-weight: 600; color: var(--primary-color);"></div>
+                                    <p style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 15px;">
+                                        <i class="fas fa-info-circle"></i> Show this QR code at gym entrance/exit scanners
+                                    </p>
+                                    <button class="btn btn-sm" onclick="hideQRDisplay()">Close</button>
+                                </div>
+                            </div>                        </div>
                     </div>
                 </div>
 
@@ -1357,12 +1365,10 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
         // Wait for QRCode library to load
         function waitForQRCode() {
             return loadQRLibrary();
-        }
-
-        // QR Code generation and display functions
-        async function generateQR(type, classId = null) {
+        }        // Static QR Code generation and display functions
+        async function generateStaticQR() {
             try {
-                console.log('Starting QR generation for type:', type);
+                console.log('Starting static QR generation');
 
                 const qrDisplay = document.getElementById('qrDisplay');
                 if (!qrDisplay) {
@@ -1372,21 +1378,15 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
 
                 qrDisplay.style.display = 'block';
                 const qrCodeContainer = document.getElementById('qrCodeContainer');
-                const sessionInfo = document.getElementById('sessionInfo');
+                const qrMessage = document.getElementById('qrMessage');
 
-                qrCodeContainer.innerHTML = '<p>Generating QR code...</p>';
+                qrCodeContainer.innerHTML = '<p style="color: var(--primary-color);"><i class="fas fa-spinner fa-spin"></i> Generating your QR code...</p>';
 
-                const requestData = {
-                    type: type,
-                    class_id: classId
-                };
-
-                const response = await fetch('../includes/generate_checkin_qr.php', {
+                const response = await fetch('../attendance/generate_static_qr.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
+                    }
                 });
 
                 if (!response.ok) {
@@ -1399,55 +1399,33 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                     // Clear previous content
                     qrCodeContainer.innerHTML = '';
 
-                    // Create new QR code
-                    new QRCode(qrCodeContainer, {
-                        text: data.qr_data,
-                        width: 200,
-                        height: 200
-                    });
+                    // Create QR code image element
+                    const qrImage = document.createElement('img');
+                    qrImage.src = data.qr_code_url;
+                    qrImage.style.width = '200px';
+                    qrImage.style.height = '200px';
+                    qrImage.style.border = '3px solid var(--primary-color)';
+                    qrImage.style.borderRadius = '10px';
+                    qrImage.alt = 'Your Attendance QR Code';
+                    
+                    qrCodeContainer.appendChild(qrImage);
 
-                    // Display session info
-                    sessionInfo.innerHTML = `
-                        <div class="session-details" style="margin: 15px 0;">
-                            <h4 style="color: var(--dark-color); margin-bottom: 10px;">${data.session_name}</h4>
-                            <p style="color: var(--gray-color);">QR Code expires in: <span id="countdown">5:00</span></p>
-                        </div>
+                    // Display user info and instructions
+                    qrMessage.innerHTML = `
+                        <strong>${data.user_name}'s Attendance QR Code</strong><br>
+                        <small style="color: #666;">${data.instructions}</small>
                     `;
-
-                    // Start countdown
-                    startCountdown(300); // 5 minutes
                 } else {
                     qrCodeContainer.innerHTML = `<p class="error" style="color: var(--danger-color);">Error: ${data.message}</p>`;
-                    sessionInfo.innerHTML = '';
+                    qrMessage.innerHTML = '';
                 }
             } catch (error) {
                 console.error('Error:', error);
                 const qrCodeContainer = document.getElementById('qrCodeContainer');
-                const sessionInfo = document.getElementById('sessionInfo');
+                const qrMessage = document.getElementById('qrMessage');
                 qrCodeContainer.innerHTML = `<p class="error" style="color: var(--danger-color);">Failed to generate QR code: ${error.message}</p>`;
-                sessionInfo.innerHTML = '';
+                qrMessage.innerHTML = '';
             }
-        }
-
-        function startCountdown(seconds) {
-            const countdownElement = document.getElementById('countdown');
-            if (!countdownElement) return;
-
-            let timeLeft = seconds;
-            const countdownInterval = setInterval(() => {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    const qrCodeContainer = document.getElementById('qrCodeContainer');
-                    if (qrCodeContainer) {
-                        qrCodeContainer.innerHTML = '<p style="color: var(--danger-color);">QR code expired. Please generate a new one.</p>';
-                    }
-                }
-                timeLeft--;
-            }, 1000);
         }
 
         function hideQRDisplay() {

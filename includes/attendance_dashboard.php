@@ -77,7 +77,8 @@ $stmt = $conn->prepare("
         CASE 
             WHEN ar.session_id IS NOT NULL THEN ats.session_name
             ELSE NULL
-        END as session_name
+        END as session_name,
+        ar.time_out as check_out_time
     FROM attendance_records ar
     JOIN users u ON ar.user_id = u.UserID
     LEFT JOIN users scanner ON ar.scanned_by_user_id = scanner.UserID
@@ -122,13 +123,15 @@ $coach_hours_stmt = $conn->prepare("
         u.Last_Name,
         COUNT(DISTINCT ar.session_id) as classes_taught,
         COUNT(CASE WHEN ar.attendance_type = 'gym_entry' THEN 1 END) as shift_checkins,
-        MIN(ar.check_in_time) as first_checkin,
-        MAX(ar.check_in_time) as last_checkin
+        ar.check_in_time,
+        ar.time_out as check_out_time,
+        TIMESTAMPDIFF(MINUTE, ar.check_in_time, ar.time_out) as duration_minutes
     FROM attendance_records ar
     JOIN users u ON ar.user_id = u.UserID
     $coach_where_clause
-    GROUP BY ar.user_id, u.First_Name, u.Last_Name
-    ORDER BY u.First_Name, u.Last_Name
+    AND ar.time_out IS NOT NULL
+    GROUP BY ar.user_id, u.First_Name, u.Last_Name, ar.check_in_time, ar.time_out
+    ORDER BY u.First_Name, u.Last_Name, ar.check_in_time DESC
 ");
 $coach_hours_stmt->execute($coach_params);
 $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -533,8 +536,7 @@ switch ($date_range_filter) {
                 <span>Employee List</span>
             </a>
 
-            <div class="sidebar-menu-header">ATTENDANCE</div>
-            <a href="qr_scanner.php">
+            <div class="sidebar-menu-header">ATTENDANCE</div>            <a href="../attendance/checkin.php">
                 <i class="fas fa-camera"></i>
                 <span>QR Scanner</span>
             </a>
@@ -656,15 +658,14 @@ switch ($date_range_filter) {
                 </form>
 
                 <div class="table-container">
-                    <table>
-                        <thead>
+                    <table>                        <thead>
                             <tr>
                                 <th>Time</th>
                                 <th>Name</th>
                                 <th>User Type</th>
-                                <th>Check-in Type</th>
+                                <th>Status</th>
                             </tr>
-                        </thead>                        <tbody>                            <?php if (empty($attendance_records)): ?>
+                        </thead><tbody>                            <?php if (empty($attendance_records)): ?>
                                 <tr>
                                     <td colspan="4" style="text-align: center; padding: 2rem;">
                                         <div style="color: var(--gray-color);">
@@ -684,10 +685,9 @@ switch ($date_range_filter) {
                                             <span class="badge badge-<?php echo strtolower($record['user_type']); ?>">
                                                 <?php echo $record['user_type']; ?>
                                             </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-<?php echo $record['attendance_type'] === 'gym_entry' ? 'gym' : 'class'; ?>">
-                                                <?php echo ucfirst(str_replace('_', ' ', $record['attendance_type'])); ?>
+                                        </td>                                        <td>
+                                            <span class="badge badge-<?php echo $record['time_out'] ? 'class' : 'gym'; ?>">
+                                                <?php echo $record['time_out'] ? 'Checked out' : 'Checked in'; ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -699,16 +699,15 @@ switch ($date_range_filter) {
             </div>            <div class="section">
                 <h2>Coach Work Summary (<?php echo $date_range_label; ?>)</h2>
                 <div class="table-container">
-                    <table>
-                        <thead>
+                    <table>                        <thead>
                             <tr>
                                 <th>Coach Name</th>
                                 <th>Shift Check-ins</th>
-                                <th>First Check-in</th>
-                                <th>Last Check-in</th>
+                                <th>Check in time</th>
+                                <th>Check out time</th>
                                 <th>Estimated Hours</th>
                             </tr>
-                        </thead>                        <tbody>
+                        </thead><tbody>
                             <?php if (empty($coach_hours)): ?>
                                 <tr>
                                     <td colspan="5" style="text-align: center; padding: 2rem;">
@@ -721,19 +720,21 @@ switch ($date_range_filter) {
                                     </td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($coach_hours as $coach): ?>
-                                    <?php
+                                <?php foreach ($coach_hours as $coach): ?>                                    <?php
                                     $estimated_hours = 0;
-                                    if ($coach['first_checkin'] && $coach['last_checkin']) {
-                                        $first = new DateTime($coach['first_checkin']);
-                                        $last = new DateTime($coach['last_checkin']);
+                                    if (isset($coach['duration_minutes']) && $coach['duration_minutes'] > 0) {
+                                        $estimated_hours = round($coach['duration_minutes'] / 60, 1);
+                                    } elseif ($coach['check_in_time'] && $coach['check_out_time']) {
+                                        // Fallback calculation if duration_minutes is not available
+                                        $first = new DateTime($coach['check_in_time']);
+                                        $last = new DateTime($coach['check_out_time']);
                                         $estimated_hours = round($last->diff($first)->h + ($last->diff($first)->i / 60), 1);
                                     }
                                     ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($coach['First_Name'] . ' ' . $coach['Last_Name']); ?></td>
-                                        <td><?php echo $coach['shift_checkins']; ?></td>                                        <td><?php echo $coach['first_checkin'] ? date('g:i A', strtotime($coach['first_checkin'])) : '-'; ?></td>
-                                        <td><?php echo $coach['last_checkin'] ? date('g:i A', strtotime($coach['last_checkin'])) : '-'; ?></td>
+                                        <td><?php echo $coach['shift_checkins']; ?></td>                                        <td><?php echo $coach['check_in_time'] ? date('M d, g:i A', strtotime($coach['check_in_time'])) : '-'; ?></td>
+                                        <td><?php echo $coach['check_out_time'] ? date('M d, g:i A', strtotime($coach['check_out_time'])) : '-'; ?></td>
                                         <td><?php echo $estimated_hours; ?>h</td>
                                     </tr>
                                 <?php endforeach; ?>
