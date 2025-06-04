@@ -42,6 +42,52 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Member') {
 
 require '../config/database.php';
 
+// Function to sync member progress to coach tracking
+function syncMemberProgressToCoaches($conn, $userId, $weight, $height, $bmi) {
+    try {
+        // Find all coaches associated with this member through class enrollments
+        $stmt = $conn->prepare("
+            SELECT DISTINCT c.coach_id 
+            FROM classenrollments ce 
+            JOIN classes c ON ce.class_id = c.class_id 
+            WHERE ce.user_id = ? AND ce.status = 'confirmed'
+        ");
+        $stmt->execute([$userId]);
+        $coaches = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (!empty($coaches)) {
+            // Check if a record already exists for today
+            $checkStmt = $conn->prepare("
+                SELECT id FROM clientprogress 
+                WHERE user_id = ? AND date = CURDATE()
+            ");
+            $checkStmt->execute([$userId]);
+            $existingRecord = $checkStmt->fetch(PDO::FETCH_ASSOC);
+              if ($existingRecord) {
+                // Update existing record
+                $updateStmt = $conn->prepare("
+                    UPDATE clientprogress 
+                    SET weight = ?, height = ?, bmi = ?, data_source = 'member_self', updated_at = NOW()
+                    WHERE user_id = ? AND date = CURDATE()
+                ");
+                $updateStmt->execute([$weight, $height, $bmi, $userId]);
+            } else {
+                // Insert new record (coaches can see data from any of their associated coaches)
+                $insertStmt = $conn->prepare("
+                    INSERT INTO clientprogress (user_id, date, weight, height, bmi, data_source, recorded_by, created_at, updated_at) 
+                    VALUES (?, CURDATE(), ?, ?, ?, 'member_self', ?, NOW(), NOW())
+                ");
+                // Use the first coach as the recorded_by for tracking purposes
+                $recordedBy = $coaches[0];
+                $insertStmt->execute([$userId, $weight, $height, $bmi, $recordedBy]);
+            }
+        }
+    } catch (PDOException $e) {
+        // Log error but don't break the main functionality
+        error_log("Error syncing to coach progress: " . $e->getMessage());
+    }
+}
+
 $userId = $_SESSION['user_id'];
 $bmi = null;
 $progressMessage = "Please enter your data to get started.";
@@ -65,8 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $bmi = null;
     }    try {
+        // Insert into member progress table
         $stmt = $conn->prepare("INSERT INTO memberprogress (UserID, Weight, Height, Goal, RecordedAt) VALUES (?, ?, ?, ?, NOW())");
         $stmt->execute([$userId, $weight, $height, $goal]);
+        
+        // Sync data to coach progress tracking (clientprogress table)
+        syncMemberProgressToCoaches($conn, $userId, $weight, $height, $bmi);
+        
     } catch (PDOException $e) {
         echo "<p style='color:red'>Error saving data: " . $e->getMessage() . "</p>";
     }

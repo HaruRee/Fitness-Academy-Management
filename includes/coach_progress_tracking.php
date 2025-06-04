@@ -10,6 +10,46 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Coach') {
 
 $coach_id = $_SESSION['user_id'];
 
+// Handle manual progress input from coach
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_progress') {
+    $client_id = intval($_POST['client_id']);
+    $weight = floatval($_POST['weight']);
+    $height = floatval($_POST['height']);
+    $body_fat = !empty($_POST['body_fat']) ? floatval($_POST['body_fat']) : null;
+    $workout_duration = !empty($_POST['workout_duration']) ? intval($_POST['workout_duration']) : null;
+    $notes = trim($_POST['notes']);
+    
+    // Calculate BMI
+    $bmi = ($height > 0) ? round($weight / (($height/100) * ($height/100)), 2) : null;
+    
+    try {
+        // Check if record exists for today
+        $checkStmt = $conn->prepare("SELECT id FROM clientprogress WHERE user_id = ? AND date = CURDATE()");
+        $checkStmt->execute([$client_id]);
+        $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+          if ($existing) {
+            // Update existing record
+            $updateStmt = $conn->prepare("
+                UPDATE clientprogress 
+                SET weight = ?, height = ?, bmi = ?, body_fat = ?, workout_duration_min = ?, notes = ?, data_source = 'coach_input', recorded_by = ?, updated_at = NOW()
+                WHERE user_id = ? AND date = CURDATE()
+            ");
+            $updateStmt->execute([$weight, $height, $bmi, $body_fat, $workout_duration, $notes, $coach_id, $client_id]);
+        } else {
+            // Insert new record
+            $insertStmt = $conn->prepare("
+                INSERT INTO clientprogress (user_id, date, weight, height, bmi, body_fat, workout_duration_min, notes, data_source, recorded_by, created_at, updated_at) 
+                VALUES (?, CURDATE(), ?, ?, ?, ?, ?, ?, 'coach_input', ?, NOW(), NOW())
+            ");
+            $insertStmt->execute([$client_id, $weight, $height, $bmi, $body_fat, $workout_duration, $notes, $coach_id]);
+        }
+        
+        $success_message = "Progress data saved successfully!";
+    } catch (PDOException $e) {
+        $error_message = "Error saving progress data: " . $e->getMessage();
+    }
+}
+
 // Fetch coach info (optional, for sidebar or header)
 $stmt = $conn->prepare("SELECT * FROM users WHERE UserID = ? AND Role = 'Coach'");
 $stmt->execute([$coach_id]);
@@ -37,14 +77,12 @@ $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $progressData = [];
 if (count($clients) > 0) {
     $clientIds = array_column($clients, 'UserID');
-    $placeholders = implode(',', array_fill(0, count($clientIds), '?'));
-
-    $stmt = $conn->prepare("
-        SELECT p.user_id, p.date, p.weight, p.bmi, p.body_fat, p.workout_duration_min
-        FROM ClientProgress p
+    $placeholders = implode(',', array_fill(0, count($clientIds), '?'));    $stmt = $conn->prepare("
+        SELECT p.user_id, p.date, p.weight, p.bmi, p.body_fat, p.workout_duration_min, p.data_source
+        FROM clientprogress p
         JOIN (
             SELECT user_id, MAX(date) AS latest_date
-            FROM ClientProgress
+            FROM clientprogress
             WHERE user_id IN ($placeholders)
             GROUP BY user_id
         ) latest ON p.user_id = latest.user_id AND p.date = latest.latest_date
@@ -262,14 +300,118 @@ if (count($clients) > 0) {
             font-size: 1.8rem;
             font-weight: 700;
             color: #e41e26;
-        }
-
-        .no-clients {
+        }        .no-clients {
             text-align: center;
             color: #666;
             font-style: italic;
             margin-top: 60px;
             font-size: 1.1rem;
+        }
+
+        /* Progress Input Form Styles */
+        .add-progress-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .add-progress-btn:hover {
+            background: #cc3333;
+        }
+
+        .progress-form {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .progress-form.show {
+            display: block;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 60px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         @media (max-width: 600px) {
@@ -354,13 +496,19 @@ if (count($clients) > 0) {
                     </a>
                 </div>
             </nav>
-        </aside>
-
-        <!-- Main Content -->
+        </aside>        <!-- Main Content -->
         <div class="main-content">
             <div class="progress-tracking-header">
                 <h2>Progress Tracking</h2>
             </div>
+
+            <?php if (isset($success_message)): ?>
+                <div class="alert alert-success"><?= htmlspecialchars($success_message) ?></div>
+            <?php endif; ?>
+            
+            <?php if (isset($error_message)): ?>
+                <div class="alert alert-error"><?= htmlspecialchars($error_message) ?></div>
+            <?php endif; ?>
 
             <?php if (count($clients) > 0): ?>
                 <?php foreach ($clients as $client): ?>
@@ -380,8 +528,7 @@ if (count($clients) > 0) {
                         </div>
                         <?php
                         $p = $progressData[$client['UserID']] ?? null;
-                        ?>
-                        <?php if ($p): ?>
+                        ?>                        <?php if ($p): ?>
                             <div class="progress-stats">
                                 <div class="stat-box">
                                     <div class="stat-label">Weight (kg)</div>
@@ -399,19 +546,87 @@ if (count($clients) > 0) {
                                     <div class="stat-label">Workout Duration (min)</div>
                                     <div class="stat-value"><?= htmlspecialchars($p['workout_duration_min']) ?></div>
                                 </div>
+                            </div>                            <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                                Last updated: <?= date('M d, Y', strtotime($p['date'])) ?>
+                                <span style="margin-left: 10px; color: <?= $p['data_source'] === 'member_self' ? '#28a745' : '#007bff' ?>;">
+                                    <i class="fas <?= $p['data_source'] === 'member_self' ? 'fa-user' : 'fa-user-tie' ?>"></i>
+                                    <?= $p['data_source'] === 'member_self' ? 'Self-reported' : 'Coach input' ?>
+                                </span>
                             </div>
                         <?php else: ?>
                             <div style="margin-top: 15px; color: #888; font-style: italic;">
                                 No progress data available for this client.
                             </div>
                         <?php endif; ?>
+                        
+                        <!-- Add Progress Button -->
+                        <button class="add-progress-btn" onclick="toggleProgressForm(<?= $client['UserID'] ?>)">
+                            <i class="fas fa-plus"></i> Add/Update Progress
+                        </button>
+                        
+                        <!-- Progress Input Form -->
+                        <div class="progress-form" id="progress-form-<?= $client['UserID'] ?>">
+                            <form method="POST" action="">
+                                <input type="hidden" name="action" value="add_progress">
+                                <input type="hidden" name="client_id" value="<?= $client['UserID'] ?>">
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="weight-<?= $client['UserID'] ?>">Weight (kg)</label>
+                                        <input type="number" step="0.1" name="weight" id="weight-<?= $client['UserID'] ?>" 
+                                               value="<?= $p ? htmlspecialchars($p['weight']) : '' ?>" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="height-<?= $client['UserID'] ?>">Height (cm)</label>
+                                        <input type="number" step="0.1" name="height" id="height-<?= $client['UserID'] ?>" 
+                                               value="<?= $p ? htmlspecialchars($p['height']) : '' ?>" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="body_fat-<?= $client['UserID'] ?>">Body Fat (%)</label>
+                                        <input type="number" step="0.1" name="body_fat" id="body_fat-<?= $client['UserID'] ?>" 
+                                               value="<?= $p ? htmlspecialchars($p['body_fat']) : '' ?>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workout_duration-<?= $client['UserID'] ?>">Workout Duration (min)</label>
+                                        <input type="number" name="workout_duration" id="workout_duration-<?= $client['UserID'] ?>" 
+                                               value="<?= $p ? htmlspecialchars($p['workout_duration_min']) : '' ?>">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="notes-<?= $client['UserID'] ?>">Notes</label>
+                                    <textarea name="notes" id="notes-<?= $client['UserID'] ?>" 
+                                              placeholder="Optional notes about client's progress..."><?= $p ? htmlspecialchars($p['notes']) : '' ?></textarea>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="button" class="btn-cancel" onclick="toggleProgressForm(<?= $client['UserID'] ?>)">Cancel</button>
+                                    <button type="submit" class="btn-save">Save Progress</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-clients">No clients assigned yet.</div>
-            <?php endif; ?>
-        </div>
+            <?php endif; ?>        </div>
     </div>
+
+    <script>
+        function toggleProgressForm(clientId) {
+            const form = document.getElementById('progress-form-' + clientId);
+            if (form.classList.contains('show')) {
+                form.classList.remove('show');
+            } else {
+                // Hide all other forms first
+                document.querySelectorAll('.progress-form').forEach(f => f.classList.remove('show'));
+                form.classList.add('show');
+            }
+        }
+    </script>
 </body>
 
 </html>
