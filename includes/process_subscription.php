@@ -152,230 +152,380 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe to Coach | Fitness Academy</title>
     <link rel="icon" type="image/png" href="../assets/images/fa_logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #e41e26;
+            --primary-dark: #c71e24;
+            --text-color: #333;
+            --text-light: #666;
+            --bg-light: #f8f9fa;
+            --border-color: #eee;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+        }
+
         body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
             margin: 0;
-            color: #333;
+            color: var(--text-color);
+            line-height: 1.5;
         }
 
         .container {
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 15px;
         }
 
         .card {
             background: #fff;
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
         }
 
         .subscription-header {
-            margin-bottom: 30px;
+            margin-bottom: 22px;
+            text-align: center;
         }
 
         .subscription-header i {
-            font-size: 3rem;
-            color: #e41e26;
-            margin-bottom: 20px;
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
         .subscription-header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-            color: #333;
+            font-size: 1.5rem;
+            margin: 0 0 5px;
+            color: var(--text-color);
+            font-weight: 600;
         }
 
         .coach-info {
-            background: #f8f9fa;
+            background: var(--bg-light);
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
+            padding: 18px;
+            margin-bottom: 22px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .coach-info:hover {
+            border-color: #d0d0d0;
+            background: #f3f4f6;
         }
 
         .coach-name {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #e41e26;
-            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
         }
 
         .subscription-price {
-            font-size: 2rem;
+            font-size: 1.7rem;
             font-weight: 700;
-            color: #333;
-            margin-bottom: 20px;
+            color: var(--text-color);
+            margin: 5px 0;
+        }
+
+        .subscription-price-note {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 4px;
         }
 
         .benefits-list {
-            text-align: left;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
-        .benefits-list h3 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
+        .benefits-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            font-weight: 500;
         }
 
         .benefit-item {
             display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(228, 30, 38, 0.05);
-            border-radius: 8px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            transition: transform 0.15s ease;
+        }
+
+        .benefit-item:hover {
+            transform: translateX(3px);
         }
 
         .benefit-item i {
-            color: #28a745;
-            margin-right: 15px;
-            font-size: 1.1rem;
+            color: var(--success-color);
+            margin-right: 10px;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            margin-top: 4px;
         }
-
-        .payment-form {
-            text-align: left;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #e41e26;
+        
+        .benefit-item span {
+            color: #444;
         }
 
         .payment-info {
-            margin-bottom: 30px;
+            margin-bottom: 22px;
             text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(248, 249, 250, 0.7);
         }
 
         .payment-info p {
-            margin-bottom: 20px;
-            color: #666;
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            color: var(--text-light);
         }
 
-        .payment-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+        .payment-methods {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .payment-option {
+        .payment-icon {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f3f5;
+            border-radius: 8px;
+            color: #555;
+            transition: all 0.2s ease;
+        }
+
+        .payment-icon:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            color: var(--primary-color);
+        }
+
+        .payment-icon i {
+            font-size: 1.1rem;
+        }
+
+        .action-buttons {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 15px;
-            background: rgba(228, 30, 38, 0.05);
-            border-radius: 10px;
-            border: 2px solid transparent;
-        }
-
-        .payment-option i {
-            font-size: 1.5rem;
-            color: #e41e26;
-            margin-bottom: 8px;
-        }
-
-        .payment-option span {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #333;
+            gap: 10px;
         }
 
         .btn {
-            padding: 15px 30px;
+            padding: 14px;
             border: none;
             border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 500;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             width: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #e41e26, #ff6b6b);
+            background-color: var(--primary-color);
             color: #fff;
+            box-shadow: 0 2px 4px rgba(228, 30, 38, 0.2);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(45deg, #c71e24, #ff5252);
-            transform: translateY(-2px);
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(228, 30, 38, 0.25);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         .btn-secondary {
-            background: #6c757d;
-            color: #fff;
-            margin-top: 10px;
+            background-color: transparent;
+            color: var(--text-light);
+            border: 1px solid #ddd;
         }
 
         .btn-secondary:hover {
-            background: #545b62;
+            background-color: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        /* Button loading state */
+        .btn-primary.loading {
+            background-color: #f0888b;
+            pointer-events: none;
+        }
+
+        .btn-primary.loading::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.6s linear infinite;
+            right: 18px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .alert {
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .alert i {
+            margin-right: 10px;
+            margin-top: 2px;
         }
 
         .alert-success {
             background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+            border-left: 4px solid var(--success-color);
             color: #155724;
         }
 
         .alert-danger {
             background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
+            border-left: 4px solid var(--danger-color);
             color: #721c24;
         }
 
         .back-link {
             display: inline-flex;
             align-items: center;
-            color: #e41e26;
+            color: #555;
             text-decoration: none;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .back-link i {
-            margin-right: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            padding: 6px 10px;
+            border-radius: 6px;
         }
 
         .back-link:hover {
-            color: #c71e24;
+            color: var(--primary-color);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .back-link i {
+            margin-right: 6px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 576px) {
+            .container {
+                padding: 10px;
+                margin: 15px auto;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 10px;
+            }
+
+            .subscription-header i {
+                font-size: 1.8rem;
+            }
+
+            .subscription-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .subscription-price {
+                font-size: 1.4rem;
+            }
+
+            .btn {
+                padding: 12px;
+            }
+        }
+
+        /* High-contrast mode for accessibility */
+        @media (prefers-contrast: more) {
+            :root {
+                --primary-color: #c00;
+                --primary-dark: #900;
+                --text-color: #000;
+                --text-light: #333;
+                --bg-light: #fff;
+                --border-color: #666;
+                --success-color: #006400;
+                --danger-color: #a00;
+            }
+            
+            .card {
+                box-shadow: 0 0 0 1px #000;
+            }
+            
+            .alert {
+                border: 1px solid currentColor;
+            }
+            
+            .btn-primary {
+                border: 1px solid #000;
+            }
+            
+            .btn-secondary {
+                border: 1px solid #000;
+            }
         }
     </style>
 </head>
@@ -400,73 +550,66 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             <?php else: ?>
                 <div class="subscription-header">
                     <i class="fas fa-crown"></i>
-                    <h1>Subscribe to Premium Content</h1>
+                    <h1>Premium Subscription</h1>
                 </div>
 
                 <div class="coach-info">
                     <div class="coach-name"><?= htmlspecialchars($coach['First_Name'] . ' ' . $coach['Last_Name']) ?></div>
-                    <div class="subscription-price">₱<?= number_format($price, 2) ?>/month</div>
+                    <div class="subscription-price">₱<?= number_format($price, 2) ?></div>
+                    <div class="subscription-price-note">per month, cancel anytime</div>
                 </div>
 
                 <div class="benefits-list">
-                    <h3>What You Get:</h3>
+                    <div class="benefits-title">Subscription includes:</div>
                     <div class="benefit-item">
                         <i class="fas fa-check-circle"></i>
-                        <span>Unlimited access to all premium video courses</span>
+                        <span>Unlimited access to all premium videos</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-check-circle"></i>
-                        <span>New content added regularly</span>
+                        <span>Regular new content updates</span>
                     </div>
                     <div class="benefit-item">
                         <i class="fas fa-check-circle"></i>
-                        <span>HD video quality and mobile access</span>
-                    </div>
-                    <div class="benefit-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Cancel anytime</span>
+                        <span>HD video quality on all devices</span>
                     </div>
                 </div>
 
-                <form method="POST" class="payment-form">
+                <form method="POST" id="subscriptionForm" class="payment-form">
                     <input type="hidden" name="action" value="create_checkout">
 
                     <div class="payment-info">
-                        <p>Click below to proceed to secure PayMongo checkout. You can pay using:</p>
-                        <div class="payment-options">
-                            <div class="payment-option">
-                                <i class="fas fa-credit-card"></i>
-                                <span>Credit/Debit Cards</span>
-                            </div>
-                            <div class="payment-option">
-                                <i class="fas fa-mobile-alt"></i>
-                                <span>GCash</span>
-                            </div>
-                            <div class="payment-option">
-                                <i class="fas fa-wallet"></i>
-                                <span>PayMaya</span>
-                            </div>
-                            <div class="payment-option">
-                                <i class="fas fa-car"></i>
-                                <span>GrabPay</span>
-                            </div>
+                        <p>Payment processed securely via PayMongo</p>
+                        <div class="payment-methods">
+                            <div class="payment-icon" title="Credit/Debit Card"><i class="fas fa-credit-card"></i></div>
+                            <div class="payment-icon" title="GCash"><i class="fas fa-mobile-alt"></i></div>
+                            <div class="payment-icon" title="PayMaya"><i class="fas fa-wallet"></i></div>
+                            <div class="payment-icon" title="GrabPay"><i class="fas fa-car"></i></div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-lock"></i> Proceed to Secure Checkout - ₱<?= number_format($price, 2) ?>
-                    </button>
-
-                    <a href="member_online_courses.php" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
-                    </a>
+                    <div class="action-buttons">
+                        <button type="submit" id="subscribeBtn" class="btn btn-primary">
+                            <i class="fas fa-lock"></i> Subscribe for ₱<?= number_format($price, 2) ?>
+                        </button>
+                        <a href="member_online_courses.php" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
                 </form>
             <?php endif; ?>
         </div>
     </div>
 
     <script>
-        // Add any additional JavaScript here if needed
+        // Add loading state to button when form is submitted
+        document.getElementById('subscriptionForm')?.addEventListener('submit', function() {
+            const button = document.getElementById('subscribeBtn');
+            if (button) {
+                button.classList.add('loading');
+                button.innerHTML = '<i class="fas fa-lock"></i> Processing...';
+            }
+        });
     </script>
 </body>
 
