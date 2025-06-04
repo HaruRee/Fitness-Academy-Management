@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             box-sizing: border-box;
         }        body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
             margin: 0;
             padding: 0;
@@ -143,45 +143,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         .nav-links a:hover {
             color: #e41e26;
-        }
-
-        .main-content {
+        }        .main-content {
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: calc(100vh - 73px);
-            padding: 20px;
+            padding: 15px;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            max-width: 800px;
+            max-width: 700px;
             width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header {
             background: linear-gradient(135deg, #e41e26, #c81a21);
             color: white;
-            padding: 40px;
+            padding: 2rem;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
             font-weight: 700;
         }
 
         .header p {
-            font-size: 1.1rem;
+            font-size: 1rem;
             opacity: 0.9;
         }
 
         .form-container {
-            padding: 40px;
+            padding: 2rem;
         }
 
         .message {
@@ -201,13 +201,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
-        }
-
-        .form-grid {
+        }        .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 25px;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-group {
@@ -222,29 +220,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .form-group label {
             font-weight: 600;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
+            font-size: 0.9rem;
         }
 
         .form-group label i {
-            margin-right: 8px;
+            margin-right: 0.5rem;
             color: #e41e26;
             width: 16px;
         }
 
         .required {
             color: #e41e26;
-            margin-left: 5px;
+            margin-left: 3px;
         }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
-            padding: 15px;
+            padding: 0.8rem;
             border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
             font-family: inherit;
         }
@@ -257,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             box-shadow: 0 0 0 3px rgba(228, 30, 38, 0.1);
         }        .form-group textarea {
             resize: vertical;
-            min-height: 120px;
+            min-height: 80px;
         }
 
         .form-help {
@@ -280,16 +279,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             width: 100%;
             height: 100%;
             cursor: pointer;
-        }
-
-        .file-upload-label {
+        }        .file-upload-label {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            border: 2px dashed #e1e5e9;
-            border-radius: 10px;
-            background: #f8f9fa;
+            padding: 0.8rem;
+            border: 2px dashed rgba(228, 30, 38, 0.3);
+            border-radius: 8px;
+            background: rgba(228, 30, 38, 0.03);
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
@@ -298,37 +296,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .file-upload-label:hover {
             border-color: #e41e26;
             background: #fff5f5;
-        }
-
-        .file-upload-label i {
-            font-size: 2rem;
+        }        .file-upload-label i {
+            font-size: 1.5rem;
             color: #e41e26;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .file-info {
             margin-top: 10px;
             font-size: 0.9rem;
-            color: #666;
-        }
-
-        .submit-btn {
+            color: #666;        }        .submit-btn {
             background: linear-gradient(135deg, #e41e26, #c81a21);
             color: white;
-            padding: 18px 40px;
+            padding: 0.8rem 1.5rem;
             border: none;
-            border-radius: 25px;
-            font-size: 1.1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
-            margin-top: 20px;
-        }
-
-        .submit-btn:hover {
+            margin-top: 1rem;
+        }        .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(228, 30, 38, 0.3);
+            box-shadow: 0 8px 20px rgba(228, 30, 38, 0.4);
+            background: linear-gradient(135deg, #f03a3f, #e41e26);
         }
 
         .back-link {
@@ -347,24 +339,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         .back-link i {
             margin-right: 8px;
-        }
-
-        @media (max-width: 768px) {
+        }        @media (max-width: 768px) {
             .form-grid {
                 grid-template-columns: 1fr;
-                gap: 20px;
+                gap: 1rem;
             }
 
             .header {
-                padding: 30px 20px;
+                padding: 1.5rem 1rem;
             }
 
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
 
             .form-container {
-                padding: 30px 20px;
+                padding: 1.5rem 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
             }
         }
     </style>

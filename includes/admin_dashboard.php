@@ -751,11 +751,13 @@ try {
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>
+            </a>            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Check In</span>
             </a>
-
-            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
-                <i class="fas fa-camera"></i>
-                <span>QR Scanner</span>
+            <a href="../attendance/checkout.php">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Check Out</span>
             </a>
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>

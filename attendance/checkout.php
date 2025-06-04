@@ -27,8 +27,7 @@ $scanner_location = $_SESSION['scanner_location'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>GYM EXIT - Check-out Scanner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="../assets/js/success-sound.js"></script>
-    <style>
+    <script src="../assets/js/success-sound.js"></script>    <style>
         :root {
             --primary-color: #d62328; /* Red gym branding */
             --primary-dark: #aa1c20;
@@ -39,6 +38,8 @@ $scanner_location = $_SESSION['scanner_location'];
             --light-color: #f9f9f9;
             --dark-color: #111827;
             --gray-color: #6b7280;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -47,101 +48,80 @@ $scanner_location = $_SESSION['scanner_location'];
             box-sizing: border-box;
         }
 
-        body {            
+        body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #000;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             color: white;
+            overflow-x: hidden;
         }
 
         .header {
-            background-color: var(--primary-color);
-            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            padding: 1rem;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(214, 35, 40, 0.3);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.1);
         }
 
         .header h1 {
             color: white;
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             font-weight: 700;
             margin: 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
         
         .header h2 {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1.5rem;
+            font-size: 1rem;
             font-weight: 400;
             margin: 5px 0 0;
         }
         
         .gym-logo {
-            margin-bottom: 10px;
-            max-height: 60px;
-        }
-
-        .btn-back {
-            background: var(--gray-color);
-            color: white;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s;
-        }
-
-        .btn-back:hover {
-            background: var(--dark-color);
-            transform: translateY(-2px);
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 5px;
+            max-height: 40px;
+        }        .container {
+            max-width: 450px;
+            margin: 1rem auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             text-align: center;
-        }
-
-        .scanner-header {
-            margin-bottom: 2rem;
+        }        .scanner-header {
+            margin-bottom: 0.8rem;
         }
 
         .scanner-header h2 {
             color: var(--primary-color);
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            margin-bottom: 0.2rem;
         }
 
         .scanner-header p {
             color: var(--gray-color);
-            font-size: 1.1rem;
+            font-size: 0.85rem;
         }
 
         .scanner-container {
-            margin: 2rem 0;
+            margin: 1rem 0;
             position: relative;
-        }
-
-        #scanner {
+        }        #scanner {
             width: 100%;
-            max-width: 500px;
-            height: 350px;
-            border: 4px solid var(--primary-color);
-            border-radius: 20px;
+            max-width: 320px;
+            height: 220px;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
             margin: 0 auto;
             display: block;
-            background: #f8f9fa;
+            background: #1a1a1a;
         }
 
         .scanner-overlay {
@@ -150,224 +130,200 @@ $scanner_location = $_SESSION['scanner_location'];
             left: 50%;
             transform: translate(-50%, -50%);
             color: var(--gray-color);
-            font-size: 1.2rem;
+            font-size: 1rem;
             pointer-events: none;
+            text-align: center;
         }
 
         .controls {
             display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin: 2rem 0;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
             gap: 0.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(214, 35, 40, 0.3);
         }
 
         .btn:hover {
-            background: #b91c1c;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 6px 20px rgba(214, 35, 40, 0.4);
         }
 
         .btn:disabled {
-            background: #ccc;
+            background: var(--gray-color);
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
-        .btn-success {
-            background: var(--success-color);
-        }
-
-        .btn-success:hover {
-            background: #059669;
-            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
-        }
-
         .btn-danger {
-            background: var(--danger-color);
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
         }
 
-        .btn-danger:hover {
-            background: #dc2626;
-            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
-        }
-
-        .manual-entry {
-            margin-top: 2rem;
-            padding: 2rem;
-            background: rgba(243, 244, 246, 0.8);
-            border-radius: 15px;
-            border: 2px dashed var(--gray-color);
-        }
-
-        .manual-entry h3 {
-            color: var(--dark-color);
-            margin-bottom: 1rem;
-        }
-
-        .manual-entry input {
-            width: 100%;
-            max-width: 400px;
-            padding: 1rem;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 1rem;
-            text-align: center;
-            font-family: 'Courier New', monospace;
+        .status-indicator {
+            padding: 0.7rem;
+            border-radius: 8px;
             margin: 1rem 0;
-            transition: border-color 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
         }
 
-        .manual-entry input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        .status-indicator.ready {
+            color: var(--success-color);
+        }
+
+        .status-indicator.scanning {
+            color: var(--warning-color);
+        }
+
+        .status-indicator.error {
+            color: var(--danger-color);
         }
 
         .result {
-            margin: 2rem 0;
-            padding: 1.5rem;
-            border-radius: 12px;
-            font-weight: 500;
-            font-size: 1.1rem;
-            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
 
         .result.show {
-            display: block;
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .result.success {
             background: rgba(16, 185, 129, 0.1);
-            color: #065f46;
-            border: 2px solid rgba(16, 185, 129, 0.3);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .result.error {
             background: rgba(239, 68, 68, 0.1);
-            color: #991b1b;
-            border: 2px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .result.loading {
-            background: rgba(220, 38, 38, 0.1);
-            color: #991b1b;
-            border: 2px solid rgba(220, 38, 38, 0.3);
-        }
-
-        .recent-checkouts {
-            margin-top: 3rem;
-            text-align: left;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }        .recent-checkouts {
+            margin-top: 1.2rem;
         }
 
         .recent-checkouts h3 {
-            color: var(--dark-color);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .checkout-item {
-            background: rgba(243, 244, 246, 0.8);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            border-left: 4px solid var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 0.6rem;
+            text-align: left;
+        }#recentCheckouts {
+            max-height: 180px;
+            overflow-y: auto;
+            border-radius: 8px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }        .checkout-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.6rem;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        .checkout-info h4 {
-            color: var(--dark-color);
-            margin-bottom: 0.5rem;
+        .checkout-item:last-child {
+            border-bottom: none;
+        }        .checkout-info h4 {
+            color: white;
+            font-size: 0.9rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .checkout-info p {
             color: var(--gray-color);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            margin: 0.2rem 0 0;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .role-member {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .role-coach {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .role-staff {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .role-admin {
+            background-color: #6366f1;
+            color: white;
         }
 
         .checkout-time {
-            color: var(--primary-color);
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .status-indicator.ready {
-            background: rgba(16, 185, 129, 0.1);
-            color: #065f46;
-        }
-
-        .status-indicator.scanning {
-            background: rgba(220, 38, 38, 0.1);
-            color: #991b1b;
-        }
-
-        .status-indicator.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #991b1b;
-        }
-
+        /* Responsive design */
         @media (max-width: 768px) {
             .container {
-                margin: 1rem;
-                padding: 1.5rem;
+                margin: 0.5rem;
+                padding: 1rem;
             }
-
-            .controls {
-                flex-direction: column;
-                align-items: center;
+            
+            .header h1 {
+                font-size: 1.5rem;
             }
-
-            .btn {
-                width: 100%;
-                max-width: 300px;
-            }
-
+            
             #scanner {
-                height: 250px;
+                height: 200px;
+            }
+            
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -579,13 +535,20 @@ $scanner_location = $_SESSION['scanner_location'];
                 if (data.success && data.checkouts && data.checkouts.length > 0) {
                     console.log('Found', data.checkouts.length, 'checkouts');
                     let html = '';
-                    
-                    data.checkouts.forEach(checkout => {
+                      data.checkouts.forEach(checkout => {
+                        // Determine role styling
+                        const role = checkout.role ? checkout.role.toLowerCase() : 'member';
+                        const roleClass = `role-${role}`;
+                        const roleDisplay = checkout.role || 'Member';
+                        
                         html += `
                             <div class="checkout-item">
                                 <div class="checkout-info">
-                                    <h4>${checkout.user_name}</h4>
-                                    <p>Member #${checkout.user_id} • ${checkout.formatted_time}</p>
+                                    <h4>
+                                        ${checkout.user_name}
+                                        <span class="role-badge ${roleClass}">${roleDisplay}</span>
+                                    </h4>
+                                    <p>ID #${checkout.user_id} • ${checkout.formatted_time}${checkout.duration ? ' • ' + checkout.duration : ''}</p>
                                 </div>
                                 <div class="checkout-time">
                                     <i class="fas fa-sign-out-alt"></i> OUT
