@@ -51,9 +51,7 @@ try {
     $validStatuses = ['succeeded', 'paid', 'payment_completed', 'completed'];
     if (!in_array($paymentStatus, $validStatuses)) {
         throw new Exception('Payment verification failed. Status: ' . $paymentStatus);
-    }
-
-    // Start transaction
+    }    // Start transaction
     $conn->beginTransaction();
 
     // Get membership payment details
@@ -61,6 +59,24 @@ try {
     $userId = $_SESSION['user_id'];
     $planId = $membershipData['plan_id'];
     $amount = $membershipData['amount'];
+
+    // Double-check user doesn't already have an active plan (security measure)
+    $stmt = $conn->prepare("
+        SELECT plan_id, membership_plan, package_type, membership_price 
+        FROM users 
+        WHERE UserID = ?
+    ");
+    $stmt->execute([$userId]);
+    $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($existingUser && (
+        $existingUser['plan_id'] || 
+        $existingUser['membership_plan'] || 
+        $existingUser['package_type'] ||
+        $existingUser['membership_price']
+    )) {
+        throw new Exception('User already has an active membership plan. Cannot process duplicate payment.');
+    }
 
     // Calculate membership duration based on plan
     $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ?");

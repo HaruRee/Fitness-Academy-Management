@@ -33,22 +33,32 @@ if (!isset($_POST['plan_id']) || !isset($_POST['amount']) || !isset($_POST['emai
 }
 
 try {
-    // Get plan details
-    $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ?");
-    $stmt->execute([$_POST['plan_id']]);
-    $plan = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$plan) {
-        throw new Exception('Invalid plan selected');
-    }
-
-    // Get user details
-    $stmt = $conn->prepare("SELECT UserID, First_Name, Last_Name, Email, Phone FROM users WHERE UserID = ?");
+    // First, check if user already has an active subscription/plan
+    $stmt = $conn->prepare("
+        SELECT UserID, plan_id, membership_plan, package_type, membership_price, 
+               First_Name, Last_Name, Email, Phone 
+        FROM users 
+        WHERE UserID = ?
+    ");
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
         throw new Exception('User not found');
+    }
+
+    // Check if user has an active subscription/plan (any of these fields indicate an active plan)
+    if ($user['plan_id'] || $user['membership_plan'] || $user['package_type']) {
+        throw new Exception('You already have an active membership plan. Please wait for your current plan to expire before purchasing a new one.');
+    }
+
+    // Get plan details
+    $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ? AND is_active = 1");
+    $stmt->execute([$_POST['plan_id']]);
+    $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$plan) {
+        throw new Exception('Invalid or inactive plan selected');
     }
 
     // Initialize GuzzleHTTP client

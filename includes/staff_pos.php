@@ -74,7 +74,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
         }
         
         $planPrice = floatval($plan['price']);
-        
+          // Check if user with this email already exists
+        $existingUserStmt = $conn->prepare("SELECT UserID, membership_plan, plan_id, package_type FROM users WHERE Email = ?");
+        $existingUserStmt->execute([$customerEmail]);
+        $existingUser = $existingUserStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingUser) {
+            // Check if existing user has an active plan
+            if ($existingUser['plan_id'] || $existingUser['membership_plan'] || $existingUser['package_type']) {
+                throw new Exception("A user with email {$customerEmail} already has an active membership plan. Cannot create duplicate membership.");
+            }
+            throw new Exception("A user with email {$customerEmail} already exists in the system. Please use a different email or contact support.");
+        }
+
         // Validate cash amount
         if ($cashAmount < $planPrice) {
             throw new Exception("Insufficient cash amount. Required: ₱" . number_format($planPrice, 2));
@@ -208,10 +220,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             $newMemberId,
             $planPrice,
             $transactionId,
-            $paymentDetails
-        ]);
+            $paymentDetails        ]);
         
-        // Log in audit trail        $auditSql = "INSERT INTO audit_trail (username, action, timestamp) VALUES (?, ?, NOW())";
+        // Log in audit trail
+        $auditSql = "INSERT INTO audit_trail (username, action, timestamp) VALUES (?, ?, NOW())";
         $auditStmt = $conn->prepare($auditSql);
         $action = "POS Sale: {$plan['name']} to {$customerName} - Amount: ₱{$planPrice} - Transaction: {$transactionId}";
         $auditStmt->execute([$_SESSION['user_name'] ?? 'Staff', $action]);
