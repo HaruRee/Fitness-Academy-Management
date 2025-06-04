@@ -79,13 +79,7 @@ $scanner_location = $_SESSION['scanner_location'];
             color: rgba(255, 255, 255, 0.9);
             font-size: 1rem;
             font-weight: 400;
-            margin: 5px 0 0;
-        }
-        
-        .gym-logo {
-            margin-bottom: 5px;
-            max-height: 40px;
-        }        .container {
+            margin: 5px 0 0;        }.container {
             max-width: 450px;
             margin: 1rem auto;
             background: var(--glass-bg);
@@ -331,7 +325,6 @@ $scanner_location = $_SESSION['scanner_location'];
 </head>
 
 <body>    <div class="header">
-        <img src="/gym1/assets/images/fa_logo.png" alt="Gym Logo" class="gym-logo" onerror="console.log('Logo failed to load')">
         <h1>GYM ENTRANCE</h1>
         <h2>CHECK-IN SCANNER</h2>
     </div>
