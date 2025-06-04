@@ -1,13 +1,29 @@
 <?php
+// Enable error reporting for debugging (remove in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-require '../config/database.php';
-require_once '../vendor/autoload.php';
+try {
+    require '../config/database.php';
+} catch (Exception $e) {
+    die("Database configuration error: " . $e->getMessage());
+}
+
+try {
+    require_once '../vendor/autoload.php';
+} catch (Exception $e) {
+    die("Composer autoload error: " . $e->getMessage());
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 // Load API configuration
-require_once __DIR__ . '/../config/api_config.php';
+try {
+    require_once __DIR__ . '/../config/api_config.php';
+} catch (Exception $e) {
+    die("API configuration error: " . $e->getMessage());
+}
 
 session_start();
 
@@ -199,8 +215,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
 // Function to send verification email
 function sendVerificationEmail($email, $verification_code)
 {
-    require_once 'email_templates.php';
-    
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -221,11 +235,44 @@ function sendVerificationEmail($email, $verification_code)
         $username = explode('@', $email)[0];
         $username = ucfirst($username);
         
-        $mail->Body = EmailTemplates::emailVerification($username, $verification_code);
-        $mail->AltBody = EmailTemplates::getPlainTextVersion(
-            "Your verification code is: {$verification_code}. Enter this code to complete your registration.",
-            'Email Verification'
-        );
+        // Try to use email templates, fallback to simple HTML if not available
+        $emailBody = '';
+        $altBody = "Your verification code is: {$verification_code}. Enter this code to complete your registration.";
+        
+        try {
+            // Try to load email templates with proper path
+            if (file_exists(__DIR__ . '/email_templates.php')) {
+                require_once __DIR__ . '/email_templates.php';
+                $emailBody = EmailTemplates::emailVerification($username, $verification_code);
+                $altBody = EmailTemplates::getPlainTextVersion($altBody, 'Email Verification');
+            } else {
+                throw new Exception('Email templates not found');
+            }
+        } catch (Exception $templateError) {
+            // Fallback to simple HTML email
+            $appName = defined('APP_NAME') ? APP_NAME : 'Fitness Academy';
+            $emailBody = "
+            <html>
+            <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <h2 style='color: #e41e26;'>Email Verification</h2>
+                    <p>Hello {$username},</p>
+                    <p>Thank you for registering with {$appName}!</p>
+                    <p>Your verification code is:</p>
+                    <div style='background: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px;'>
+                        <h1 style='color: #e41e26; margin: 0; font-size: 32px; letter-spacing: 3px;'>{$verification_code}</h1>
+                    </div>
+                    <p>Enter this code to complete your registration.</p>
+                    <p>If you didn't request this, please ignore this email.</p>
+                    <hr style='margin: 20px 0;'>
+                    <p style='color: #666; font-size: 12px;'>This is an automated message from {$appName}.</p>
+                </div>
+            </body>
+            </html>";
+        }
+        
+        $mail->Body = $emailBody;
+        $mail->AltBody = $altBody;
         
         $mail->send();
         return true;
