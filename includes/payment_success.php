@@ -154,23 +154,59 @@ try {
             membership_plan, membership_price, plan_id, package_type
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
 
-        $stmt->execute([
-            $userData['username'],
-            $hashed_password,
-            $userData['role'],
-            $userData['first_name'],
-            $userData['last_name'],
-            $userData['email'],
-            $userData['date_of_birth'],
-            $userData['phone'],
-            $userData['address'],
-            $userData['emergency_contact'],
-            $email_token,
-            $_SESSION['selected_plan'],
-            $_SESSION['plan_price'],
-            $_SESSION['plan_id'],
-            $_SESSION['package_type']
-        ]);
+        try {
+            $stmt->execute([
+                $userData['username'],
+                $hashed_password,
+                $userData['role'],
+                $userData['first_name'],
+                $userData['last_name'],
+                $userData['email'],
+                $userData['date_of_birth'],
+                $userData['phone'],
+                $userData['address'],
+                $userData['emergency_contact'],
+                $email_token,
+                $_SESSION['selected_plan'],
+                $_SESSION['plan_price'],
+                $_SESSION['plan_id'],
+                $_SESSION['package_type']
+            ]);
+        } catch (PDOException $e) {
+            // If UserID field error, try with explicit UserID
+            if (strpos($e->getMessage(), 'UserID') !== false) {
+                // Get next available UserID
+                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                $userIdStmt->execute();
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+                
+                $stmtWithId = $conn->prepare("INSERT INTO users (
+                    UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
+                    Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
+                    membership_plan, membership_price, plan_id, package_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
+                
+                $stmtWithId->execute([
+                    $nextUserId,
+                    $userData['username'],
+                    $hashed_password,
+                    $userData['role'],
+                    $userData['first_name'],
+                    $userData['last_name'],
+                    $userData['email'],
+                    $userData['date_of_birth'],
+                    $userData['phone'],
+                    $userData['address'],                    $userData['emergency_contact'],
+                    $email_token,
+                    $_SESSION['selected_plan'],
+                    $_SESSION['plan_price'],
+                    $_SESSION['plan_id'],
+                    $_SESSION['package_type']
+                ]);
+            } else {
+                throw $e; // Re-throw if it's a different error
+            }
+        }
 
         $user_id = $conn->lastInsertId();
 

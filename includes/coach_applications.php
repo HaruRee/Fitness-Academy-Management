@@ -52,22 +52,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
 
                     // Generate a temporary password (user should change this)
                     $temp_password = bin2hex(random_bytes(8)); // 16 character random password
-                    $password_hash = password_hash($temp_password, PASSWORD_DEFAULT);
-                    // Create user account
+                    $password_hash = password_hash($temp_password, PASSWORD_DEFAULT);                    // Create user account
                     $stmt = $conn->prepare("
                         INSERT INTO users (Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) 
                         VALUES (?, ?, ?, 'Coach', ?, ?, ?, ?, ?, 1, 1, 1)
                     ");
-                    $stmt->execute([
-                        $username,
-                        $password_hash,
-                        $application['email'],
-                        $first_name,
-                        $last_name,
-                        $application['phone'],
-                        $application['address'],
-                        $application['birthdate']
-                    ]);
+                    try {
+                        $stmt->execute([
+                            $username,
+                            $password_hash,
+                            $application['email'],
+                            $first_name,
+                            $last_name,
+                            $application['phone'],
+                            $application['address'],
+                            $application['birthdate']
+                        ]);
+                    } catch (PDOException $e) {
+                        // If UserID field error, try with explicit UserID
+                        if (strpos($e->getMessage(), 'UserID') !== false) {
+                            // Get next available UserID
+                            $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                            $userIdStmt->execute();
+                            $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+                            
+                            $stmtWithId = $conn->prepare("
+                                INSERT INTO users (UserID, Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) 
+                                VALUES (?, ?, ?, 'Coach', ?, ?, ?, ?, ?, 1, 1, 1)
+                            ");
+                            $stmtWithId->execute([
+                                $nextUserId,
+                                $username,
+                                $password_hash,
+                                $application['email'],
+                                $first_name,
+                                $last_name,
+                                $application['phone'],
+                                $application['address'],
+                                $application['birthdate']
+                            ]);
+                        } else {
+                            throw $e; // Re-throw if it's a different error
+                        }
+                    }
 
                     $user_id = $conn->lastInsertId();
 

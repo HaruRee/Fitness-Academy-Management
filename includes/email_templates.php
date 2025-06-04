@@ -146,11 +146,23 @@ class EmailTemplates {
                 }
                 .details-label { 
                     font-weight: 600; 
-                    color: #666; 
-                }
+                    color: #666;                }
                 .details-value { 
                     color: #333; 
                     font-weight: 500;
+                }
+                .password-display {
+                    font-family: 'Courier New', monospace;
+                    font-weight: bold;
+                    color: #333;
+                    background: #f8f9fa;
+                    padding: 10px 15px;
+                    border-radius: 6px;
+                    border: 2px solid #e9ecef;
+                    font-size: 16px;
+                    letter-spacing: 1px;
+                    display: inline-block;
+                    margin: 5px 0;
                 }
                 .highlight { 
                     background: linear-gradient(120deg, " . self::$brandColor . "20 0%, " . self::$brandColor . "20 100%);
@@ -322,10 +334,9 @@ class EmailTemplates {
                 <div class='details-row'>
                     <span class='details-label'>Email:</span>
                     <span class='details-value'>" . htmlspecialchars($email) . "</span>
-                </div>
-                <div class='details-row'>
+                </div>                <div class='details-row'>
                     <span class='details-label'>Temporary Password:</span>
-                    <span class='details-value code' style='color: white; background: " . self::$brandColor . ";'>{$password}</span>
+                    <span class='details-value password-display'>{$password}</span>
                 </div>
             </div>
             

@@ -114,8 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             'notes' => $notes,
             'transaction_type' => 'membership_pos',
             'username_created' => $username
-        ]);
-        // Create the member account
+        ]);        // Create the member account
         $memberSql = "
             INSERT INTO users (
                 Username, PasswordHash, Email, First_Name, Last_Name,
@@ -130,23 +129,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
                 1, 1, 'active', NOW(),
                 NULL
             )
-        ";
-        // Execute member creation
+        ";        // Execute member creation
         $memberStmt = $conn->prepare($memberSql);
-        $memberStmt->execute([
-            $username,
-            password_hash($tempPassword, PASSWORD_DEFAULT),
-            $customerEmail,
-            explode(' ', $customerName)[0], // First name
-            implode(' ', array_slice(explode(' ', $customerName), 1)), // Last name
-            $customerPhone,
-            $customerAddress,
-            $customerPhone, // Using phone as emergency contact
-            $plan['name'], // membership_plan
-            $_SESSION['package_type'] ?? null, // package_type
-            $planId, // plan_id
-            $planPrice // membership_price
-        ]);
+        try {
+            $memberStmt->execute([
+                $username,
+                password_hash($tempPassword, PASSWORD_DEFAULT),
+                $customerEmail,
+                explode(' ', $customerName)[0], // First name
+                implode(' ', array_slice(explode(' ', $customerName), 1)), // Last name
+                $customerPhone,
+                $customerAddress,
+                $customerPhone, // Using phone as emergency contact
+                $plan['name'], // membership_plan
+                $_SESSION['package_type'] ?? null, // package_type
+                $planId, // plan_id
+                $planPrice // membership_price
+            ]);
+        } catch (PDOException $e) {
+            // If UserID field error, try with explicit UserID
+            if (strpos($e->getMessage(), 'UserID') !== false) {
+                // Get next available UserID
+                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                $userIdStmt->execute();
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+                
+                // Retry with UserID included
+                $memberSqlWithId = "
+                    INSERT INTO users (
+                        UserID, Username, PasswordHash, Email, First_Name, Last_Name,
+                        Phone, Address, emergency_contact, Role, RegistrationDate,
+                        membership_plan, package_type, plan_id, membership_price,
+                        IsActive, email_confirmed, account_status, last_activity_date,
+                        DateOfBirth
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, 'Member', NOW(),
+                        ?, ?, ?, ?,
+                        1, 1, 'active', NOW(),
+                        NULL
+                    )
+                ";
+                $memberStmtWithId = $conn->prepare($memberSqlWithId);
+                $memberStmtWithId->execute([
+                    $nextUserId,
+                    $username,
+                    password_hash($tempPassword, PASSWORD_DEFAULT),
+                    $customerEmail,
+                    explode(' ', $customerName)[0], // First name
+                    implode(' ', array_slice(explode(' ', $customerName), 1)), // Last name
+                    $customerPhone,
+                    $customerAddress,
+                    $customerPhone, // Using phone as emergency contact
+                    $plan['name'], // membership_plan
+                    $_SESSION['package_type'] ?? null, // package_type
+                    $planId, // plan_id
+                    $planPrice // membership_price
+                ]);
+            } else {
+                throw $e; // Re-throw if it's a different error
+            }
+        }
 
         $newMemberId = $conn->lastInsertId();
 
@@ -165,13 +208,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             $planPrice,
             $transactionId,
             $paymentDetails
-        ]);
-
-        // Log in audit trail
+        ]);        // Log in audit trail
         $auditSql = "INSERT INTO audit_trail (username, action, timestamp) VALUES (?, ?, NOW())";
         $auditStmt = $conn->prepare($auditSql);
         $action = "POS Sale: {$plan['name']} to {$customerName} - Amount: ₱{$planPrice} - Transaction: {$transactionId}";
-        $auditStmt->execute([$_SESSION['username'], $action]);
+        $auditStmt->execute([$_SESSION['user_name'] ?? 'Admin', $action]);
 
         $conn->commit();
         // Send email receipt with login credentials
@@ -272,18 +313,18 @@ function getPosUserId($conn)
 }
 
 // Function to generate a strong random password
-function generateStrongPassword($length = 12)
+function generateStrongPassword($length = 10)
 {
-    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+';
+    // Use only letters and numbers for cleaner, more user-friendly passwords
+    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     $password = '';
 
-    // Ensure at least one of each required character type
+    // Ensure at least one lowercase, one uppercase, and one number
     $password .= $chars[rand(0, 25)]; // lowercase
     $password .= $chars[rand(26, 51)]; // uppercase
     $password .= $chars[rand(52, 61)]; // number
-    $password .= $chars[rand(62, strlen($chars) - 1)]; // special char
 
-    // Fill the rest with random chars
+    // Fill the rest with random alphanumeric chars
     for ($i = strlen($password); $i < $length; $i++) {
         $password .= $chars[rand(0, strlen($chars) - 1)];
     }
