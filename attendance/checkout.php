@@ -506,10 +506,11 @@ $scanner_location = $_SESSION['scanner_location'];
                     overlay.innerHTML = '<i class="fas fa-camera"></i> Click "Start Scanner" to begin';
                     updateStatus('Scanner stopped', 'ready');
                 }).catch(err => {
-                    console.error('Scanner stop error:', err);
-                });
+                    console.error('Scanner stop error:', err);                });
             }
-        }        function onScanSuccess(decodedText, decodedResult) {
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
             if (decodedText && !scanTimeout) {
                 // Set timeout to prevent rapid scanning
                 scanTimeout = true;
@@ -529,7 +530,9 @@ $scanner_location = $_SESSION['scanner_location'];
 
         function onScanFailure(error) {
             // Silent fail - don't log every scan attempt
-        }        // Manual QR entry removed for kiosk mode        async function processAttendance(qrCode) {
+        }
+
+        async function processAttendance(qrCode) {
             showResult('Processing check-out...', 'loading');
             
             try {

@@ -8,8 +8,11 @@ header('Content-Type: application/json');
 // Set timezone
 date_default_timezone_set('Asia/Manila');
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if this is kiosk mode (standalone scanner)
+$is_kiosk_mode = isset($_SESSION['kiosk_mode']) && $_SESSION['kiosk_mode'] === true;
+
+// Check if user is logged in (except for kiosk mode)
+if (!$is_kiosk_mode && !isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Please log in first']);
     exit;
@@ -23,6 +26,12 @@ $client_timestamp = $input['timestamp'] ?? '';
 
 $scanner_user_id = $_SESSION['user_id'];
 $scanner_role = $_SESSION['role'];
+
+// For kiosk mode, use system scanner ID
+if ($is_kiosk_mode) {
+    $scanner_user_id = 1; // System/admin user for kiosk scans
+    $scanner_role = 'system';
+}
 
 if (empty($qr_code)) {
     echo json_encode(['success' => false, 'message' => 'QR code is required']);
