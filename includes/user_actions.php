@@ -49,10 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $_SESSION['error'] = "Email already exists. Please use a different email address.";
             header('Location: ' . $redirect);
             exit;
-        }
-
-        // Hash the password
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);        // Insert user into database
+        }        // Hash the password
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Insert user into database
         $stmt = $conn->prepare("INSERT INTO users (Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) VALUES (:username, :password, :email, :role, :firstName, :lastName, :phone, :address, :dob, :isActive, :isApproved, 1)");
 
         $stmt->bindParam(':username', $username);
@@ -91,11 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $dob,
                     $isActive,
                     $isApproved
-                ]);
-            } else {
+                ]);            } else {
                 throw $e; // Re-throw if it's a different error
             }
-        }        // Log the action in audit trail
+        }
+        
+        // Log the action in audit trail
         $audit_stmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
         $audit_stmt->bindParam(':username', $_SESSION['user_name']);
         $action = "added new user: " . $username;
@@ -177,11 +178,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bindParam(':isActive', $isActive, PDO::PARAM_INT);
         $stmt->bindParam(':isApproved', $isApproved, PDO::PARAM_INT);
         $stmt->bindParam(':emailConfirmed', $emailConfirmed, PDO::PARAM_INT);
-        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);        $stmt->execute();
 
-        $stmt->execute();
-
-        // Log the action in audit trail        $audit_stmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
+        // Log the action in audit trail
+        $audit_stmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
         $audit_stmt->bindParam(':username', $_SESSION['user_name']);
         $action = "updated user ID: " . $userId;
         $audit_stmt->bindParam(':action', $action);
@@ -300,7 +300,9 @@ function handleStatusChange($conn) {
         $historyStmt->bindParam(':new_status', $newStatus);
         $historyStmt->bindParam(':reason', $reason);
         $historyStmt->bindParam(':changed_by', $_SESSION['user_id'], PDO::PARAM_INT);
-        $historyStmt->execute();        // Log in audit trail
+        $historyStmt->execute();
+        
+        // Log in audit trail
         $auditStmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
         $auditStmt->bindParam(':username', $_SESSION['user_name']);
         $action = "changed user status: {$currentUser['Username']} from '$previousStatus' to '$newStatus' - Reason: $reason";

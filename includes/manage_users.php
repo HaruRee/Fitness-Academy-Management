@@ -59,7 +59,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
             // Now delete the user
             $stmt = $conn->prepare("DELETE FROM users WHERE UserID = :id");
             $stmt->bindParam(':id', $_GET['id'], PDO::PARAM_INT);
-            $stmt->execute();            // Log the action in audit trail
+            $stmt->execute();
+            
+            // Log the action in audit trail
             $audit_stmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
             $audit_stmt->bindParam(':username', $_SESSION['user_name']);
             $action = "deleted user ID: " . $_GET['id'] . " (Username: " . $username_to_delete . ")";
