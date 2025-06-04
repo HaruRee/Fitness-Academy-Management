@@ -1,0 +1,6 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^6.9",
+        "luigel/laravel-paymongo": "^2.5"
+    }
+}

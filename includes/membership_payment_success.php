@@ -1,0 +1,152 @@
+<?php
+require '../config/database.php';
+require_once '../vendor/autoload.php';
+session_start();
+
+// Function to get correct URL for hosting environment
+function getCorrectUrl($path)
+{
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+
+    // Get the directory path from the current script
+    $currentDir = dirname($_SERVER['PHP_SELF']);
+    // Remove 'includes' from the path to get the base directory
+    $baseDir = dirname($currentDir);
+    // Make sure the base directory ends with a slash
+    $baseDir = rtrim($baseDir, '/') . '/';
+
+    return $protocol . $host . $baseDir . ltrim($path, '/');
+}
+
+// Load API configuration
+require_once __DIR__ . '/../config/api_config.php';
+
+// Check if we have the checkout session ID and required session data
+if (!isset($_SESSION['paymongo_checkout_id']) || !isset($_SESSION['membership_payment'])) {
+    $_SESSION['error_message'] = "Missing payment data. Please try again.";
+    header("Location: " . getCorrectUrl('includes/membership.php'));
+    exit;
+}
+
+try {
+    // Get checkout session ID from session
+    $checkoutSessionId = $_SESSION['paymongo_checkout_id'];
+    error_log('Using checkout ID: ' . $checkoutSessionId);
+
+    // Initialize GuzzleHTTP client
+    $client = new \GuzzleHttp\Client();
+
+    // Verify the payment status
+    $sessionResponse = $client->request('GET', "https://api.paymongo.com/v1/checkout_sessions/{$checkoutSessionId}", [
+        'headers' => [
+            'Authorization' => 'Basic ' . base64_encode(PAYMONGO_SECRET_KEY . ':'),
+        ]
+    ]);
+
+    $sessionData = json_decode($sessionResponse->getBody(), true);
+    $paymentStatus = $sessionData['data']['attributes']['payment_intent']['status'] ?? $sessionData['data']['attributes']['status'] ?? null;
+
+    // Check if payment is successful
+    $validStatuses = ['succeeded', 'paid', 'payment_completed', 'completed'];
+    if (!in_array($paymentStatus, $validStatuses)) {
+        throw new Exception('Payment verification failed. Status: ' . $paymentStatus);
+    }
+
+    // Start transaction
+    $conn->beginTransaction();
+
+    // Get membership payment details
+    $membershipData = $_SESSION['membership_payment'];
+    $userId = $_SESSION['user_id'];
+    $planId = $membershipData['plan_id'];
+    $amount = $membershipData['amount'];
+
+    // Calculate membership duration based on plan
+    $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ?");
+    $stmt->execute([$planId]);
+    $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Extract duration from plan name (assuming format like "3 Months Unlimited Access")
+    preg_match('/(\d+)\s*(?:Month|Months|Session|Sessions)/', $plan['name'], $matches);
+    $duration = isset($matches[1]) ? intval($matches[1]) : 1; // Default to 1 if not found
+
+    // Set start and end dates
+    $startDate = date('Y-m-d');
+    $endDate = date('Y-m-d', strtotime("+{$duration} months"));
+
+    // Insert into memberships table
+    $stmt = $conn->prepare("
+        INSERT INTO memberships (
+            user_id, plan_id, start_date, end_date, 
+            amount_paid, payment_method, payment_reference,
+            status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NOW())
+    ");
+
+    $stmt->execute([
+        $userId,
+        $planId,
+        $startDate,
+        $endDate,
+        $amount,
+        $sessionData['data']['attributes']['payment_method_used'] ?? 'online',
+        $checkoutSessionId
+    ]);
+
+    // Update user's membership details
+    $stmt = $conn->prepare("
+        UPDATE users SET 
+        membership_plan = ?,
+        membership_price = ?,
+        plan_id = ?
+        WHERE UserID = ?
+    ");
+
+    $stmt->execute([
+        $plan['name'],
+        $amount,
+        $planId,
+        $userId
+    ]);
+
+    // Insert into payments table
+    $stmt = $conn->prepare("
+        INSERT INTO payments (
+            user_id, amount, payment_type, payment_method,
+            reference_number, status, created_at
+        ) VALUES (?, ?, 'membership', ?, ?, 'completed', NOW())
+    ");
+
+    $stmt->execute([
+        $userId,
+        $amount,
+        $sessionData['data']['attributes']['payment_method_used'] ?? 'online',
+        $checkoutSessionId
+    ]);
+
+    // Commit transaction
+    $conn->commit();
+
+    // Clear payment session data
+    unset($_SESSION['paymongo_checkout_id']);
+    unset($_SESSION['membership_payment']);
+    unset($_SESSION['selected_plan_id']);
+
+    // Set success message
+    $_SESSION['success_message'] = "Payment successful! Your membership has been activated.";
+
+    // Redirect back to membership page
+    header("Location: " . getCorrectUrl('includes/membership.php'));
+    exit;
+} catch (Exception $e) {
+    // Rollback transaction if started
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
+
+    error_log('Payment Success Error: ' . $e->getMessage());
+    $_SESSION['error_message'] = "Error processing payment: " . $e->getMessage();
+    header("Location: " . getCorrectUrl('includes/membership.php'));
+    exit;
+}

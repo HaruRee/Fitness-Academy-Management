@@ -1,0 +1,63 @@
+# Vendor directory (Composer dependencies)
+/vendor/
+
+# Configuration files with sensitive data
+config/database.php
+config/api_config.php
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Upload directories (may contain user data)
+uploads/user_*
+uploads/temp/
+
+# Cache directories
+cache/
+tmp/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# API Keys and sensitive configuration files
+config/api_config.php
+*.key
+*.pem
+*.p12
+secrets.json
+*.PublishSettings
+
+# Database backups and SQL dumps
+*.sql
+*.bak
+*.backup
+*.publishsettings
+
+# Backup files that may contain sensitive data
+*.sql
+*.bak
+*.backup
+*.bak
+*.backup
