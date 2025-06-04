@@ -3,6 +3,9 @@
 session_start();
 require_once '../config/database.php';
 
+// Set timezone to Manila, Philippines
+date_default_timezone_set('Asia/Manila');
+
 // Check if user is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header("Location: ../login.php");
@@ -10,13 +13,45 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 
 // Get filter parameters
-$date_filter = $_GET['date'] ?? date('Y-m-d');
+$date_range_filter = $_GET['date_range'] ?? 'all_time';
 $user_type_filter = $_GET['user_type'] ?? 'all';
 $attendance_type_filter = $_GET['attendance_type'] ?? 'all';
 
+// Calculate date range based on filter
+$date_conditions = [];
+$date_params = [];
+
+switch ($date_range_filter) {
+    case 'today':
+        $date_conditions[] = "DATE(ar.check_in_time) = CURDATE()";
+        break;
+    case 'last_7_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+        break;
+    case 'last_30_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        break;
+    case 'last_90_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)";
+        break;
+    case 'last_365_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)";
+        break;
+    case 'all_time':
+    default:
+        // No date filter, show all records
+        break;
+}
+
 // Build query based on filters
-$where_conditions = ["DATE(ar.check_in_time) = ?"];
-$params = [$date_filter];
+$where_conditions = [];
+$params = [];
+
+// Add date range conditions
+if (!empty($date_conditions)) {
+    $where_conditions = array_merge($where_conditions, $date_conditions);
+    $params = array_merge($params, $date_params);
+}
 
 if ($user_type_filter !== 'all') {
     $where_conditions[] = "ar.user_type = ?";
@@ -28,7 +63,7 @@ if ($attendance_type_filter !== 'all') {
     $params[] = $attendance_type_filter;
 }
 
-$where_clause = implode(' AND ', $where_conditions);
+$where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
 
 // Get attendance records
 $stmt = $conn->prepare("
@@ -47,13 +82,14 @@ $stmt = $conn->prepare("
     JOIN users u ON ar.user_id = u.UserID
     LEFT JOIN users scanner ON ar.scanned_by_user_id = scanner.UserID
     LEFT JOIN attendance_sessions ats ON ar.session_id = ats.id
-    WHERE $where_clause
+    $where_clause
     ORDER BY ar.check_in_time DESC
 ");
 $stmt->execute($params);
 $attendance_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get daily statistics
+// Get statistics for the selected date range
+$stats_where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
 $stats_stmt = $conn->prepare("
     SELECT 
         COUNT(*) as total_checkins,
@@ -62,13 +98,24 @@ $stats_stmt = $conn->prepare("
         SUM(CASE WHEN user_type = 'Coach' THEN 1 ELSE 0 END) as coach_checkins,
         SUM(CASE WHEN attendance_type = 'gym_entry' THEN 1 ELSE 0 END) as gym_entries,
         SUM(CASE WHEN attendance_type = 'class_session' THEN 1 ELSE 0 END) as class_attendances
-    FROM attendance_records 
-    WHERE DATE(check_in_time) = ?
+    FROM attendance_records ar
+    $stats_where_clause
 ");
-$stats_stmt->execute([$date_filter]);
+$stats_stmt->execute($params);
 $daily_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
-// Get coach work hours for payroll
+// Get coach work hours for the selected date range
+$coach_where_conditions = ['ar.user_type = ?'];
+$coach_params = ['Coach'];
+
+// Add the same date and other filters for coach data
+if (!empty($date_conditions)) {
+    $coach_where_conditions = array_merge($coach_where_conditions, $date_conditions);
+    $coach_params = array_merge($coach_params, $date_params);
+}
+
+$coach_where_clause = 'WHERE ' . implode(' AND ', $coach_where_conditions);
+
 $coach_hours_stmt = $conn->prepare("
     SELECT 
         u.First_Name,
@@ -79,12 +126,32 @@ $coach_hours_stmt = $conn->prepare("
         MAX(ar.check_in_time) as last_checkin
     FROM attendance_records ar
     JOIN users u ON ar.user_id = u.UserID
-    WHERE ar.user_type = 'Coach' AND DATE(ar.check_in_time) = ?
+    $coach_where_clause
     GROUP BY ar.user_id, u.First_Name, u.Last_Name
     ORDER BY u.First_Name, u.Last_Name
 ");
-$coach_hours_stmt->execute([$date_filter]);
+$coach_hours_stmt->execute($coach_params);
 $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get the date range label for display
+$date_range_label = 'All Time';
+switch ($date_range_filter) {
+    case 'today':
+        $date_range_label = 'Today (' . date('M j, Y') . ')';
+        break;
+    case 'last_7_days':
+        $date_range_label = 'Last 7 Days';
+        break;
+    case 'last_30_days':
+        $date_range_label = 'Last 30 Days';
+        break;
+    case 'last_90_days':
+        $date_range_label = 'Last 90 Days';
+        break;
+    case 'last_365_days':
+        $date_range_label = 'Last 365 Days';
+        break;
+}
 ?>
 
 <!DOCTYPE html>
@@ -346,9 +413,7 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 50px;
             font-size: 0.8rem;
             font-weight: 500;
-        }
-
-        .badge-member {
+        }        .badge-member {
             background: rgba(59, 130, 246, 0.1);
             color: #3b82f6;
         }
@@ -356,6 +421,11 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
         .badge-coach {
             background: rgba(16, 185, 129, 0.1);
             color: #10b981;
+        }
+
+        .badge-staff {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
         }
 
         .badge-gym {
@@ -366,6 +436,11 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
         .badge-class {
             background: rgba(99, 102, 241, 0.1);
             color: #6366f1;
+        }
+
+        .badge-work_shift {
+            background: rgba(139, 69, 19, 0.1);
+            color: #8B4513;
         }
 
         @media (max-width: 992px) {
@@ -529,33 +604,37 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
         <main class="main-content">
             <div class="welcome-header">
                 <p>Track and manage gym attendance records.</p>
-            </div>
-
-            <div class="section">
-                <h2>Daily Statistics</h2>
+            </div>            <div class="section">
+                <h2>Attendance Statistics (<?php echo $date_range_label; ?>)</h2>
                 <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
                     <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Total Check-ins</h3>
-                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['total_checkins']; ?></div>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['total_checkins'] ?? 0; ?></div>
                     </div>
                     <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Unique Users</h3>
-                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['unique_users']; ?></div>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['unique_users'] ?? 0; ?></div>
                     </div>
                     <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Member Check-ins</h3>
-                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['member_checkins']; ?></div>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['member_checkins'] ?? 0; ?></div>
                     </div>
                     <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Coach Check-ins</h3>
-                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['coach_checkins']; ?></div>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['coach_checkins'] ?? 0; ?></div>
                     </div>
-                </div>
-
+                </div>                <form method="GET" action="">
                 <div class="filters">
                     <div class="filter-item">
-                        <label for="date">Date</label>
-                        <input type="date" id="date" name="date" value="<?php echo $date_filter; ?>" onchange="this.form.submit()">
+                        <label for="date_range">Date Range</label>
+                        <select id="date_range" name="date_range" onchange="this.form.submit()">
+                            <option value="all_time" <?php echo $date_range_filter === 'all_time' ? 'selected' : ''; ?>>All Time</option>
+                            <option value="today" <?php echo $date_range_filter === 'today' ? 'selected' : ''; ?>>Today</option>
+                            <option value="last_7_days" <?php echo $date_range_filter === 'last_7_days' ? 'selected' : ''; ?>>Last 7 Days</option>
+                            <option value="last_30_days" <?php echo $date_range_filter === 'last_30_days' ? 'selected' : ''; ?>>Last 30 Days</option>
+                            <option value="last_90_days" <?php echo $date_range_filter === 'last_90_days' ? 'selected' : ''; ?>>Last 90 Days</option>
+                            <option value="last_365_days" <?php echo $date_range_filter === 'last_365_days' ? 'selected' : ''; ?>>Last 365 Days</option>
+                        </select>
                     </div>
                     <div class="filter-item">
                         <label for="user_type">User Type</label>
@@ -574,6 +653,7 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </select>
                     </div>
                 </div>
+                </form>
 
                 <div class="table-container">
                     <table>
@@ -584,16 +664,21 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th>User Type</th>
                                 <th>Check-in Type</th>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($attendance_records)): ?>
+                        </thead>                        <tbody>                            <?php if (empty($attendance_records)): ?>
                                 <tr>
-                                    <td colspan="4" style="text-align: center;">No attendance records found for the selected date.</td>
+                                    <td colspan="4" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Try selecting a different date range using the dropdown above, or check if there are any recent check-ins.</small>
+                                        </div>
+                                    </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($attendance_records as $record): ?>
                                     <tr>
-                                        <td><?php echo date('H:i:s', strtotime($record['check_in_time'])); ?></td>
+                                        <td><?php echo date('g:i:s A', strtotime($record['check_in_time'])); ?></td>
                                         <td><?php echo htmlspecialchars($record['First_Name'] . ' ' . $record['Last_Name']); ?></td>
                                         <td>
                                             <span class="badge badge-<?php echo strtolower($record['user_type']); ?>">
@@ -611,10 +696,8 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div class="section">
-                <h2>Coach Work Summary (<?php echo date('M j, Y', strtotime($date_filter)); ?>)</h2>
+            </div>            <div class="section">
+                <h2>Coach Work Summary (<?php echo $date_range_label; ?>)</h2>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -625,11 +708,17 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th>Last Check-in</th>
                                 <th>Estimated Hours</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                        </thead>                        <tbody>
                             <?php if (empty($coach_hours)): ?>
                                 <tr>
-                                    <td colspan="5" style="text-align: center;">No coach attendance records found for this date.</td>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-user-tie" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No coach attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Coach work hours will appear here once coaches check in for shifts or classes.</small>
+                                        </div>
+                                    </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($coach_hours as $coach): ?>
@@ -643,9 +732,8 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                                     ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($coach['First_Name'] . ' ' . $coach['Last_Name']); ?></td>
-                                        <td><?php echo $coach['shift_checkins']; ?></td>
-                                        <td><?php echo $coach['first_checkin'] ? date('H:i', strtotime($coach['first_checkin'])) : '-'; ?></td>
-                                        <td><?php echo $coach['last_checkin'] ? date('H:i', strtotime($coach['last_checkin'])) : '-'; ?></td>
+                                        <td><?php echo $coach['shift_checkins']; ?></td>                                        <td><?php echo $coach['first_checkin'] ? date('g:i A', strtotime($coach['first_checkin'])) : '-'; ?></td>
+                                        <td><?php echo $coach['last_checkin'] ? date('g:i A', strtotime($coach['last_checkin'])) : '-'; ?></td>
                                         <td><?php echo $estimated_hours; ?>h</td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -655,17 +743,15 @@ $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </main>
-    </div>
-
-    <script>
+    </div>    <script>
         // Handle form submission for filters
-        document.querySelectorAll('select, input[type="date"]').forEach(element => {
+        document.querySelectorAll('select').forEach(element => {
             element.addEventListener('change', function() {
-                const date = document.getElementById('date').value;
+                const dateRange = document.getElementById('date_range').value;
                 const userType = document.getElementById('user_type').value;
                 const attendanceType = document.getElementById('attendance_type').value;
 
-                window.location.href = `attendance_dashboard.php?date=${date}&user_type=${userType}&attendance_type=${attendanceType}`;
+                window.location.href = `attendance_dashboard.php?date_range=${dateRange}&user_type=${userType}&attendance_type=${attendanceType}`;
             });
         });
     </script>

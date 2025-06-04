@@ -3,25 +3,9 @@ session_start();
 require '../config/database.php';
 date_default_timezone_set('Asia/Manila');
 
-// Function to get correct URL for hosting environment
-function getCorrectUrl($path)
-{
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
-
-    // Check if we're on InfinityFree hosting or localhost
-    if (strpos($host, '.ct.ws') !== false || strpos($host, '.infinityfreeapp.com') !== false || strpos($host, '.epizy.com') !== false || strpos($host, '.rf.gd') !== false) {
-        // InfinityFree hosting - files are in the root directory structure
-        return $protocol . $host . '/' . ltrim($path, '/');
-    } else {
-        // Localhost or other hosting - include gym1 folder
-        return $protocol . $host . '/gym1/' . ltrim($path, '/');
-    }
-}
-
 // Ensure only admin access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
-    header("Location: " . getCorrectUrl('includes/login.php'));
+    header("Location: login.php");
     exit;
 }
 
