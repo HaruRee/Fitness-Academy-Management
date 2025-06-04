@@ -641,8 +641,7 @@ if (isset($_POST['restore']) && isset($_FILES['sqlfile'])) {
                 <span>Employee List</span>
             </a>
 
-            <div class="sidebar-menu-header">Attendance</div>
-            <a href="qr_scanner.php">
+            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
                 <i class="fas fa-camera"></i>
                 <span>QR Scanner</span>
             </a>

@@ -892,7 +892,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             </a>
 
             <div class="sidebar-menu-header">Attendance</div>
-            <a href="qr_scanner.php">
+            <a href="../attendance/checkin.php">
                 <i class="fas fa-camera"></i>
                 <span>QR Scanner</span>
             </a>
