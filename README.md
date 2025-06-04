@@ -2,8 +2,8 @@
 
 [![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue.svg)](https://php.net)
 [![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange.svg)](https://mysql.com)
-[![License](https://img.shields.io/badge/License-Private-red.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-green.svg)](https://github.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status](https://img.shields.io/badge/Status-Active-green.svg)](https://github.com/HaruRee/Fitness-Academy-Management)
 
 A comprehensive web-based gym management system designed to streamline fitness center operations, enhance member experience, and optimize business processes.
 
@@ -27,8 +27,15 @@ A comprehensive web-based gym management system designed to streamline fitness c
 - **Class Scheduling**: Advanced class booking system with capacity management
 - **Coach Management**: Coach profiles, specializations, and class assignments
 - **Payment Processing**: Integrated payment gateway with multiple payment methods
-- **Attendance Tracking**: QR code-based check-in system for members and staff
+- **Modernized QR Attendance**: Kiosk-style check-in/check-out system with static QR codes per user
 - **Membership Plans**: Flexible subscription models with automated billing
+
+### 📱 QR Attendance System
+- **Static QR Codes**: Each user gets a permanent QR code for both check-in and check-out
+- **Kiosk Mode**: Standalone attendance terminals for real-world gym deployment
+- **Real-time Updates**: Live display of recent check-ins and check-outs
+- **Inactive User Support**: Allows attendance tracking with staff warnings
+- **Auto-scanner**: Automatic camera activation for seamless user experience
 
 ### 📊 Analytics & Reporting
 - **Revenue Analytics**: Real-time financial reporting and transaction tracking
@@ -262,3 +269,32 @@ We welcome contributions to improve the Fitness Academy system. Please follow th
 - Include comprehensive comments
 - Write unit tests for new features
 - Ensure responsive design compatibility
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### MIT License Summary
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ❌ Liability
+- ❌ Warranty
+
+## 👨‍💻 Author
+
+**HaruRee**
+- GitHub: [@HaruRee](https://github.com/HaruRee)
+- Repository: [Fitness-Academy-Management](https://github.com/HaruRee/Fitness-Academy-Management)
+
+## 🙏 Acknowledgments
+
+- Built with modern web technologies
+- Responsive design for optimal user experience
+- Secure authentication and data protection
+- Comprehensive business management features
+
+---
+
+**© 2024 Fitness Academy Management System. All rights reserved.**
