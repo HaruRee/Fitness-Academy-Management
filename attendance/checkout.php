@@ -10,6 +10,7 @@ if (!isset($_SESSION['scanner_id'])) {
     $_SESSION['scanner_type'] = 'check_out';
     $_SESSION['scanner_name'] = 'Exit Scanner';
     $_SESSION['scanner_location'] = 'Main Exit';
+    $_SESSION['kiosk_mode'] = true; // Enable kiosk mode for API access
 }
 
 $scanner_id = $_SESSION['scanner_id'];
@@ -372,9 +373,8 @@ $scanner_location = $_SESSION['scanner_location'];
     </style>
 </head>
 
-<body>    
-    <div class="header">
-        <img src="../assets/images/logo.png" alt="Gym Logo" class="gym-logo">
+<body>      <div class="header">
+        <img src="/gym1/assets/images/fa_logo.png" alt="Gym Logo" class="gym-logo" onerror="console.log('Logo failed to load')">
         <h1>GYM EXIT</h1>
         <h2>CHECK-OUT SCANNER</h2>
     </div>
@@ -552,12 +552,16 @@ $scanner_location = $_SESSION['scanner_location'];
             }
         }        async function loadRecentCheckouts() {
             try {
+                console.log('Loading recent checkouts...');
                 const response = await fetch('get_recent_checkouts.php');
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('API data received:', data);
                 
                 const container = document.getElementById('recentCheckouts');
                 
                 if (data.success && data.checkouts && data.checkouts.length > 0) {
+                    console.log('Found', data.checkouts.length, 'checkouts');
                     let html = '';
                     
                     data.checkouts.forEach(checkout => {
@@ -576,6 +580,7 @@ $scanner_location = $_SESSION['scanner_location'];
                     
                     container.innerHTML = html;
                 } else {
+                    console.log('No checkouts found or API failed:', data);
                     container.innerHTML = `
                         <div class="checkout-item">
                             <div class="checkout-info">

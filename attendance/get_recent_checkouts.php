@@ -8,22 +8,21 @@ header('Content-Type: application/json');
 // Set timezone
 date_default_timezone_set('Asia/Manila');
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if we have either a user session or kiosk mode
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['kiosk_mode'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please log in first']);
+    echo json_encode(['success' => false, 'message' => 'Session required']);
     exit;
 }
 
 try {    // Get recent check-outs from today
-    $stmt = $conn->prepare("
-        SELECT 
+    $stmt = $conn->prepare("        SELECT 
             ar.id,
             ar.user_id,
             ar.check_in_time,
             ar.time_out,
             ar.location,
-            ar.duration_minutes,
+            TIMESTAMPDIFF(MINUTE, ar.check_in_time, ar.time_out) as duration_minutes,
             u.First_Name,
             u.Last_Name,
             u.Role,

@@ -10,6 +10,7 @@ if (!isset($_SESSION['scanner_id'])) {
     $_SESSION['scanner_type'] = 'check_in';
     $_SESSION['scanner_name'] = 'Entrance Scanner';
     $_SESSION['scanner_location'] = 'Main Entrance';
+    $_SESSION['kiosk_mode'] = true; // Enable kiosk mode for API access
 }
 
 $scanner_id = $_SESSION['scanner_id'];
@@ -354,7 +355,7 @@ $scanner_location = $_SESSION['scanner_location'];
 </head>
 
 <body>    <div class="header">
-        <img src="../assets/images/logo.png" alt="Gym Logo" class="gym-logo">
+        <img src="/gym1/assets/images/fa_logo.png" alt="Gym Logo" class="gym-logo" onerror="console.log('Logo failed to load')">
         <h1>GYM ENTRANCE</h1>
         <h2>CHECK-IN SCANNER</h2>
     </div>

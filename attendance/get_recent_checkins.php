@@ -8,10 +8,10 @@ header('Content-Type: application/json');
 // Set timezone
 date_default_timezone_set('Asia/Manila');
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if we have either a user session or kiosk mode
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['kiosk_mode'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Please log in first']);
+    echo json_encode(['success' => false, 'message' => 'Session required']);
     exit;
 }
 
