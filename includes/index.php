@@ -2,15 +2,28 @@
 session_start();
 require_once '../config/database.php';
 
-// Helper function to properly handle thumbnail paths
+// Helper function to standardize thumbnail paths
 function fixThumbnailPath($path) {
-    if (empty($path)) return false;
+    if (!$path) return '';
     
-    // If the path already starts with '../' remove it to avoid double path issues
+    // If path already has '../', use it as is for the video player's poster attribute
     if (strpos($path, '../') === 0) {
-        return substr($path, 3);
+        return $path;
     }
-    return $path;
+    
+    // Otherwise add the '../' prefix
+    return '../' . $path;
+}
+
+// Helper function to standardize video paths  
+function fixVideoPath($path) {
+    if (!$path) return '';
+    
+    // Remove any existing '../' prefix to avoid double prefix
+    $cleanPath = str_replace('../', '', $path);
+    
+    // Add single '../' prefix
+    return '../' . $cleanPath;
 }
 
 // Get all approved free videos with coach info
@@ -512,11 +525,14 @@ if (isset($_SESSION['user_id'])) {
       text-decoration: none;
       letter-spacing: 1px;
       transition: all 0.3s ease;
+      background: none; /* Remove background */
+      border: none; /* Remove borders */
+      padding: 0; /* Remove padding */
     }
 
     .feature-link:hover {
       color: #c81a21;
-      padding-left: 5px;
+      padding-left: 5px; /* Optional hover effect */
     }
 
     /* Section styles */
@@ -1562,35 +1578,123 @@ html {
 
   <!-- Modern Card-based Features Section -->
   <section class="features">
-    <div class="features-container">
-      <div class="feature-card">
-        <img src="../assets/images/coaches.jpeg" alt="Personal Training" class="feature-image">
-        <div class="feature-content">
-          <h3 class="feature-title">PERSONAL TRAINING</h3>
-          <p class="feature-text">Achieve more with a Personal Trainer - Personalized, Motivating, Effective. Our expert trainers will help you reach your goals faster.</p>
-          <a href="#" class="feature-link">Learn More <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <img src="../assets/images/landing.jpeg" alt="Classes" class="feature-image">
-        <div class="feature-content">
-          <h3 class="feature-title">CHOOSE YOUR CLASSES</h3>
-          <p class="feature-text">Gym newbie or getting back in the game, we've got a wide variety of classes to choose from. Find what works for you.</p>
-          <a href="#" class="feature-link">Learn More <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <img src="../assets/images/location.jpg" alt="Membership" class="feature-image">
-        <div class="feature-content">
-          <h3 class="feature-title">MEMBERSHIP OPTIONS</h3>
-          <p class="feature-text">No long-term contracts, no monthly dues, just pay as you go with up to 14 months validity. Choose what's best for you.</p>
-          <a href="#" class="feature-link">Join Now <i class="fas fa-arrow-right"></i></a>
-        </div>
+  <div class="features-container">
+    <div class="feature-card" data-modal="personal-training-modal" style="cursor: pointer;">
+      <img src="../assets/images/coaches.jpeg" alt="Personal Training" class="feature-image">
+      <div class="feature-content">
+        <h3 class="feature-title">PERSONAL TRAINING</h3>
+        <p class="feature-text">Achieve more with a Personal Trainer - Personalized, Motivating, Effective.</p>
+        <button class="feature-link">Learn More <i class="fas fa-arrow-right"></i></button>
       </div>
     </div>
-  </section>  <!-- About Us Section - Compact -->
+
+    <div class="feature-card" data-modal="classes-modal" style="cursor: pointer;">
+      <img src="../assets/images/landing.jpeg" alt="Classes" class="feature-image">
+      <div class="feature-content">
+        <h3 class="feature-title">CHOOSE YOUR CLASSES</h3>
+        <p class="feature-text">Gym newbie or getting back in the game, we've got a wide variety of classes to choose from.</p>
+        <button class="feature-link">Learn More <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <div class="feature-card" style="cursor: pointer;" onclick="window.location.href='register.php';">
+      <img src="../assets/images/md.jpeg" alt="Membership" class="feature-image">
+      <div class="feature-content">
+        <h3 class="feature-title">MEMBERSHIP OPTIONS</h3>
+        <p class="feature-text">No long-term contracts, no monthly dues, just pay as you go with up to 14 months validity.</p>
+        <button class="feature-link">Join Now <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modals -->
+<div id="personal-training-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+    <img src="../assets/images/coaches.jpeg" alt="Personal Training" style="width: 100%; border-radius: 10px; margin-bottom: 15px;">
+    <h3>Personal Training</h3>
+    <p>Achieve more with a Personal Trainer who provides personalized, motivating, and effective guidance tailored to your needs. Our expert trainers focus on creating customized programs that align with your fitness goals and lifestyle. With one-on-one sessions, you'll receive dedicated attention to improve your technique and maximize results. Whether you're a beginner or an experienced athlete, our trainers are here to support your journey to better health and wellness.</p>
+  </div>
+</div>
+
+<div id="classes-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+    <img src="../assets/images/landing.jpeg" alt="Classes" style="width: 100%; border-radius: 10px; margin-bottom: 15px;">
+    <h3>Choose Your Classes</h3>
+    <p>Explore a wide variety of classes designed to cater to all fitness levels, from beginners to advanced athletes. Our classes include options such as yoga, strength training, and cardio workouts, ensuring there's something for everyone. Each class is led by experienced instructors who provide expert guidance and motivation. Join us to discover the perfect class that fits your schedule and helps you achieve your fitness goals in a supportive environment.</p>
+  </div>
+</div>
+
+<div id="membership-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+    <img src="../assets/images/md.jpeg" alt="Membership Options" style="width: 100%; border-radius: 10px; margin-bottom: 15px;">
+    <h3>Membership Options</h3>
+    <p>Our membership plans are designed to offer flexibility and convenience, with no long-term contracts or monthly dues. Choose from a variety of options, including pay-as-you-go plans with up to 14 months of validity. Each plan is tailored to meet your lifestyle and fitness needs, ensuring you get the most value out of your membership. Join us today and take the first step toward achieving your fitness goals in a welcoming and professional environment.</p>
+  </div>
+</div>
+
+<!-- Modal Styles -->
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    text-align: center;
+  }
+
+  .modal-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+</style>
+
+<!-- Modal Script -->
+<script>
+  document.querySelectorAll('.feature-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const modalId = card.getAttribute('data-modal');
+      document.getElementById(modalId).style.display = 'flex';
+    });
+  });
+
+  document.querySelectorAll('.modal-close').forEach(closeButton => {
+    closeButton.addEventListener('click', () => {
+      closeButton.closest('.modal').style.display = 'none';
+    });
+  });
+
+  window.addEventListener('click', event => {
+    if (event.target.classList.contains('modal')) {
+      event.target.style.display = 'none';
+    }
+  });
+</script>
+
+  <!-- About Us Section - Compact -->
   <section id="about" class="section">
     <div class="section-container">
       <div class="section-header">
@@ -1685,8 +1789,13 @@ html {
           <div class="video-grid">
               <?php foreach ($free_videos as $video): ?>
 <div class="video-card" style="cursor:pointer;text-decoration:none;color:inherit;" 
-     data-video-id="<?= $video['id'] ?>">                      <div class="video-thumbnail">                          <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                              <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
+     data-video-id="<?= $video['id'] ?>">                      <div class="video-thumbnail">
+                          <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
+                              <?php
+                              // Remove '../' prefix if present to avoid double prefix
+                              $thumbnailPath = str_replace('../', '', $video['thumbnail_path']);
+                              ?>
+                              <img src="../<?= htmlspecialchars($thumbnailPath) ?>" alt="Thumbnail">
                           <?php else: ?>
                               <i class="fas fa-play-circle"></i>
                           <?php endif; ?>
@@ -1697,10 +1806,9 @@ html {
                               <i class="fas fa-user"></i>
                               <?= htmlspecialchars($video['First_Name'] . ' ' . $video['Last_Name']) ?>
                           </div>
-                          <div class="video-description"><?= htmlspecialchars($video['description']) ?></div>
-                          <span class="access-badge access-free">Free</span>
+                          <div class="video-description"><?= htmlspecialchars($video['description']) ?></div>                          <span class="access-badge access-free">Free</span>
                       </div>
-                  </a>
+                  </div>
               <?php endforeach; ?>
           </div>
       <?php else: ?>
@@ -1722,44 +1830,58 @@ html {
 </div>
 
   <!-- Enhanced Footer with Active Social Media Links -->
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-section">
-        <h3>Fitness Academy</h3>
-        <p>Your premier fitness destination in Caloocan City. We're dedicated to helping you achieve your fitness goals in a supportive and motivating environment.</p>
-      </div>
-
-      <div class="footer-section">
-        <h3>Quick Links</h3>
-        <p><a href="login.php">Login</a></p>
-        <p><a href="register.php">Welcome ka rito Ka-TroFA</a></p>
-        <p><a href="register_coach.php">Be a Coach</a></p>
-        <p><a href="#membership">Membership Plans</a></p>
-      </div>
-
-      <div class="footer-section">
-        <h3>Contact Info</h3>
-        <p><i class="fas fa-map-marker-alt"></i> 3F Newland Lumber Building</p>
-        <p>A. Mabini Street, Caloocan City</p>
-        <p><i class="fas fa-phone"></i> 0917 700 4373</p>
-        <p><i class="fas fa-envelope"></i> fitnessacademy28@gmail.com</p>
-      </div>
-
-      <div class="footer-section">
-        <h3>Follow Us</h3>
-        <div class="social-links">
-          <a href="https://www.facebook.com/fitnessacademy" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-          <a href="https://www.instagram.com/fitnessacademy" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="https://www.tiktok.com/@fitnessacademy" title="TikTok"><i class="fab fa-tiktok"></i></a>
-          <a href="mailto:fitnessacademy28@gmail.com" title="Email us"><i class="fas fa-envelope"></i></a>
-        </div>
-      </div>
+  <footer class="footer" style="background-color: #222; color: #ccc; padding: 40px 20px; font-family: Arial, sans-serif; font-size: 14px;">
+  <div class="footer-content" style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 30px;">
+    <!-- About Section -->
+    <div class="footer-section" style="flex: 1 1 300px;">
+      <h3 style="color: #fff; margin-bottom: 15px; border-bottom: 2px solid #d62328; display: inline-block; padding-bottom: 5px;">About Fitness Academy</h3>
+      <p style="margin: 0;">Fitness Academy is your premier fitness destination in Caloocan City, offering state-of-the-art facilities, expert trainers, and a supportive community to help you achieve your fitness goals.</p>
     </div>
 
-    <div class="copyright">
-      <p>&copy; <?php echo date("Y"); ?> Fitness Academy. All rights reserved.</p>
-    </div>  </footer>
+    <!-- Quick Links Section -->
+    <div class="footer-section" style="flex: 1 1 200px;">
+      <h3 style="color: #fff; margin-bottom: 15px; border-bottom: 2px solid #d62328; display: inline-block; padding-bottom: 5px;">Quick Links</h3>
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        <li><a href="login.php" style="color: #ccc; text-decoration: none;">Login</a></li>
+        <li><a href="register.php" style="color: #ccc; text-decoration: none;">Register</a></li>
+        <li><a href="register_coach.php" style="color: #ccc; text-decoration: none;">Become a Coach</a></li>
+        <li><a href="#membership" style="color: #ccc; text-decoration: none;">Membership Plans</a></li>
+      </ul>
+    </div>
 
+    <!-- Contact Info Section -->
+    <div class="footer-section" style="flex: 1 1 200px;">
+      <h3 style="color: #fff; margin-bottom: 15px; border-bottom: 2px solid #d62328; display: inline-block; padding-bottom: 5px;">Contact Info</h3>
+      <p style="margin: 0;"><i class="fas fa-map-marker-alt" style="color: #d62328;"></i> 349 A. Mabini St, Poblacion, Caloocan City</p>
+      <p style="margin: 0;"><i class="fas fa-phone" style="color: #d62328;"></i> 0917 700 4373</p>
+      <p style="margin: 0;"><i class="fas fa-envelope" style="color: #d62328;"></i> fitnessacademycaloocan@gmail.com</p>
+    </div>
+
+    <!-- Social Media Section -->
+    <div class="footer-section" style="flex: 1 1 200px;">
+      <h3 style="color: #fff; margin-bottom: 15px; border-bottom: 2px solid #d62328; display: inline-block; padding-bottom: 5px;">Follow Us</h3>
+      <div style="display: flex; gap: 15px;">
+        <a href="https://www.facebook.com/fitnessacademy" target="_blank" style="color: #ccc; text-decoration: none;">
+          <i class="fab fa-facebook-f" style="font-size: 20px;"></i>
+        </a>
+        <a href="https://www.instagram.com/fitnessacademy" target="_blank" style="color: #ccc; text-decoration: none;">
+          <i class="fab fa-instagram" style="font-size: 20px;"></i>
+        </a>
+        <a href="https://www.tiktok.com/@fitnessacademy" target="_blank" style="color: #ccc; text-decoration: none;">
+          <i class="fab fa-tiktok" style="font-size: 20px;"></i>
+        </a>
+        <a href="mailto:fitnessacademy28@gmail.com" target="_blank" style="color: #ccc; text-decoration: none;">
+          <i class="fas fa-envelope" style="font-size: 20px;"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Copyright Section -->
+  <div style="text-align: center; margin-top: 20px; color: #aaa; font-size: 13px;">
+    <p>&copy; <?php echo date("Y"); ?> Fitness Academy. All rights reserved.</p>
+  </div>
+</footer>
   <!-- Leaflet JavaScript -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -2021,18 +2143,16 @@ html {
     document.querySelectorAll('.video-card').forEach(card => {
       card.addEventListener('click', function() {
         const id = this.getAttribute('data-video-id');
-        const video = freeVideos.find(v => v.id == id);
-
-        if (video) {
+        const video = freeVideos.find(v => v.id == id);        if (video) {
           let html = '';
           if (video.video_path) {
-            // Fix the thumbnail path in JavaScript
-            const thumbnailPath = video.thumbnail_path && video.thumbnail_path.startsWith('../') ? 
-                video.thumbnail_path.substring(3) : video.thumbnail_path;
+            // Remove any existing '../' prefix before adding our own to avoid double prefix
+            const videoPath = video.video_path.replace(/^\.\.\//, '');
+            const thumbnailPath = video.thumbnail_path ? video.thumbnail_path.replace(/^\.\.\//, '') : '';
             
-            html += `<video src="../${video.video_path}" controls autoplay style="width:100%;border-radius:8px;" poster="${thumbnailPath ? '../'+thumbnailPath : ''}"></video>`;
+            html += `<video src="../${videoPath}" controls autoplay style="width:100%;border-radius:8px;" poster="${thumbnailPath ? '../' + thumbnailPath : ''}"></video>`;
             html += `<div style="margin-top:14px;">
-  <a href="../${video.video_path}" download class="cta download-btn">
+  <a href="../${videoPath}" download class="cta download-btn">
     <i class="fas fa-download"></i> Download Video
   </a>
 </div>`;

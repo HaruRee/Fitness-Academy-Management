@@ -28,13 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 // Get application details
                 $stmt = $conn->prepare("SELECT * FROM coach_applications WHERE id = ?");
                 $stmt->execute([$application_id]);
-                $application = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($application) {
-                    // Extract first and last name from full name
-                    $name_parts = explode(' ', trim($application['name']), 2);
-                    $first_name = $name_parts[0];
-                    $last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+                $application = $stmt->fetch(PDO::FETCH_ASSOC);                if ($application) {
+                    // Use the existing first_name and last_name from database
+                    $first_name = $application['first_name'];
+                    $last_name = $application['last_name'];
 
                     // Generate username from email (part before @)
                     $username = explode('@', $application['email'])[0];
@@ -651,15 +648,28 @@ try {
 
         .detail-value {
             color: var(--dark-color);
-        }
-
-        .resume-link {
+        }        .resume-link {
             color: var(--primary-color);
             text-decoration: none;
         }
 
         .resume-link:hover {
             text-decoration: underline;
+        }
+
+        /* Resume Modal specific styles */
+        #resumeModal .modal-content {
+            max-width: 900px;
+            max-height: 90vh;
+        }
+
+        #resumeViewer {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        #resumeViewer iframe {
+            min-height: 500px;
         }
 
         /* Pagination */
@@ -912,10 +922,9 @@ try {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach ($applications as $app): ?>
+                    <tbody>                        <?php foreach ($applications as $app): ?>
                             <tr>
-                                <td><?= htmlspecialchars($app['name']) ?></td>
+                                <td><?= htmlspecialchars($app['first_name'] . ' ' . $app['last_name']) ?></td>
                                 <td><?= htmlspecialchars($app['email']) ?></td>
                                 <td><?= htmlspecialchars($app['phone']) ?></td>
                                 <td>
@@ -1008,17 +1017,28 @@ try {
                     <button type="button" onclick="closeModal('processModal')" class="btn btn-secondary">Cancel</button>
                     <button type="submit" id="processSubmitBtn" class="btn">Confirm</button>
                 </div>
-            </form>
+            </form>        </div>
+    </div>
+
+    <!-- Resume Viewer Modal -->
+    <div id="resumeModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="resumeTitle">Resume</h2>
+                <button class="close" onclick="closeModal('resumeModal')">&times;</button>
+            </div>
+            <div id="resumeViewer" style="padding: 20px;">
+                <!-- Resume content will be populated by JavaScript -->
+            </div>
         </div>
     </div>
 
     <script>
         function viewApplication(app) {
             const details = document.getElementById('applicationDetails');
-            details.innerHTML = `
-                <div class="detail-item">
+            details.innerHTML = `                <div class="detail-item">
                     <span class="detail-label">Name:</span>
-                    <span class="detail-value">${app.name}</span>
+                    <span class="detail-value">${app.first_name} ${app.last_name}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Email:</span>
@@ -1054,14 +1074,13 @@ try {
                 <div class="detail-item">
                     <span class="detail-label">Motivation:</span>
                     <span class="detail-value">${app.why_coach || 'Not provided'}</span>
-                </div>
-                <div class="detail-item">
+                </div>                <div class="detail-item">
                     <span class="detail-label">Resume:</span>
                     <span class="detail-value">
                         ${app.resume_path 
-                            ? `<a href="../uploads/coach_resumes/${app.resume_path}" target="_blank" class="resume-link">
-                                 <i class="fas fa-download"></i> Download Resume
-                               </a>`
+                            ? `<button onclick="viewResume('${app.resume_path}', '${app.first_name} ${app.last_name}')" class="resume-link" style="background:none;border:none;color:#e41e26;cursor:pointer;text-decoration:underline;">
+                                 <i class="fas fa-eye"></i> View Resume
+                               </button>`
                             : 'No resume uploaded'
                         }
                     </span>
@@ -1129,22 +1148,52 @@ try {
             }
 
             document.getElementById('processModal').style.display = 'block';
-        }
-
-        function closeModal(modalId) {
+        }        function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Close modal when clicking outside
+        function viewResume(resumePath, applicantName) {
+            const resumeModal = document.getElementById('resumeModal');
+            const resumeTitle = document.getElementById('resumeTitle');
+            const resumeViewer = document.getElementById('resumeViewer');
+            
+            resumeTitle.textContent = `Resume - ${applicantName}`;
+            
+            // Get file extension to determine how to display
+            const fileExtension = resumePath.split('.').pop().toLowerCase();
+            const resumeUrl = `../uploads/coach_resumes/${resumePath}`;
+            
+            if (fileExtension === 'pdf') {
+                resumeViewer.innerHTML = `<iframe src="${resumeUrl}" style="width:100%;height:500px;border:none;"></iframe>`;
+            } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                resumeViewer.innerHTML = `<img src="${resumeUrl}" style="width:100%;height:auto;border-radius:8px;" alt="Resume">`;
+            } else {
+                resumeViewer.innerHTML = `
+                    <div style="text-align:center;padding:40px;">
+                        <i class="fas fa-file-alt" style="font-size:48px;color:#ccc;margin-bottom:16px;"></i>
+                        <p>This file format cannot be previewed directly.</p>
+                        <a href="${resumeUrl}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download to View
+                        </a>
+                    </div>
+                `;
+            }
+            
+            resumeModal.style.display = 'block';
+        }        // Close modal when clicking outside
         window.onclick = function(event) {
             const viewModal = document.getElementById('viewModal');
             const processModal = document.getElementById('processModal');
+            const resumeModal = document.getElementById('resumeModal');
 
             if (event.target === viewModal) {
                 viewModal.style.display = 'none';
             }
             if (event.target === processModal) {
                 processModal.style.display = 'none';
+            }
+            if (event.target === resumeModal) {
+                resumeModal.style.display = 'none';
             }
         }
     </script>

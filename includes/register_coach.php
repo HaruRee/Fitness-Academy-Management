@@ -6,7 +6,8 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = trim($_POST['name']);
+    $firstName = trim($_POST['first_name']);
+    $lastName = trim($_POST['last_name']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $address = trim($_POST['address']);
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $why_coach = trim($_POST['why_coach']);
     
     // Validate required fields
-    if (empty($name) || empty($email) || empty($phone) || empty($address) || empty($birthdate)) {
+    if (empty($firstName) || empty($lastName) || empty($email) || empty($phone) || empty($address) || empty($birthdate)) {
         $message = 'Please fill in all required fields.';
         $messageType = 'error';
     } else {
@@ -59,14 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
-        if (empty($message)) {
-            try {                // Insert coach application into database
+        if (empty($message)) {            try {                // Insert coach application into database
                 $stmt = $conn->prepare("
-                    INSERT INTO coach_applications (name, email, phone, address, birthdate, license_number, experience, specialization, why_coach, resume_path, status, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                    INSERT INTO coach_applications (first_name, last_name, email, phone, address, birthdate, license_number, experience, specialization, why_coach, resume_path, status, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
                 ");
                 
-                $stmt->execute([$name, $email, $phone, $address, $birthdate, $license_number, $experience, $specialization, $why_coach, $resume_path]);
+                $stmt->execute([$firstName, $lastName, $email, $phone, $address, $birthdate, $license_number, $experience, $specialization, $why_coach, $resume_path]);
                 
                 $message = 'Your coach application has been submitted successfully! We will review your application and get back to you soon.';
                 $messageType = 'success';
@@ -395,15 +395,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="" enctype="multipart/form-data">
-                <div class="form-grid">
+            <form method="POST" action="" enctype="multipart/form-data">                <div class="form-grid">
                     <div class="form-group">
-                        <label for="name">
+                        <label for="first_name">
                             <i class="fas fa-user"></i>
-                            Full Name <span class="required">*</span>
+                            First Name <span class="required">*</span>
                         </label>
-                        <input type="text" id="name" name="name" required 
-                               value="<?php echo isset($_POST['name']) ? htmlspecialchars($_POST['name']) : ''; ?>">
+                        <input type="text" id="first_name" name="first_name" required 
+                               value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">
+                            <i class="fas fa-user"></i>
+                            Last Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="last_name" name="last_name" required 
+                               value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
                     </div>
 
                     <div class="form-group">

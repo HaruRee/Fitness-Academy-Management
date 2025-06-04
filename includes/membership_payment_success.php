@@ -45,13 +45,11 @@ try {
     ]);
 
     $sessionData = json_decode($sessionResponse->getBody(), true);
-    $paymentStatus = $sessionData['data']['attributes']['payment_intent']['status'] ?? $sessionData['data']['attributes']['status'] ?? null;
-
-    // Check if payment is successful
-    $validStatuses = ['succeeded', 'paid', 'payment_completed', 'completed'];
+    $paymentStatus = $sessionData['data']['attributes']['payment_intent']['status'] ?? $sessionData['data']['attributes']['status'] ?? null;    // Check if payment is successful
+    $validStatuses = ['succeeded', 'paid', 'payment_completed', 'completed', 'active'];
     if (!in_array($paymentStatus, $validStatuses)) {
         throw new Exception('Payment verification failed. Status: ' . $paymentStatus);
-    }    // Start transaction
+    }// Start transaction
     $conn->beginTransaction();
 
     // Get membership payment details
@@ -124,21 +122,26 @@ try {
         $amount,
         $planId,
         $userId
-    ]);
-
-    // Insert into payments table
+    ]);    // Insert into payments table
     $stmt = $conn->prepare("
         INSERT INTO payments (
-            user_id, amount, payment_type, payment_method,
-            reference_number, status, created_at
-        ) VALUES (?, ?, 'membership', ?, ?, 'completed', NOW())
+            user_id, amount, payment_date, payment_method,
+            transaction_id, payment_details, status
+        ) VALUES (?, ?, NOW(), ?, ?, ?, 'completed')
     ");
+
+    $paymentDetails = json_encode([
+        'type' => 'membership',
+        'plan_id' => $planId,
+        'plan_name' => $plan['name']
+    ]);
 
     $stmt->execute([
         $userId,
         $amount,
         $sessionData['data']['attributes']['payment_method_used'] ?? 'online',
-        $checkoutSessionId
+        $checkoutSessionId,
+        $paymentDetails
     ]);
 
     // Commit transaction
