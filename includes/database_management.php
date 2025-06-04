@@ -170,82 +170,59 @@ if (isset($_POST['restore']) && isset($_FILES['sqlfile'])) {
         $firstLine = fgets(fopen($tmpFile, 'r'));
         if (!preg_match('/^-- Backup of `fitness`/', $firstLine)) {
             throw new Exception("Invalid backup file format. This file doesn't appear to be a valid Fitness Academy backup.");
-        }        // Increase PHP time limit for large files
+        }
+
+        // Increase PHP time limit for large files
         set_time_limit(300); // 5 minutes
-        
-        // Disable foreign key checks and strict mode temporarily (session-level only)
+
+        // Disable foreign key checks and strict mode temporarily
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
-        $pdo->exec("SET sql_mode = '';");
-        $pdo->exec("SET autocommit = 0;");
-        $pdo->exec("SET unique_checks = 0;");
+        $pdo->exec("SET sql_mode = '';" );
         
-        // Read entire file at once for better performance
-        $sqlContent = file_get_contents($tmpFile);
-        
-        // Ultra-fast comment removal using single regex
-        $sqlContent = preg_replace('/^(?:--|#).*$/m', '', $sqlContent);
-        $sqlContent = preg_replace('/\/\*.*?\*\//s', '', $sqlContent);
-        
-        // Split into statements using more efficient method
-        $statements = explode(';', $sqlContent);
-        $statements = array_filter(array_map('trim', $statements));
-        
-        $errorCount = 0;
-        $totalStatements = count($statements);
-        
-        // Use larger batch size for maximum speed
-        $batchSize = 500;
-        $startTime = microtime(true);
-        
-        for ($i = 0; $i < $totalStatements; $i += $batchSize) {
-            $batch = array_slice($statements, $i, $batchSize);
+        // Read file in chunks to handle large files
+        $handle = fopen($tmpFile, 'r');
+        if ($handle) {
+            $query = '';
+            $success = true;
+            $errorCount = 0;
             
-            // Combine multiple statements for bulk execution
-            $bulkQuery = '';
-            foreach ($batch as $statement) {
-                $statement = trim($statement);
-                if (!empty($statement)) {
-                    $bulkQuery .= $statement . '; ';
+            while (!feof($handle)) {
+                $line = fgets($handle);
+                
+                // Skip comments and empty lines
+                if (empty($line) || substr(trim($line), 0, 2) == '--' || substr(trim($line), 0, 1) == '#') {
+                    continue;
                 }
-            }
-            
-            if (!empty($bulkQuery)) {
-                try {
-                    $pdo->exec($bulkQuery);
-                } catch (PDOException $e) {
-                    // Fallback to individual execution for this batch
-                    foreach ($batch as $statement) {
-                        $statement = trim($statement);
-                        if (!empty($statement)) {
-                            try {
-                                $pdo->exec($statement . ';');
-                            } catch (PDOException $e2) {
-                                error_log("Error executing statement: " . $e2->getMessage());
-                                $errorCount++;
-                            }
+                
+                $query .= $line;
+                
+                if (substr(trim($line), -1, 1) == ';') {
+                    // Execute each complete query
+                    try {
+                        $stmt = $pdo->prepare($query);
+                        $stmt->execute();
+                    } catch (PDOException $e) {
+                        // Log the error but continue with other queries
+                        error_log("Error executing query: " . $e->getMessage() . "\nQuery: " . $query);
+                        $errorCount++;
+                        if ($errorCount > 10) {
+                            throw new Exception("Too many errors occurred during restore (>10). Stopping restore process.");
                         }
                     }
+                    $query = '';
                 }
             }
-              // Progress indicator
-            if ($i % 1000 == 0) {
-                $progress = round(($i / $totalStatements) * 100, 1);
-                error_log("Restore progress: {$progress}% ({$i}/{$totalStatements})");
+            fclose($handle);
+            
+            if ($errorCount > 0) {
+                throw new Exception("Restore completed with {$errorCount} errors. Check error log for details.");
             }
-        }
-        
-        $endTime = microtime(true);
-        $executionTime = round($endTime - $startTime, 2);
-          if ($errorCount > 0) {
-            error_log("Restore completed in {$executionTime}s with {$errorCount} errors out of {$totalStatements} statements.");
         } else {
-            error_log("Restore completed successfully in {$executionTime}s. {$totalStatements} statements executed.");
+            throw new Exception("Could not open backup file for reading.");
         }
-        
-        // Re-enable foreign key checks and other settings
+
+        // Re-enable foreign key checks
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
-        $pdo->exec("SET unique_checks = 1;");
-        $pdo->exec("SET autocommit = 1;");
         
         // Log the restore activity
         trackUserActivity($_SESSION['user_id'], 'Database Restore', 'Restored database from file: ' . $fileName);
