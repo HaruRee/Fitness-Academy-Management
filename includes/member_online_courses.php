@@ -6,6 +6,17 @@ ini_set('display_errors', 1);
 session_start();
 require_once '../config/database.php';
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Check if logged in and is member
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Member') {
     header("Location: ../login.php");
@@ -62,74 +73,161 @@ $paid_videos = array_filter($all_videos, function ($video) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+            background: #18191a;
             margin: 0;
-            color: #333;
+            color: #f5f6fa;
+            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px 16px;
         }
 
         .hero-section {
-            background: linear-gradient(45deg, #e41e26, #ff6b6b);
+            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
             color: #fff;
-            padding: 60px 0;
-            text-align: center;
-            margin-bottom: 40px;
+            padding: 48px 0 32px 0;
+            margin-bottom: 32px;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+        }
+
+        .hero-flex {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .hero-icon {
+            background: rgba(24, 25, 26, 0.13);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .hero-icon i {
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
         }
 
         .hero-section h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
+            font-size: 2.1rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(24, 25, 26, 0.10);
         }
 
-        .hero-section p {
-            font-size: 1.2rem;
-            opacity: 0.9;
+        .hero-desc {
+            font-size: 1.13rem;
+            font-weight: 500;
+            color: #f9f9f9;
+            opacity: 0.98;
+            max-width: 700px;
+            text-shadow: 0 2px 8px rgba(24, 25, 26, 0.10);
         }
 
         .section-title {
-            font-size: 1.8rem;
-            margin-bottom: 25px;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
-            color: #333;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         .section-title i {
-            margin-right: 15px;
-            color: #e41e26;
+            margin-right: 12px;
+            color: #ff5252;
+            font-size: 1.2em;
+        }
+
+        .filter-tabs {
+            display: flex;
+            margin-bottom: 24px;
+            background: #23272f;
+            border-radius: 10px;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            color: #b0b3b8;
+            background: none;
+            border: none;
+            outline: none;
+            user-select: none;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(228, 30, 38, 0.10);
+        }
+
+        .filter-tab:not(.active):hover {
+            background: #23272f;
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px;
-            margin-bottom: 50px;
+            gap: 28px;
+            margin-bottom: 40px;
         }
 
         .video-card {
-            background: #fff;
-            border-radius: 15px;
+            background: #23272f;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.13);
+            transition: transform 0.18s, box-shadow 0.18s;
             position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            min-height: 380px;
         }
 
         .video-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px) scale(1.015);
+            box-shadow: 0 10px 32px rgba(228, 30, 38, 0.10);
         }
 
         .video-thumbnail {
             width: 100%;
-            height: 200px;
-            background: #f0f0f0;
+            height: 180px;
+            background: #18191a;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -141,11 +239,14 @@ $paid_videos = array_filter($all_videos, function ($video) {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-bottom: 1px solid #23272f;
+            transition: filter 0.2s;
         }
 
         .video-thumbnail i {
             font-size: 3rem;
-            color: #666;
+            color: #ff5252;
+            opacity: 0.7;
         }
 
         .play-overlay {
@@ -154,12 +255,12 @@ $paid_videos = array_filter($all_videos, function ($video) {
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.22);
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.2s;
         }
 
         .video-card:hover .play-overlay {
@@ -167,76 +268,101 @@ $paid_videos = array_filter($all_videos, function ($video) {
         }
 
         .play-button {
-            background: rgba(228, 30, 38, 0.9);
+            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 54px;
+            height: 54px;
             font-size: 1.5rem;
             cursor: pointer;
-            transition: background 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
+            transition: background 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .play-button:hover {
-            background: rgba(199, 30, 36, 0.9);
+            background: linear-gradient(90deg, #c71e24 0%, #ff5252 100%);
+            transform: scale(1.07);
         }
 
         .video-info {
-            padding: 20px;
+            padding: 18px 18px 14px 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .video-title {
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            color: #333;
+            font-size: 1.08rem;
+            margin-bottom: 7px;
+            color: #fff;
             line-height: 1.3;
+            letter-spacing: 0.1px;
         }
 
         .coach-name {
-            color: #e41e26;
+            color: #ff5252;
             font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
+            font-size: 0.93rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .coach-name i {
+            font-size: 1em;
+            color: #ff5252;
         }
 
         .video-description {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
+            color: #b0b3b8;
+            font-size: 0.97rem;
+            margin-bottom: 12px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             line-height: 1.4;
+            min-height: 2.7em;
         }
 
         .video-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 15px;
+            font-size: 0.89rem;
+            color: #b0b3b8;
+            margin-bottom: 10px;
+            gap: 8px;
         }
 
         .access-badge {
-            padding: 6px 12px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            border: none;
+            display: inline-block;
         }
 
         .access-free {
-            background: #e8f5e8;
-            color: #2e7d32;
+            background: #1e4620;
+            color: #7fff7f;
+            border: 1px solid #2e7d32;
         }
 
         .access-paid {
-            background: #fff3e0;
-            color: #f57c00;
+            background: #2d1d00;
+            color: #ffc107;
+            border: 1px solid #f57c00;
         }
 
         .locked-overlay {
@@ -245,17 +371,19 @@ $paid_videos = array_filter($all_videos, function ($video) {
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(24, 25, 26, 0.93);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #fff;
+            z-index: 2;
+            padding: 0 10px;
         }
 
         .locked-overlay i {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
             color: #ffc107;
         }
 
@@ -263,98 +391,194 @@ $paid_videos = array_filter($all_videos, function ($video) {
             text-align: center;
             margin: 0;
             font-weight: 600;
+            font-size: 1.05em;
+            color: #fff;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 10px 0;
             border: none;
             border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.98rem;
+            font-weight: 700;
             text-decoration: none;
             display: inline-block;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             text-align: center;
+            width: 100%;
+            margin-top: 8px;
+            letter-spacing: 0.2px;
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #e41e26, #ff6b6b);
+            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
             color: #fff;
+            border: none;
         }
 
         .btn-primary:hover {
-            background: linear-gradient(45deg, #c71e24, #ff5252);
+            background: linear-gradient(90deg, #c71e24 0%, #ff5252 100%);
             color: #fff;
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.03);
         }
 
-        .btn-outline {
-            border: 2px solid #e41e26;
-            color: #e41e26;
-            background: transparent;
+        .btn-secondary {
+            background: #444950;
+            color: #fff;
+            border: 1.5px solid #888;
         }
 
-        .btn-outline:hover {
-            background: #e41e26;
-            color: #fff;
+        .btn-secondary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #666;
+            color: #b0b3b8;
         }
 
         .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #ddd;
+            font-size: 3.5rem;
+            margin-bottom: 18px;
+            color: #23272f;
         }
 
         .empty-state h3 {
-            margin-bottom: 10px;
-            color: #555;
-        }
-
-        .filter-tabs {
-            display: flex;
-            margin-bottom: 30px;
-            background: #555;
-            border-radius: 10px;
-            padding: 5px;
-            box-shadow: 0 4px 8px rgba(72, 68, 68, 0.1);
-        }
-
-        .filter-tab {
-            flex: 1;
-            padding: 12px 20px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 8px;
+            margin-bottom: 8px;
+            color: #fff;
+            font-size: 1.2rem;
             font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s;
-            color: #bbb;
         }
 
-        .filter-tab.active {
-            background: #d62328;
-            color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .filter-tab:not(.active):hover {
-            background: #333;
-            color: #fff;
-        }
-
-        .tab-content {
+        /* Video Modal */
+        #videoModal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.96);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .tab-content.active {
-            display: block;
+        #videoModal.active {
+            display: flex;
+        }
+
+        #videoModal>div {
+            position: relative;
+            width: 95vw;
+            max-width: 800px;
+            background: #18191a;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            padding: 0;
+        }
+
+        #videoModal button[onclick^="closeVideoModal"] {
+            position: absolute;
+            top: -44px;
+            right: 0;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2.2rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: color 0.2s;
+        }
+
+        #videoModal button[onclick^="closeVideoModal"]:hover {
+            color: #ff5252;
+        }
+
+        #modalVideo {
+            width: 100%;
+            border-radius: 10px;
+            background: #000;
+            min-height: 220px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .container {
+                padding: 12px 4vw;
+            }
+
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 18px;
+            }
+
+            .video-thumbnail {
+                height: 140px;
+            }
+
+            .video-card {
+                min-height: 320px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 6px 2vw;
+            }
+
+            .hero-section {
+                padding: 36px 0 22px 0;
+                border-radius: 0 0 12px 12px;
+            }
+
+            .hero-section h1 {
+                font-size: 1.25rem;
+            }
+
+            .hero-section p {
+                font-size: 0.97rem;
+            }
+
+            .section-title {
+                font-size: 1.05rem;
+            }
+
+            .video-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .video-thumbnail {
+                height: 110px;
+            }
+
+            .video-card {
+                min-height: 220px;
+            }
+
+            .video-info {
+                padding: 12px 10px 10px 10px;
+            }
+
+            .btn,
+            .btn-primary,
+            .btn-secondary {
+                font-size: 0.93rem;
+                padding: 8px 0;
+            }
+
+            #videoModal>div {
+                width: 99vw;
+                max-width: 99vw;
+            }
+
+            #modalVideo {
+                min-height: 120px;
+            }
         }
     </style>
 </head>
@@ -363,9 +587,16 @@ $paid_videos = array_filter($all_videos, function ($video) {
     <?php include '../assets/format/member_header.php'; ?>
 
     <div class="hero-section">
-        <div class="container">
-            <h1>Online Fitness Courses</h1>
-            <p>Learn from our comprehensive video library with free and premium courses</p>
+        <div class="container hero-flex">
+            <div class="hero-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <div>
+                <h1>Unlock Your Fitness Potential</h1>
+                <p class="hero-desc">
+                    Access a curated library of expert-led fitness video courses—covering strength, mobility, nutrition, and more. Learn at your own pace, from anywhere, with both free and premium content designed for real results.
+                </p>
+            </div>
         </div>
     </div>
 
@@ -389,10 +620,9 @@ $paid_videos = array_filter($all_videos, function ($video) {
             <?php if (count($free_videos) > 0): ?>
                 <div class="video-grid">
                     <?php foreach ($free_videos as $video): ?>
-                        <div class="video-card" onclick="watchVideo(<?= $video['id'] ?>)">
-                            <div class="video-thumbnail">
+                        <div class="video-card" onclick="watchVideo(<?= $video['id'] ?>)">                            <div class="video-thumbnail">
                                 <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                                    <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                                 <?php else: ?>
                                     <i class="fas fa-play-circle"></i>
                                 <?php endif; ?>
@@ -443,10 +673,9 @@ $paid_videos = array_filter($all_videos, function ($video) {
                         <?php
                         $can_access = in_array($video['coach_id'], $subscribed_coaches);
                         ?>
-                        <div class="video-card" <?= $can_access ? 'onclick="watchVideo(' . $video['id'] . ')"' : '' ?>>
-                            <div class="video-thumbnail">
+                        <div class="video-card" <?= $can_access ? 'onclick="watchVideo(' . $video['id'] . ')"' : '' ?>>                            <div class="video-thumbnail">
                                 <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                                    <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                                 <?php else: ?>
                                     <i class="fas fa-play-circle"></i>
                                 <?php endif; ?>

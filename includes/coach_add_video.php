@@ -3,6 +3,17 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 date_default_timezone_set('Asia/Manila');
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Helper functions for file size formatting and parsing
 function return_bytes($val)
 {
@@ -129,9 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate unique filename
                 $video_extension = pathinfo($video_file['name'], PATHINFO_EXTENSION);
                 $video_filename = 'video_' . $coach_id . '_' . time() . '_' . uniqid() . '.' . $video_extension;
-                $video_path = $upload_dir . $video_filename;
-
-                // Handle thumbnail upload
+                $video_path = $upload_dir . $video_filename;                // Handle thumbnail upload
                 $thumbnail_path = null;
                 if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
                     $thumbnail_file = $_FILES['thumbnail'];
@@ -140,9 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (in_array($thumbnail_file['type'], $thumb_allowed)) {
                         $thumb_extension = pathinfo($thumbnail_file['name'], PATHINFO_EXTENSION);
                         $thumb_filename = 'thumb_' . $coach_id . '_' . time() . '_' . uniqid() . '.' . $thumb_extension;
-                        $thumbnail_path = $thumb_dir . $thumb_filename;
+                        // Full physical path to the thumbnail file
+                        $thumbnail_file_path = $thumb_dir . $thumb_filename;
 
-                        if (!move_uploaded_file($thumbnail_file['tmp_name'], $thumbnail_path)) {
+                        if (move_uploaded_file($thumbnail_file['tmp_name'], $thumbnail_file_path)) {
+                            // Store with '../' prefix for consistency across the application
+                            $thumbnail_path = '../uploads/video_thumbnails/' . $thumb_filename;
+                        } else {
                             $thumbnail_path = null;
                         }
                     }
@@ -174,7 +187,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error_message = "Database error: " . $e->getMessage();
                         // Clean up uploaded files on database error
                         if (file_exists($video_path)) unlink($video_path);
-                        if ($thumbnail_path && file_exists($thumbnail_path)) unlink($thumbnail_path);
+                        if ($thumbnail_path) {
+                            $physical_path = strpos($thumbnail_path, '../') === 0 
+                                ? $thumbnail_path 
+                                : '../' . $thumbnail_path;
+                                
+                            if (file_exists($physical_path)) {
+                                unlink($physical_path);
+                            }
+                        }
                     }
                 } else {
                     // Enhanced error logging

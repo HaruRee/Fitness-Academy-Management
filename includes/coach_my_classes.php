@@ -3,6 +3,17 @@ session_start();
 require_once '../config/database.php';
 date_default_timezone_set('Asia/Manila');
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Check if logged in and is coach
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Coach') {
     header("Location: login.php");
@@ -609,10 +620,9 @@ function formatTime($time)
                 <?php if (count($videos) > 0): ?>
                     <div class="video-grid">
                         <?php foreach ($videos as $video): ?>
-                            <div class="video-card">
-                                <div class="video-thumbnail">
+                            <div class="video-card">                                <div class="video-thumbnail">
                                     <?php if ($video['thumbnail_path']): ?>
-                                        <img src="<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
                                     <?php else: ?>
                                         <i class="fas fa-play-circle"></i>
                                     <?php endif; ?>

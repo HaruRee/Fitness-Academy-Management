@@ -2,6 +2,17 @@
 session_start();
 require_once '../config/database.php';
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Check if logged in and is coach
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Coach') {
     header("Location: login.php");
@@ -59,12 +70,18 @@ if ($_POST && $_POST['action'] === 'update_video') {
                     $new_filename = 'thumb_' . $video_id . '_' . uniqid() . '.' . $file_extension;
                     $upload_path = $upload_dir . $new_filename;
 
-                    if (move_uploaded_file($_FILES['thumbnail']['tmp_name'], $upload_path)) {
-                        // Delete old thumbnail if exists
-                        if ($thumbnail_path && file_exists('../' . $thumbnail_path)) {
-                            unlink('../' . $thumbnail_path);
+                    if (move_uploaded_file($_FILES['thumbnail']['tmp_name'], $upload_path)) {                        // Delete old thumbnail if exists
+                        if ($thumbnail_path) {
+                            $old_path = strpos($thumbnail_path, '../') === 0 
+                                ? $thumbnail_path 
+                                : '../' . $thumbnail_path;
+                                
+                            if (file_exists($old_path)) {
+                                unlink($old_path);
+                            }
                         }
-                        $thumbnail_path = 'uploads/video_thumbnails/' . $new_filename;
+                        // Store path with '../' prefix for consistency across the application
+                        $thumbnail_path = '../uploads/video_thumbnails/' . $new_filename;
                     }
                 }
             }
@@ -516,9 +533,8 @@ if ($_POST && $_POST['action'] === 'delete_video') {
             <div class="card">
                 <h3 style="margin-bottom: 20px;"><i class="fas fa-video"></i> Current Video</h3>
                 <div class="video-preview">
-                    <div class="video-thumbnail">
-                        <?php if ($video['thumbnail_path']): ?>
-                            <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                    <div class="video-thumbnail">                        <?php if ($video['thumbnail_path']): ?>
+                            <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                         <?php else: ?>
                             <i class="fas fa-play-circle"></i>
                         <?php endif; ?>

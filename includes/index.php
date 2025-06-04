@@ -2,6 +2,17 @@
 session_start();
 require_once '../config/database.php';
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Get all approved free videos with coach info
 $stmt = $conn->prepare("
     SELECT cv.*, u.First_Name, u.Last_Name
@@ -1674,9 +1685,8 @@ html {
           <div class="video-grid">
               <?php foreach ($free_videos as $video): ?>
 <div class="video-card" style="cursor:pointer;text-decoration:none;color:inherit;" 
-     data-video-id="<?= $video['id'] ?>">                      <div class="video-thumbnail">
-                          <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                              <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+     data-video-id="<?= $video['id'] ?>">                      <div class="video-thumbnail">                          <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
+                              <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                           <?php else: ?>
                               <i class="fas fa-play-circle"></i>
                           <?php endif; ?>
@@ -2016,7 +2026,11 @@ html {
         if (video) {
           let html = '';
           if (video.video_path) {
-            html += `<video src="../${video.video_path}" controls autoplay style="width:100%;border-radius:8px;" poster="${video.thumbnail_path ? '../'+video.thumbnail_path : ''}"></video>`;
+            // Fix the thumbnail path in JavaScript
+            const thumbnailPath = video.thumbnail_path && video.thumbnail_path.startsWith('../') ? 
+                video.thumbnail_path.substring(3) : video.thumbnail_path;
+            
+            html += `<video src="../${video.video_path}" controls autoplay style="width:100%;border-radius:8px;" poster="${thumbnailPath ? '../'+thumbnailPath : ''}"></video>`;
             html += `<div style="margin-top:14px;">
   <a href="../${video.video_path}" download class="cta download-btn">
     <i class="fas fa-download"></i> Download Video

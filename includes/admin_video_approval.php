@@ -2,6 +2,17 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 
+// Helper function to properly handle thumbnail paths
+function fixThumbnailPath($path) {
+    if (empty($path)) return false;
+    
+    // If the path already starts with '../' remove it to avoid double path issues
+    if (strpos($path, '../') === 0) {
+        return substr($path, 3);
+    }
+    return $path;
+}
+
 // Check if logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header("Location: login.php");
@@ -849,12 +860,11 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Pending Videos Tab -->
             <div id="pending-tab" class="tab-content active">
                 <?php if (count($pending_videos) > 0): ?>
-                    <div class="video-grid">
-                        <?php foreach ($pending_videos as $video): ?>
+                    <div class="video-grid">                        <?php foreach ($pending_videos as $video): ?>
                             <div class="video-card">
                                 <div class="video-thumbnail">
                                     <?php if ($video['thumbnail_path']): ?>
-                                        <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                                        <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                                     <?php else: ?>
                                         <i class="fas fa-play-circle"></i>
                                     <?php endif; ?>
@@ -907,12 +917,11 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Approved Videos Tab -->
             <div id="approved-tab" class="tab-content">
                 <?php if (count($approved_videos) > 0): ?>
-                    <div class="video-grid">
-                        <?php foreach ($approved_videos as $video): ?>
+                    <div class="video-grid">                        <?php foreach ($approved_videos as $video): ?>
                             <div class="video-card">
                                 <div class="video-thumbnail">
                                     <?php if ($video['thumbnail_path']): ?>
-                                        <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                                        <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                                     <?php else: ?>
                                         <i class="fas fa-play-circle"></i>
                                     <?php endif; ?>
@@ -961,12 +970,11 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Rejected Videos Tab -->
             <div id="rejected-tab" class="tab-content">
                 <?php if (count($rejected_videos) > 0): ?>
-                    <div class="video-grid">
-                        <?php foreach ($rejected_videos as $video): ?>
+                    <div class="video-grid">                        <?php foreach ($rejected_videos as $video): ?>
                             <div class="video-card">
                                 <div class="video-thumbnail">
                                     <?php if ($video['thumbnail_path']): ?>
-                                        <img src="../<?= htmlspecialchars($video['thumbnail_path']) ?>" alt="Thumbnail">
+                                        <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
                                     <?php else: ?>
                                         <i class="fas fa-play-circle"></i>
                                     <?php endif; ?>
