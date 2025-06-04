@@ -170,15 +170,14 @@ if (isset($_POST['restore']) && isset($_FILES['sqlfile'])) {
         $firstLine = fgets(fopen($tmpFile, 'r'));
         if (!preg_match('/^-- Backup of `fitness`/', $firstLine)) {
             throw new Exception("Invalid backup file format. This file doesn't appear to be a valid Fitness Academy backup.");
-        }
-
-        // Increase PHP time limit for large files
-        set_time_limit(300); // 5 minutes        // Disable foreign key checks and strict mode temporarily
+        }        // Increase PHP time limit for large files
+        set_time_limit(300); // 5 minutes
+        
+        // Disable foreign key checks and strict mode temporarily (session-level only)
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
         $pdo->exec("SET sql_mode = '';");
         $pdo->exec("SET autocommit = 0;");
         $pdo->exec("SET unique_checks = 0;");
-        $pdo->exec("SET innodb_buffer_pool_size = 268435456;"); // 256MB
         
         // Read entire file at once for better performance
         $sqlContent = file_get_contents($tmpFile);
@@ -228,25 +227,22 @@ if (isset($_POST['restore']) && isset($_FILES['sqlfile'])) {
                     }
                 }
             }
-            
-            // Progress indicator
+              // Progress indicator
             if ($i % 1000 == 0) {
                 $progress = round(($i / $totalStatements) * 100, 1);
                 error_log("Restore progress: {$progress}% ({$i}/{$totalStatements})");
             }
         }
         
-        // Final commit
-        $pdo->exec("COMMIT;");
-        
         $endTime = microtime(true);
         $executionTime = round($endTime - $startTime, 2);
-        
-        if ($errorCount > 0) {
+          if ($errorCount > 0) {
             error_log("Restore completed in {$executionTime}s with {$errorCount} errors out of {$totalStatements} statements.");
         } else {
             error_log("Restore completed successfully in {$executionTime}s. {$totalStatements} statements executed.");
-        }        // Re-enable foreign key checks and other settings
+        }
+        
+        // Re-enable foreign key checks and other settings
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
         $pdo->exec("SET unique_checks = 1;");
         $pdo->exec("SET autocommit = 1;");
