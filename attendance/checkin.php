@@ -24,10 +24,10 @@ $scanner_location = $_SESSION['scanner_location'];
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GYM ENTRANCE - Check-in Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>GYM ENTRANCE - Check-in Scanner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="../assets/js/success-sound.js"></script>
     <style>
         :root {
             --primary-color: #d62328; /* Red gym branding */
@@ -398,11 +398,12 @@ $scanner_location = $_SESSION['scanner_location'];
                 </div>
             </div>
         </div>
-    </div>
-
-    <script>
+    </div>    <script>
         let html5QrcodeScanner = null;
-        let isScanning = false;        document.addEventListener('DOMContentLoaded', function() {
+        let isScanning = false;
+        let scanTimeout = false; // Prevent rapid scanning
+        
+        document.addEventListener('DOMContentLoaded', function() {
             loadRecentCheckins();
             // Auto-start scanner for kiosk mode
             setTimeout(() => {
@@ -489,12 +490,21 @@ $scanner_location = $_SESSION['scanner_location'];
                     console.error('Scanner stop error:', err);
                 });
             }
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            if (decodedText) {
-                stopScanner();
+        }        function onScanSuccess(decodedText, decodedResult) {
+            if (decodedText && !scanTimeout) {
+                // Set timeout to prevent rapid scanning
+                scanTimeout = true;
+                updateStatus('Processing scan...', 'scanning');
+                
                 processAttendance(decodedText);
+                
+                // Reset timeout after 5 seconds to allow next scan
+                setTimeout(() => {
+                    scanTimeout = false;
+                    if (isScanning) {
+                        updateStatus('Scanning for QR codes...', 'scanning');
+                    }
+                }, 5000);
             }
         }
 
@@ -533,6 +543,11 @@ $scanner_location = $_SESSION['scanner_location'];
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Play success sound
+                    if (window.successSound) {
+                        window.successSound.playSuccess();
+                    }
+                    
                     showResult(`✅ Check-in successful: ${data.user_name}`, 'success');
                     loadRecentCheckins(); // Refresh the recent check-ins list
                 } else {
