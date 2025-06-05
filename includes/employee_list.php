@@ -575,10 +575,6 @@ $staff = count(array_filter($employees, function ($emp) {
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
             </a>
-            <a href="track_payments.php">
-                <i class="fas fa-credit-card"></i>
-                <span>Payment Status</span>
-            </a>
             <a href="employee_list.php" class="active">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>

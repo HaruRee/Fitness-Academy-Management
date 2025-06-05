@@ -694,10 +694,6 @@ $rejected_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
             </a>
-            <a href="track_payments.php">
-                <i class="fas fa-credit-card"></i>
-                <span>Payment Status</span>
-            </a>
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>

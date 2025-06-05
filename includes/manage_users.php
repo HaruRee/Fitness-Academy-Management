@@ -1369,15 +1369,10 @@ try {
             </a>
             <a href="coach_applications.php">
                 <i class="fas fa-user-tie"></i>
-                <span>Coach Applications</span>
-                <a href="admin_video_approval.php">
+                <span>Coach Applications</span>                <a href="admin_video_approval.php">
                     <i class="fas fa-video"></i>
                     <span>Video Approval</span>
                 </a>
-            </a> <a href="track_payments.php">
-                <i class="fas fa-credit-card"></i>
-                <span>Payment Status</span>
-            </a>
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>

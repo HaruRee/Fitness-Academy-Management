@@ -706,17 +706,12 @@ try {
                 <span>Coach Applications</span>
             </a>
             <a href="admin_video_approval.php">
-                <i class="fas fa-video"></i>
-                <span>Video Approval</span>
-            </a>
-            <a href="track_payments.php">
-                <i class="fas fa-credit-card"></i>
-                <span>Payment Status</span>
+                <i class="fas fa-video"></i>                <span>Video Approval</span>
             </a>
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>
-            </a>            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
+            </a><div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
                 <i class="fas fa-sign-in-alt"></i>
                 <span>Check In</span>
             </a>

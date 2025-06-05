@@ -543,13 +543,9 @@ try {
             </a> <a href="member_list.php">
                 <i class="fas fa-users"></i>
                 <span>Member List</span>
-            </a>
-            <a href="coach_applications.php">
+            </a>            <a href="coach_applications.php">
                 <i class="fas fa-user-tie"></i>
                 <span>Coach Applications</span>
-            </a> <a href="track_payments.php">
-                <i class="fas fa-credit-card"></i>
-                <span>Payment Status</span>
             </a>
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
