@@ -569,10 +569,6 @@ switch ($date_range_filter) {
             </a>
 
             <div class="sidebar-menu-header">ACCOUNT</div>
-            <a href="admin_settings.php">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
             <a href="logout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>

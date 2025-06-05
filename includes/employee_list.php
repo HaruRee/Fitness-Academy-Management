@@ -617,10 +617,6 @@ $staff = count(array_filter($employees, function ($emp) {
             </a>
 
             <div class="sidebar-menu-header">Account</div>
-            <a href="admin_settings.php">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
             <a href="logout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>

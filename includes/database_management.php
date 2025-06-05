@@ -673,10 +673,6 @@ if (isset($_POST['restore']) && isset($_FILES['sqlfile'])) {
                 <i class="fas fa-database"></i>
                 <span>Backup & Restore</span>
             </a>            <div class="sidebar-menu-header">Account</div>
-            <a href="admin_settings.php">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
             <a href="logout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
