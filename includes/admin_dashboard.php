@@ -3,7 +3,6 @@
 session_start();
 require '../config/database.php';
 require 'activity_tracker.php';
-date_default_timezone_set('Asia/Manila');
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header('Location: login.php');
@@ -450,30 +449,7 @@ try {
             color: var(--dark-color);
             font-size: 0.9rem;
             font-weight: 500;
-        }
-
-        .confidence-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .confidence-badge.high {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .confidence-badge.medium {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .confidence-badge.low {
-            background: #fee2e2;
-            color: #991b1b;
-        }        .prediction-insights {
+        }.prediction-insights {
             margin-top: 0.25rem;
         }
 
@@ -1031,7 +1007,6 @@ try {
                         <div class="prediction-content">
                             <div class="prediction-main">
                                 <span class="prediction-text">Loading predictions...</span>
-                                <span class="confidence-badge">Low</span>
                             </div>
                             <div class="prediction-insights">
                                 <ul class="insights-list"></ul>
@@ -1071,7 +1046,6 @@ try {
                         <div class="prediction-content">
                             <div class="prediction-main">
                                 <span class="prediction-text">Loading predictions...</span>
-                                <span class="confidence-badge">Low</span>
                             </div>
                             <div class="prediction-insights">
                                 <ul class="insights-list"></ul>
@@ -1435,21 +1409,15 @@ try {
                 membershipContainer.classList.remove('loading');
                 revenueContainer.classList.remove('loading');
             }
-        }
-
-        function updatePredictionDisplay(elementId, prediction) {
+        }        function updatePredictionDisplay(elementId, prediction) {
             const element = document.getElementById(elementId);
             const textElement = element.querySelector('.prediction-text');
-            const confidenceElement = element.querySelector('.confidence-badge');
             const insightsList = element.querySelector('.insights-list');
 
             // Update prediction text
             textElement.textContent = prediction.prediction || 'No prediction available';
 
-            // Update confidence badge
-            const confidence = prediction.confidence || 'low';
-            confidenceElement.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
-            confidenceElement.className = `confidence-badge ${confidence}`;            // Update insights
+            // Update insights
             insightsList.innerHTML = '';
             if (prediction.insights && Array.isArray(prediction.insights)) {
                 prediction.insights.forEach(insight => {
