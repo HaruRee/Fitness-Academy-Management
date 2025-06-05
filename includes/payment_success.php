@@ -323,7 +323,7 @@ try {
             $redirectUrl = $protocol . $host . '/includes/registration_success.php';
         } else {
             // Localhost or other hosting - include gym1 folder
-            $redirectUrl = $protocol . $host . '/gym1/includes/registration_success.php';
+            $redirectUrl = $protocol . $host . '/includes/registration_success.php';
         }
 
         header("Location: " . $redirectUrl);
