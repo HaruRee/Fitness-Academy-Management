@@ -373,43 +373,37 @@ try {
         .stat-label {
             color: var(--gray-color);
             font-size: 0.9rem;
-        }
-
-        .chart-grid {
+        }        .chart-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
             margin-bottom: 2rem;
-        }
-
-        .chart-card {
+            max-width: 100%;
+            justify-content: center;
+        }.chart-card {
             background: white;
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 2rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             height: 100%;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 250px;
             width: 100%;
-        }
-
-        .chart-header {
+            min-height: 480px;
+        }.chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }        .chart-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .chart-title {
             font-size: 1.2rem;
             font-weight: 600;
             color: var(--dark-color);
-        }
-
-        .chart-actions select {
+        }        .chart-actions select {
             background: #f3f4f6;
             border: none;
             padding: 0.5rem 1rem;
@@ -417,6 +411,119 @@ try {
             color: var(--gray-color);
             font-size: 0.9rem;
             cursor: pointer;
+        }
+
+        /* AI Predictions Styles */        .ai-predictions {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .prediction-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .prediction-header .fas.fa-brain {
+            color: var(--primary-color);
+        }
+
+        .prediction-loader {
+            margin-left: auto;
+        }
+
+        .prediction-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .prediction-text {
+            color: var(--dark-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .confidence-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .confidence-badge.high {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .confidence-badge.medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .confidence-badge.low {
+            background: #fee2e2;
+            color: #991b1b;
+        }        .prediction-insights {
+            margin-top: 0.25rem;
+        }
+
+        .insights-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }        .insights-list li {
+            color: var(--gray-color);
+            font-size: 0.85rem;
+            padding: 0.15rem 0;
+            position: relative;
+            padding-left: 1rem;
+        }
+        
+        .insights-list li strong {
+            color: #1d4ed8;
+            font-weight: 600;
+        }.insights-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Responsive adjustments for AI predictions */
+        @media (max-width: 768px) {            .ai-predictions {
+                margin-top: 0.5rem;
+                padding: 0.75rem;
+            }
+
+            .prediction-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .confidence-badge {
+                align-self: flex-end;
+            }
+        }
+
+        /* Animation for loading state */
+        .ai-predictions.loading {
+            opacity: 0.7;
+        }
+
+        .prediction-loader .fa-spinner {
+            color: var(--primary-color);
         }
 
         .activity-card {
@@ -614,9 +721,48 @@ try {
             margin-bottom: 1rem;
         }
 
-        @media (max-width: 1200px) {
+        .prediction-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-predictions {
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .refresh-predictions:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: rotate(15deg);
+        }
+
+        .refresh-predictions i {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
             .chart-grid {
                 grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .chart-card {
+                min-height: 400px;
+                padding: 1.5rem;
+            }
+
+            .chart-container {
+                height: 280px;
             }
 
             .sales-summary {
@@ -673,6 +819,25 @@ try {
 
             .main-content {
                 padding: 1.5rem;
+            }
+        }
+
+        /* Large screens optimization */
+        @media (min-width: 1400px) {
+            .chart-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2.5rem;
+                max-width: 1400px;
+                margin: 0 auto 2rem auto;
+            }
+
+            .chart-card {
+                min-height: 520px;
+                padding: 2.5rem;
+            }
+
+            .chart-container {
+                height: 350px;
             }
         }
     </style>
@@ -846,9 +1011,32 @@ try {
                                 <option value="90">Last 90 Days</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="chart-container">
+                    </div>                    <div class="chart-container">
                         <canvas id="membershipChart"></canvas>
+                    </div>
+                      <!-- AI Predictions Section for Membership -->
+                    <div class="ai-predictions" id="membershipPredictions">
+                        <div class="prediction-header">
+                            <i class="fas fa-brain"></i>
+                            <span>AI Insights</span>
+                            <div class="prediction-actions">
+                                <button class="refresh-predictions" title="Get fresh insights" data-target="membership">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <div class="prediction-loader" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="prediction-content">
+                            <div class="prediction-main">
+                                <span class="prediction-text">Loading predictions...</span>
+                                <span class="confidence-badge">Low</span>
+                            </div>
+                            <div class="prediction-insights">
+                                <ul class="insights-list"></ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -865,6 +1053,30 @@ try {
                     </div>
                     <div class="chart-container">
                         <canvas id="revenueChart"></canvas>
+                    </div>
+                      <!-- AI Predictions Section for Revenue -->
+                    <div class="ai-predictions" id="revenuePredictions">
+                        <div class="prediction-header">
+                            <i class="fas fa-brain"></i>
+                            <span>AI Insights</span>
+                            <div class="prediction-actions">
+                                <button class="refresh-predictions" title="Get fresh insights" data-target="revenue">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <div class="prediction-loader" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="prediction-content">
+                            <div class="prediction-main">
+                                <span class="prediction-text">Loading predictions...</span>
+                                <span class="confidence-badge">Low</span>
+                            </div>
+                            <div class="prediction-insights">
+                                <ul class="insights-list"></ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1177,10 +1389,138 @@ try {
             revenueChart.data.labels = data.labels;
             revenueChart.data.datasets[0].data = data.data;
             revenueChart.update();
+        });        // Initialize everything when the document loads
+        document.addEventListener('DOMContentLoaded', initializeCharts);        // AI Predictions functionality
+        async function fetchPredictions() {
+            const membershipLoader = document.querySelector('#membershipPredictions .prediction-loader');
+            const revenueLoader = document.querySelector('#revenuePredictions .prediction-loader');
+            const membershipContainer = document.getElementById('membershipPredictions');
+            const revenueContainer = document.getElementById('revenuePredictions');
+            
+            try {
+                // Show loaders and add loading class
+                membershipLoader.style.display = 'block';
+                revenueLoader.style.display = 'block';
+                membershipContainer.classList.add('loading');
+                revenueContainer.classList.add('loading');
+
+                const response = await fetch('../api/get_predictions.php');
+                if (!response.ok) throw new Error('Failed to fetch predictions');
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updatePredictionDisplay('membershipPredictions', result.predictions.membership);
+                    updatePredictionDisplay('revenuePredictions', result.predictions.revenue);
+                } else {
+                    throw new Error(result.error || 'Failed to generate predictions');
+                }
+            } catch (error) {
+                console.error('Error fetching predictions:', error);
+                // Show error message
+                updatePredictionDisplay('membershipPredictions', {
+                    prediction: 'Unable to generate predictions',
+                    confidence: 'low',
+                    insights: ['Prediction service temporarily unavailable']
+                });
+                updatePredictionDisplay('revenuePredictions', {
+                    prediction: 'Unable to generate predictions', 
+                    confidence: 'low',
+                    insights: ['Prediction service temporarily unavailable']
+                });
+            } finally {
+                // Hide loaders and remove loading class
+                membershipLoader.style.display = 'none';
+                revenueLoader.style.display = 'none';
+                membershipContainer.classList.remove('loading');
+                revenueContainer.classList.remove('loading');
+            }
+        }
+
+        function updatePredictionDisplay(elementId, prediction) {
+            const element = document.getElementById(elementId);
+            const textElement = element.querySelector('.prediction-text');
+            const confidenceElement = element.querySelector('.confidence-badge');
+            const insightsList = element.querySelector('.insights-list');
+
+            // Update prediction text
+            textElement.textContent = prediction.prediction || 'No prediction available';
+
+            // Update confidence badge
+            const confidence = prediction.confidence || 'low';
+            confidenceElement.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+            confidenceElement.className = `confidence-badge ${confidence}`;            // Update insights
+            insightsList.innerHTML = '';
+            if (prediction.insights && Array.isArray(prediction.insights)) {
+                prediction.insights.forEach(insight => {
+                    const li = document.createElement('li');
+                    // Clean up any incorrect formatting first
+                    let cleanedText = insight.replace(/\*+/g, function(match) {
+                        return match.length % 2 === 0 ? match : match + '*';
+                    });
+                    
+                    // Convert markdown-style bold (**text**) to HTML bold
+                    // Handle nested and multiple bold sections
+                    let formattedText = '';
+                    let bold = false;
+                    let lastIndex = 0;
+                    let regex = /\*\*/g;
+                    let match;
+                    
+                    while ((match = regex.exec(cleanedText)) !== null) {
+                        // Add the text before this match
+                        formattedText += cleanedText.substring(lastIndex, match.index);
+                        // Add the appropriate opening or closing tag
+                        formattedText += bold ? '</strong>' : '<strong>';
+                        // Toggle bold state
+                        bold = !bold;
+                        // Update last index
+                        lastIndex = match.index + 2;
+                    }
+                    
+                    // Add any remaining text
+                    formattedText += cleanedText.substring(lastIndex);
+                    
+                    // Make sure we close any open tags
+                    if (bold) formattedText += '</strong>';
+                    
+                    li.innerHTML = formattedText;
+                    insightsList.appendChild(li);
+                });
+            }
+        }        // Load predictions on page load and refresh every 5 minutes
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPredictions();
+            
+            // Set up refresh interval
+            setInterval(fetchPredictions, 5 * 60 * 1000); // Refresh every 5 minutes
+            
+            // Set up refresh button click handlers
+            document.querySelectorAll('.refresh-predictions').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Add spinning animation to the refresh icon
+                    const icon = this.querySelector('i');
+                    icon.classList.add('fa-spin');
+                    
+                    // Fetch fresh predictions
+                    fetchPredictions().finally(() => {
+                        // Remove spinning animation after 1 second
+                        setTimeout(() => {
+                            icon.classList.remove('fa-spin');
+                        }, 1000);
+                    });
+                });
+            });
         });
 
-        // Initialize everything when the document loads
-        document.addEventListener('DOMContentLoaded', initializeCharts);
+        // Add click handlers for chart time range changes to update predictions
+        document.getElementById('membershipTimeRange').addEventListener('change', () => {
+            setTimeout(fetchPredictions, 1000); // Wait for chart to update first
+        });
+
+        document.getElementById('revenueTimeRange').addEventListener('change', () => {
+            setTimeout(fetchPredictions, 1000); // Wait for chart to update first
+        });
     </script>
 </body>
 
