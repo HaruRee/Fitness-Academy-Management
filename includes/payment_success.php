@@ -14,8 +14,8 @@ function getCorrectUrl($path)
         // InfinityFree hosting - files are in the root directory structure
         return $protocol . $host . '/' . ltrim($path, '/');
     } else {
-        // Localhost or other hosting - remove gym1 folder
-        return $protocol . $host . '/' . ltrim($path, '/');
+        // Localhost or other hosting - include gym1 folder
+        return $protocol . $host . '/gym1/' . ltrim($path, '/');
     }
 }
 
@@ -28,8 +28,8 @@ error_reporting(E_ALL);
 error_log('Payment Success Callback - GET: ' . json_encode($_GET));
 error_log('Payment Success Callback - SESSION: ' . json_encode($_SESSION));
 
-// PayMongo API credentials
-define('PAYMONGO_SECRET_KEY', 'sk_test_8zaUvLB9QjiQFbDwjugyzMst');
+// Load API configuration
+require_once __DIR__ . '/../config/api_config.php';
 
 // Check if we have the checkout session ID and required session data
 if (!isset($_SESSION['paymongo_checkout_id']) || !isset($_SESSION['user_data'])) {
@@ -154,23 +154,59 @@ try {
             membership_plan, membership_price, plan_id, package_type
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
 
-        $stmt->execute([
-            $userData['username'],
-            $hashed_password,
-            $userData['role'],
-            $userData['first_name'],
-            $userData['last_name'],
-            $userData['email'],
-            $userData['date_of_birth'],
-            $userData['phone'],
-            $userData['address'],
-            $userData['emergency_contact'],
-            $email_token,
-            $_SESSION['selected_plan'],
-            $_SESSION['plan_price'],
-            $_SESSION['plan_id'],
-            $_SESSION['package_type']
-        ]);
+        try {
+            $stmt->execute([
+                $userData['username'],
+                $hashed_password,
+                $userData['role'],
+                $userData['first_name'],
+                $userData['last_name'],
+                $userData['email'],
+                $userData['date_of_birth'],
+                $userData['phone'],
+                $userData['address'],
+                $userData['emergency_contact'],
+                $email_token,
+                $_SESSION['selected_plan'],
+                $_SESSION['plan_price'],
+                $_SESSION['plan_id'],
+                $_SESSION['package_type']
+            ]);
+        } catch (PDOException $e) {
+            // If UserID field error, try with explicit UserID
+            if (strpos($e->getMessage(), 'UserID') !== false) {
+                // Get next available UserID
+                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                $userIdStmt->execute();
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+                
+                $stmtWithId = $conn->prepare("INSERT INTO users (
+                    UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
+                    Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
+                    membership_plan, membership_price, plan_id, package_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
+                
+                $stmtWithId->execute([
+                    $nextUserId,
+                    $userData['username'],
+                    $hashed_password,
+                    $userData['role'],
+                    $userData['first_name'],
+                    $userData['last_name'],
+                    $userData['email'],
+                    $userData['date_of_birth'],
+                    $userData['phone'],
+                    $userData['address'],                    $userData['emergency_contact'],
+                    $email_token,
+                    $_SESSION['selected_plan'],
+                    $_SESSION['plan_price'],
+                    $_SESSION['plan_id'],
+                    $_SESSION['package_type']
+                ]);
+            } else {
+                throw $e; // Re-throw if it's a different error
+            }
+        }
 
         $user_id = $conn->lastInsertId();
 
@@ -277,28 +313,21 @@ try {
         // Set success message and redirect to success page
         $_SESSION['registration_success'] = true;
 
-        // Updated redirection logic
-        if ($proceedWithRegistration) {
-            // Construct the full URL to ensure correct redirection
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'];
+        // Construct the full URL to ensure correct redirection
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'];
 
-            // Check if we're on InfinityFree hosting or localhost
-            if (strpos($host, '.ct.ws') !== false || strpos($host, '.infinityfreeapp.com') !== false || strpos($host, '.epizy.com') !== false || strpos($host, '.rf.gd') !== false) {
-                // InfinityFree hosting - files are in the root/includes directory
-                $redirectUrl = $protocol . $host . '/includes/registration_success.php';
-            } else {
-                // Localhost or other hosting - remove gym1 folder
-                $redirectUrl = $protocol . $host . '/includes/registration_success.php';
-            }
-
-            header("Location: " . $redirectUrl);
-            exit;
+        // Check if we're on InfinityFree hosting or localhost
+        if (strpos($host, '.ct.ws') !== false || strpos($host, '.infinityfreeapp.com') !== false || strpos($host, '.epizy.com') !== false || strpos($host, '.rf.gd') !== false) {
+            // InfinityFree hosting - files are in the root/includes directory
+            $redirectUrl = $protocol . $host . '/includes/registration_success.php';
         } else {
-            $_SESSION['error_message'] = "Registration error: Payment verification failed.";
-            header("Location: " . getCorrectUrl('includes/register.php'));
-            exit;
+            // Localhost or other hosting - include gym1 folder
+            $redirectUrl = $protocol . $host . '/includes/registration_success.php';
         }
+
+        header("Location: " . $redirectUrl);
+        exit;
     } else {
         // Payment not successful
         throw new Exception("Payment was not successful: payment verification failed");
