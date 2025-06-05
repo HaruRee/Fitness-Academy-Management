@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Test Checkout API</title>
 </head>
+
 <body>
     <h1>Test Checkout API</h1>
     <button onclick="testCheckout()">Test Checkout</button>
@@ -11,7 +13,7 @@
     <script>
         async function testCheckout() {
             try {
-                const response = await fetch('/gym1/attendance/process_checkout.php', {
+                const response = await fetch('/attendance/process_checkout.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -32,4 +34,5 @@
         }
     </script>
 </body>
+
 </html>

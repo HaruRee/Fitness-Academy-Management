@@ -11,11 +11,9 @@ function getCorrectUrl($path)
 
     // Check if we're on InfinityFree hosting or localhost
     if (strpos($host, '.ct.ws') !== false || strpos($host, '.infinityfreeapp.com') !== false || strpos($host, '.epizy.com') !== false || strpos($host, '.rf.gd') !== false) {
-        // InfinityFree hosting - files are in the root directory structure
         return $protocol . $host . '/' . ltrim($path, '/');
     } else {
-        // Localhost or other hosting - include gym1 folder
-        return $protocol . $host . '/gym1/' . ltrim($path, '/');
+        return $protocol . $host . '/' . ltrim($path, '/');
     }
 }
 
@@ -77,7 +75,7 @@ try {
         $baseUrl = $protocol . $host . '/includes/';
     } else {
         // Localhost or other hosting - include gym1 folder
-        $baseUrl = $protocol . $host . '/gym1/includes/';
+        $baseUrl = $protocol . $host . '/includes/';
     }
 
     // Initialize GuzzleHTTP client for API requests

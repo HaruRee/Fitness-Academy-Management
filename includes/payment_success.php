@@ -14,8 +14,8 @@ function getCorrectUrl($path)
         // InfinityFree hosting - files are in the root directory structure
         return $protocol . $host . '/' . ltrim($path, '/');
     } else {
-        // Localhost or other hosting - include gym1 folder
-        return $protocol . $host . '/gym1/' . ltrim($path, '/');
+        // Localhost or other hosting - do not include gym1 folder
+        return $protocol . $host . '/' . ltrim($path, '/');
     }
 }
 
@@ -179,13 +179,13 @@ try {
                 $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
                 $userIdStmt->execute();
                 $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
-                
+
                 $stmtWithId = $conn->prepare("INSERT INTO users (
                     UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
                     Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
                     membership_plan, membership_price, plan_id, package_type
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
-                
+
                 $stmtWithId->execute([
                     $nextUserId,
                     $userData['username'],
@@ -196,7 +196,8 @@ try {
                     $userData['email'],
                     $userData['date_of_birth'],
                     $userData['phone'],
-                    $userData['address'],                    $userData['emergency_contact'],
+                    $userData['address'],
+                    $userData['emergency_contact'],
                     $email_token,
                     $_SESSION['selected_plan'],
                     $_SESSION['plan_price'],

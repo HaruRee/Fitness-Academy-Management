@@ -12,7 +12,7 @@ function getCorrectUrl($path)
     if (strpos($host, '.ct.ws') !== false || strpos($host, '.infinityfreeapp.com') !== false || strpos($host, '.epizy.com') !== false || strpos($host, '.rf.gd') !== false) {
         return $protocol . $host . '/' . ltrim($path, '/');
     } else {
-        return $protocol . $host . '/gym1/' . ltrim($path, '/');
+        return $protocol . $host . '/' . ltrim($path, '/');
     }
 }
 

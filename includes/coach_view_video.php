@@ -551,7 +551,7 @@ $updated_at = $video['updated_at'];
                     <div class="video-player-container">
                         <?php if ($video['status'] === 'approved'): ?>
                             <video controls class="video-player" style="width: 100%; height: 450px;">
-                                <source src="/gym1/uploads/coach_videos/<?= basename($video['video_path']) ?>" type="video/mp4">
+                                <source src="/uploads/coach_videos/<?= basename($video['video_path']) ?>" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         <?php else: ?>
@@ -568,7 +568,7 @@ $updated_at = $video['updated_at'];
                         <a href="coach_edit_video.php?id=<?= $video['id'] ?>" class="btn btn-primary">
                             <i class="fas fa-edit"></i> Edit Video
                         </a>
-                        <a href="/gym1/uploads/coach_videos/<?= basename($video['video_path']) ?>" class="btn btn-secondary" download>
+                        <a href="/uploads/coach_videos/<?= basename($video['video_path']) ?>" class="btn btn-secondary" download>
                             <i class="fas fa-download"></i> Download
                         </a>
                     </div>
