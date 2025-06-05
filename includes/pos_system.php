@@ -1,18 +1,29 @@
 <?php
 session_start();
 require_once '../config/database.php';
-require_once '../config/api_config.php'; // Load API configuration
-require_once 'activity_tracker.php';
-require_once '../vendor/autoload.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// Check if user is logged in and is an admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
+// Check if user is logged in and redirect based on role
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+
+// Redirect based on user role
+if ($_SESSION['role'] === 'Admin') {
+    // Redirect admin to staff POS with a message
+    $_SESSION['pos_redirect_message'] = 'POS System has been moved to Staff dashboard for better workflow management.';
+    header('Location: admin_dashboard.php');
+    exit;
+} elseif ($_SESSION['role'] === 'Staff') {
+    // Redirect staff to their own POS system
+    header('Location: staff_pos.php');
+    exit;
+} else {
+    // Other roles don't have access
+    header('Location: login.php');
+    exit;
+}
+?>
 
 // Track page view activity
 if (isset($_SESSION['user_id'])) {
@@ -1049,12 +1060,6 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
-            </a>
-
-            <div class="sidebar-menu-header">Point of Sale</div>
-            <a href="pos_system.php" class="active">
-                <i class="fas fa-cash-register"></i>
-                <span>POS System</span>
             </a>
 
             <div class="sidebar-menu-header">Reports</div>

@@ -543,12 +543,6 @@ switch ($date_range_filter) {
                 <span>Attendance Reports</span>
             </a>
 
-            <div class="sidebar-menu-header">POINT OF SALE</div>
-            <a href="pos_system.php">
-                <i class="fas fa-cash-register"></i>
-                <span>POS System</span>
-            </a>
-
             <div class="sidebar-menu-header">REPORTS</div>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>

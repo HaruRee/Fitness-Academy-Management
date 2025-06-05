@@ -722,15 +722,7 @@ try {
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
-            </a>
-
-            <div class="sidebar-menu-header">Point of Sale</div>
-            <a href="pos_system.php">
-                <i class="fas fa-cash-register"></i>
-                <span>POS System</span>
-            </a>
-
-            <div class="sidebar-menu-header">Reports</div>
+            </a>            <div class="sidebar-menu-header">Reports</div>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>
                 <span>Analytics</span>
@@ -775,14 +767,23 @@ try {
             </div>            <div class="header-actions">
                 <span><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></span>
             </div>
-        </header>
-
-        <!-- Main Content -->
+        </header>        <!-- Main Content -->
         <main class="main-content">
             <?php if (!empty($error)): ?>
                 <div class="error-message">
                     <?= htmlspecialchars($error) ?>
                 </div>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['pos_redirect_message'])): ?>
+                <div class="success-message" style="background: #d1fae5; border: 1px solid #10b981; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <i class="fas fa-info-circle"></i>
+                    <?= htmlspecialchars($_SESSION['pos_redirect_message']) ?>
+                    <span style="display: block; margin-top: 0.5rem; font-size: 0.9rem;">
+                        Staff can now access the POS system from their dashboard for streamlined operations.
+                    </span>
+                </div>
+                <?php unset($_SESSION['pos_redirect_message']); ?>
             <?php endif; ?>
 
             <div class="welcome-header">

@@ -661,16 +661,9 @@ try {
             <a href="../attendance/checkout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Check Out</span>
-            </a>
-            <a href="attendance_dashboard.php">
+            </a>            <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
-            </a>
-
-            <div class="sidebar-menu-header">Point of Sale</div>
-            <a href="pos_system.php">
-                <i class="fas fa-cash-register"></i>
-                <span>POS System</span>
             </a>
 
             <div class="sidebar-menu-header">Reports</div>
