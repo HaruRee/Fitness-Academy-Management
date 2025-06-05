@@ -4,6 +4,12 @@
  * 
  * Copy this file to api_config.php and update with your actual API keys.
  * This template file can be safely committed to version control.
+ * 
+ * Includes configurations for:
+ * - PayMongo payment processing
+ * - Azure Computer Vision OCR
+ * - AI recommendation system (OpenRouter/DeepSeek)
+ * - SMTP email settings
  */
 
 // Domain Configuration
@@ -20,6 +26,11 @@ define('AZURE_CV_API_KEYS', [
     'your_azure_cv_api_key_2_here'  // Azure Key 2
 ]);
 define('AZURE_CV_API_URL', 'https://your-region.cognitiveservices.azure.com/vision/v3.2/read/analyze');
+
+// AI Recommendation System Configuration
+define('OPENROUTER_API_KEY', 'your_openrouter_api_key_here');
+define('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/chat/completions');
+define('AI_MODEL', 'deepseek/deepseek-chat-v3-0324:free'); // AI model for recommendations
 
 // Add other API keys here as needed
 // define('OTHER_API_KEY', 'your_api_key_here');

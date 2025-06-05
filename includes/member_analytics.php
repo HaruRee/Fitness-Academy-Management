@@ -280,9 +280,7 @@ include '../assets/format/member_header.php';
             min-width: 0;
             margin-bottom: 10px;
         }
-    }
-
-    @media (max-width: 600px) {
+    }    @media (max-width: 600px) {
         .analytics-container {
             flex-direction: column;
             align-items: stretch;
@@ -317,6 +315,61 @@ include '../assets/format/member_header.php';
             margin: 0 auto;
             box-sizing: border-box;
         }
+    }
+      /* AI Recommendations Styles */
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .ai-recommendation-item {
+        background: #232323;
+        margin-bottom: 10px;
+        padding: 12px;
+        border-radius: 8px;
+        opacity: 0;
+        animation: fadeInUp 0.5s ease forwards;
+        border-left: 3px solid #eb3636;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .ai-recommendation-item:nth-child(1) { animation-delay: 0.1s; }
+    .ai-recommendation-item:nth-child(2) { animation-delay: 0.2s; }
+    .ai-recommendation-item:nth-child(3) { animation-delay: 0.3s; }
+    .ai-recommendation-item:nth-child(4) { animation-delay: 0.4s; }
+    .ai-recommendation-item:nth-child(5) { animation-delay: 0.5s; }
+    .ai-recommendation-item:nth-child(6) { animation-delay: 0.6s; }
+    
+    .ai-badge {
+        background: linear-gradient(45deg, #eb3636, #ff6b6b);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(235, 54, 54, 0.3);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 2px 8px rgba(235, 54, 54, 0.3); }
+        50% { box-shadow: 0 2px 15px rgba(235, 54, 54, 0.5); }
+        100% { box-shadow: 0 2px 8px rgba(235, 54, 54, 0.3); }
+    }
+    
+    .ai-recommendation-item:hover {
+        background: #2a2a2a;
+        transform: translateX(5px);
+        transition: all 0.3s ease;
     }
 </style>    <div class="analytics-container">
         <div class="analytics-card">
@@ -360,160 +413,43 @@ include '../assets/format/member_header.php';
                     <canvas id="progressChart"></canvas>
                 </div>
             </div>
-        </div>
-
-        <div class="analytics-card">
-            <h3>Recommendations</h3>
-        <div>
-            <?php            // Define recommendations based on BMI category and goal
-            $recommendations = [
-                'underweight' => [
-                    'Weight Loss' => [
-                        "Focus on body recomposition rather than weight loss - build muscle while maintaining current weight",
-                        "Prioritize resistance training with proper form over cardio exercises",
-                        "Consume adequate protein (1.6-2.2g per kg of body weight) to preserve muscle mass",
-                        "Eat nutrient-dense foods instead of reducing portions",
-                        "Consider consulting a healthcare professional as weight loss may not be advisable",
-                        "Focus on strength training 3-4 times per week with proper rest periods"
-                    ],
-                    'Muscle Gain' => [
-                        "Implement a progressive overload strength training program",
-                        "Eat in a caloric surplus of 300-500 calories above maintenance",
-                        "Consume 1.6-2.2g of protein per kg of body weight",
-                        "Include complex carbohydrates to fuel workouts and support muscle growth",
-                        "Add healthy fats like nuts, avocados, and olive oil for extra calories",
-                        "Drink calorie-dense smoothies between meals"
-                    ],
-                    'Maintenance' => [
-                        "Focus on reaching a healthy BMI through muscle gain",
-                        "Maintain a balanced diet with adequate protein and calories",
-                        "Incorporate both strength training and light cardio",
-                        "Track your food intake to ensure you're eating enough",
-                        "Get adequate sleep to support recovery and muscle growth",
-                        "Consider working with a nutritionist for a personalized plan"
-                    ]
-                ],
-                'normal' => [
-                    'Weight Loss' => [
-                        "Create a moderate caloric deficit of 300-500 calories",
-                        "Maintain high protein intake to preserve muscle mass",
-                        "Include both strength training and cardio in your routine",
-                        "Focus on nutrient-dense, whole foods",
-                        "Practice portion control without extreme restrictions",
-                        "Track progress through measurements and photos, not just weight"
-                    ],
-                    'Muscle Gain' => [
-                        "Eat in a slight caloric surplus (200-300 calories)",
-                        "Focus on progressive overload in strength training",
-                        "Prioritize compound exercises for maximum muscle growth",
-                        "Ensure adequate protein intake (1.6-2.2g per kg)",
-                        "Get 7-9 hours of quality sleep for recovery",
-                        "Plan your meals around your training schedule"
-                    ],
-                    'Maintenance' => [
-                        "Balance your calorie intake with activity level",
-                        "Maintain a consistent exercise routine",
-                        "Mix up workouts to prevent plateaus",
-                        "Focus on whole, nutrient-dense foods",
-                        "Regular monitoring of weight and measurements",
-                        "Adjust intake based on activity levels"
-                    ]
-                ],
-                'overweight' => [
-                    'Weight Loss' => [
-                        "Create a sustainable caloric deficit of 500-750 calories",
-                        "Combine strength training with regular cardio",
-                        "Focus on high-protein, low-calorie foods",
-                        "Implement portion control strategies",
-                        "Track food intake and exercise consistently",
-                        "Set realistic weekly weight loss goals (0.5-1kg)"
-                    ],
-                    'Muscle Gain' => [
-                        "Focus on body recomposition through strength training",
-                        "Maintain current calorie intake while increasing protein",
-                        "Prioritize compound exercises with progressive overload",
-                        "Include moderate cardio for heart health",
-                        "Track measurements and progress photos",
-                        "Get adequate rest between training sessions"
-                    ],
-                    'Maintenance' => [
-                        "Focus on gradual weight loss while maintaining muscle",
-                        "Balance strength training and cardio activities",
-                        "Monitor portion sizes and food quality",
-                        "Maintain consistent meal timing",
-                        "Track progress through multiple metrics",
-                        "Adjust routine based on progress"
-                    ]
-                ],
-                'obese' => [
-                    'Weight Loss' => [
-                        "Begin with low-impact activities like walking or swimming",
-                        "Create a moderate caloric deficit with professional guidance",
-                        "Focus on whole, unprocessed foods",
-                        "Start strength training with bodyweight exercises",
-                        "Track progress with multiple metrics including how clothes fit",
-                        "Set small, achievable weekly goals"
-                    ],
-                    'Muscle Gain' => [
-                        "Focus on fat loss while building strength",
-                        "Start with bodyweight and machine exercises",
-                        "Maintain high protein intake while in a deficit",
-                        "Include regular low-impact cardio",
-                        "Work with a trainer for proper form",
-                        "Progress gradually to prevent injury"
-                    ],
-                    'Maintenance' => [
-                        "Focus on establishing healthy, sustainable habits",
-                        "Combine strength training with regular cardio",
-                        "Work with healthcare providers on a safe plan",
-                        "Monitor progress through various metrics",
-                        "Build a support system for accountability",
-                        "Make gradual, sustainable changes"
-                    ]
-                ]
-            ];
-            
-            // Get recommendations based on BMI and goal
-            if ($bmi !== null && isset($latest['Goal'])) {
-                $bmiCategory = '';
-                if ($bmi < 18.5) {
-                    $bmiCategory = 'underweight';
-                } elseif ($bmi < 24.9) {
-                    $bmiCategory = 'normal';
-                } elseif ($bmi < 29.9) {
-                    $bmiCategory = 'overweight';
-                } else {
-                    $bmiCategory = 'obese';
-                }
-
-                $goal = $latest['Goal'];
-                
-                if (isset($recommendations[$bmiCategory][$goal])) {
-                    echo "<div class='recommendations-container' style='margin-top: 15px;'>";
-                    echo "<p class='recommendation-intro' style='color: #fff; margin-bottom: 20px;'><strong>Your Personalized Fitness Plan</strong></p>";                    echo "<div style='background: #282828; padding: 15px; border-radius: 10px; margin-bottom: 20px;'>";
-                    echo "<p style='margin-bottom: 10px;'><strong>Current Status:</strong></p>";
-                    echo "<p style='margin-left: 15px; margin-bottom: 5px;'>• BMI: <strong>" . $bmi . "</strong></p>";
-                    echo "<p style='margin-left: 15px; margin-bottom: 5px;'>• BMI Category: <strong>" . ucfirst($bmiCategory) . "</strong></p>";
-                    echo "<p style='margin-left: 15px; margin-bottom: 15px;'>• Goal: <strong>" . $goal . "</strong></p>";
-                    echo "</div>";
-                    
-                    echo "<div class='recommendation-list'>";
-                    foreach ($recommendations[$bmiCategory][$goal] as $index => $recommendation) {
-                        $number = $index + 1;
-                        echo "<div style='background: #232323; margin-bottom: 10px; padding: 12px; border-radius: 8px;'>";
-                        echo "<strong style='color: #eb3636;'>" . $number . ".</strong> " . htmlspecialchars($recommendation);
-                        echo "</div>";
-                    }
-                    echo "</div></div>";
-                } else {
-                    echo "<p>Enter your weight and height to get personalized advice based on your BMI and goals.</p>";
-                }
-            } else {
-                echo "<p>Enter your weight and height to get personalized advice based on your BMI and goals.</p>";
-            }
-            ?>
-        </div>
-    </div>    </div>
+        </div>        <div class="analytics-card">
+            <h3>AI-Powered Recommendations</h3>
+            <div>
+                <?php if ($bmi !== null && isset($latest['Goal'])): ?>
+                    <div class='recommendations-container' style='margin-top: 15px;'>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <p class='recommendation-intro' style='color: #fff; margin: 0; flex: 1;'><strong>Your Personalized AI Fitness Plan</strong></p>
+                            <span class="ai-badge">✨ AI Generated</span>
+                        </div>
+                        
+                        <div style='background: #282828; padding: 15px; border-radius: 10px; margin-bottom: 20px;'>
+                            <p style='margin-bottom: 10px;'><strong>Current Status:</strong></p>
+                            <p style='margin-left: 15px; margin-bottom: 5px;'>• BMI: <strong><?php echo $bmi; ?></strong></p>
+                            <p style='margin-left: 15px; margin-bottom: 5px;'>• BMI Category: <strong><?php 
+                                if ($bmi < 18.5) echo 'Underweight';
+                                elseif ($bmi < 24.9) echo 'Normal';
+                                elseif ($bmi < 29.9) echo 'Overweight';
+                                else echo 'Obese';
+                            ?></strong></p>
+                            <p style='margin-left: 15px; margin-bottom: 15px;'>• Goal: <strong><?php echo $latest['Goal']; ?></strong></p>
+                        </div>
+                        
+                        <div id="aiRecommendationsContent">
+                            <div id="loadingIndicator" style="text-align: center; padding: 20px;">
+                                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #444; border-radius: 50%; border-top-color: #eb3636; animation: spin 1s ease-in-out infinite;"></div>
+                                <p style="margin-top: 10px; color: #ccc;">AI is analyzing your profile...</p>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div style="text-align: center; padding: 40px 20px; background: #232323; border-radius: 10px;">
+                        <div style="font-size: 3em; margin-bottom: 15px;">📊</div>
+                        <p>Enter your weight and height to get AI-powered personalized recommendations</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -670,9 +606,7 @@ include '../assets/format/member_header.php';
     }
     
     // Initial chart load
-    loadChart('7');
-
-    // Add click handlers for filter buttons
+    loadChart('7');    // Add click handlers for filter buttons
     document.querySelectorAll('.date-filter-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             // Update active state
@@ -684,6 +618,111 @@ include '../assets/format/member_header.php';
             // Load chart with selected range
             loadChart(e.target.dataset.range);
         });
+    });
+      // AI Recommendations functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const recommendationsContent = document.getElementById('aiRecommendationsContent');
+        
+        // Automatically load AI recommendations if user has BMI data
+        <?php if ($bmi !== null && isset($latest['Goal'])): ?>
+        loadAIRecommendations();
+        <?php endif; ?>        async function loadAIRecommendations() {
+            const startTime = Date.now();
+            
+            try {
+                // Add cache busting parameter and detailed headers
+                const cacheBuster = new Date().getTime();
+                const response = await fetch(`../api/get_ai_recommendations.php?t=${cacheBuster}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                // Log response details for debugging
+                console.log('AI API Response Status:', response.status);
+                console.log('AI API Response Headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const loadTime = Date.now() - startTime;
+                
+                console.log('AI API Response Data:', data);
+                console.log('AI API Load Time:', loadTime + 'ms');
+                
+                if (data.success && data.recommendations && data.recommendations.length > 0) {
+                    displayAIRecommendations(data.recommendations, data.profile, data.meta);
+                } else {
+                    throw new Error(data.error || 'No recommendations received');
+                }
+                
+            } catch (error) {
+                const loadTime = Date.now() - startTime;
+                console.error('AI Recommendations Error:', error);
+                console.error('Error occurred after:', loadTime + 'ms');
+                
+                // Enhanced error display with debugging info
+                recommendationsContent.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: #2a1a1a; border-radius: 10px; border: 1px solid #d32f2f;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                        <p style="color: #ff6b6b; margin-bottom: 10px; font-weight: bold;">Unable to generate AI recommendations</p>
+                        <p style="font-size: 0.9em; color: #999; margin-bottom: 15px;">${error.message}</p>
+                        
+                        <details style="margin: 15px 0; text-align: left;">
+                            <summary style="cursor: pointer; color: #eb3636; margin-bottom: 10px;">🔧 Debug Information</summary>
+                            <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.8em;">
+                                <p><strong>Load Time:</strong> ${loadTime}ms</p>
+                                <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+                                <p><strong>User Agent:</strong> ${navigator.userAgent.substring(0, 50)}...</p>
+                                <p><strong>Session Storage:</strong> ${sessionStorage.length} items</p>
+                                <p><strong>Network Status:</strong> ${navigator.onLine ? 'Online' : 'Offline'}</p>
+                            </div>
+                        </details>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="location.reload()" style="background: #eb3636; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                                🔄 Refresh Page
+                            </button>
+                            <button onclick="loadAIRecommendations()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                                � Retry API Call
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayAIRecommendations(recommendations, profile, meta) {
+            console.log('Displaying recommendations:', recommendations);
+            console.log('Profile data:', profile);
+            console.log('Meta data:', meta);
+            
+            let html = `<div class="recommendation-list">`;
+            
+            recommendations.forEach((recommendation, index) => {
+                html += `
+                    <div class="ai-recommendation-item">
+                        <strong style="color: #eb3636;">${index + 1}.</strong> ${recommendation}
+                    </div>
+                `;
+            });
+              html += `
+                </div>
+                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px;">
+                    <p style="font-size: 0.9em; color: #888; margin: 0;">
+                        Powered by DeepSeek
+                    </p>
+                </div>
+            `;
+            
+            recommendationsContent.innerHTML = html;
+        }
     });
 </script>
 <?php include '../assets/format/member_footer.php'; ?>
