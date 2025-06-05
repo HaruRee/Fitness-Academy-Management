@@ -140,15 +140,11 @@ function getStatusBadgeClass($status)
                                         <span class="badge <?= getStatusBadgeClass($class['enrollment_status']) ?>">
                                             <?= ucfirst($class['enrollment_status']) ?>
                                         </span>
-                                    </td>
-                                    <td>
+                                    </td>                                    <td>
                                         <?php if (strtotime($class['class_date']) > time()): ?>
-                                            <form method="post" action="drop_class.php" class="d-inline" onsubmit="return confirm('Are you sure you want to drop out from this class?');">
-                                                <input type="hidden" name="class_id" value="<?= $class['class_id'] ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="fas fa-times-circle"></i> Drop Out
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#dropClassModal" data-class-id="<?= $class['class_id'] ?>" data-class-name="<?= htmlspecialchars($class['class_name']) ?>" data-payment-status="<?= $class['payment_status'] ?>" data-price="<?= $class['price'] ?>">
+                                                <i class="fas fa-times-circle"></i> Drop Out
+                                            </button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -236,10 +232,70 @@ function getStatusBadgeClass($status)
                     <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
                     <p class="text-muted mb-0">No available classes for enrollment at this time.</p>
                 </div>
-            <?php endif; ?>
+            <?php endif; ?>        </div>
+    </div>
+</div>
+
+<!-- Drop Class Confirmation Modal -->
+<div class="modal fade" id="dropClassModal" tabindex="-1" aria-labelledby="dropClassModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="dropClassModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Drop Class Confirmation
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Drop class: <strong id="modalClassName"></strong>?</p>
+                
+                <div class="alert alert-warning small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Non-refundable:</strong> All payments are final.
+                </div>
+                
+                <div id="paidClassWarning" class="alert alert-danger small mb-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    You paid <strong>₱<span id="paidAmount"></span></strong> - this will not be refunded.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="drop_class.php" class="d-inline" id="dropClassForm">
+                    <input type="hidden" name="class_id" id="modalClassId">
+                    <button type="submit" class="btn btn-danger btn-sm">Drop Class</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var dropClassModal = document.getElementById('dropClassModal');
+    dropClassModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var classId = button.getAttribute('data-class-id');
+        var className = button.getAttribute('data-class-name');
+        var paymentStatus = button.getAttribute('data-payment-status');
+        var price = parseFloat(button.getAttribute('data-price'));
+        
+        // Update modal content
+        document.getElementById('modalClassId').value = classId;
+        document.getElementById('modalClassName').textContent = className;
+        
+        // Show paid class warning if applicable
+        var paidWarning = document.getElementById('paidClassWarning');
+        if (paymentStatus === 'completed' && price > 0) {
+            document.getElementById('paidAmount').textContent = price.toFixed(2);
+            paidWarning.style.display = 'block';
+        } else {
+            paidWarning.style.display = 'none';
+        }
+    });
+});
+</script>
 
 <style>
     body {
@@ -397,13 +453,84 @@ function getStatusBadgeClass($status)
         margin-bottom: 10px;
         font-size: 2.5rem;
         color: #888 !important;
-    }
-
-    .text-center.py-4 p {
+    }    .text-center.py-4 p {
         margin: 0;
         color: #bbb !important;
         font-size: 1.08em;
         text-align: center;
+    }    /* Modal Styles - Simple & Compact */
+    .modal-content {
+        background-color: #2d2d2d;
+        border: 1px solid #3d3d3d;
+        color: #fff;
+        border-radius: 8px;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #3d3d3d;
+        background-color: #252525;
+        padding: 16px 20px;
+    }
+
+    .modal-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #3d3d3d;
+        background-color: #252525;
+        padding: 16px 20px;
+    }
+
+    .btn-close {
+        filter: invert(1);
+        opacity: 0.7;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5c636a;
+        border-color: #565e64;
+        color: #fff;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+
+    .alert-warning {
+        background-color: rgba(255, 193, 7, 0.15);
+        border-color: #ffc107;
+        color: #fff;
+        border-radius: 6px;
+    }
+
+    .alert-danger {
+        background-color: rgba(220, 53, 69, 0.15);
+        border-color: #dc3545;
+        color: #fff;
+        border-radius: 6px;
     }
 
     @media (max-width: 768px) {
