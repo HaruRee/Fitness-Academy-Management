@@ -713,12 +713,7 @@ include '../assets/format/member_header.php';
                 `;
             });
               html += `
-                </div>
-                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px;">
-                    <p style="font-size: 0.9em; color: #888; margin: 0;">
-                        Powered by DeepSeek
-                    </p>
-                </div>
+
             `;
             
             recommendationsContent.innerHTML = html;
