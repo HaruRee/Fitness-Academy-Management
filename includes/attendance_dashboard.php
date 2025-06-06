@@ -136,6 +136,36 @@ $coach_hours_stmt = $conn->prepare("
 $coach_hours_stmt->execute($coach_params);
 $coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Get staff work hours for the selected date range
+$staff_where_conditions = ['ar.user_type = ?'];
+$staff_params = ['Staff'];
+
+// Add the same date and other filters for staff data
+if (!empty($date_conditions)) {
+    $staff_where_conditions = array_merge($staff_where_conditions, $date_conditions);
+    $staff_params = array_merge($staff_params, $date_params);
+}
+
+$staff_where_clause = 'WHERE ' . implode(' AND ', $staff_where_conditions);
+
+$staff_hours_stmt = $conn->prepare("
+    SELECT 
+        u.First_Name,
+        u.Last_Name,
+        COUNT(CASE WHEN ar.attendance_type = 'gym_entry' THEN 1 END) as shift_checkins,
+        MIN(ar.check_in_time) as check_in_time,
+        MAX(ar.time_out) as check_out_time,
+        TIMESTAMPDIFF(MINUTE, MIN(ar.check_in_time), MAX(ar.time_out)) as duration_minutes
+    FROM attendance_records ar
+    JOIN users u ON ar.user_id = u.UserID
+    $staff_where_clause
+    AND ar.time_out IS NOT NULL
+    GROUP BY ar.user_id, u.First_Name, u.Last_Name, DATE(ar.check_in_time)
+    ORDER BY u.First_Name, u.Last_Name, DATE(ar.check_in_time) DESC
+");
+$staff_hours_stmt->execute($staff_params);
+$staff_hours = $staff_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Get the date range label for display
 $date_range_label = 'All Time';
 switch ($date_range_filter) {
@@ -720,6 +750,57 @@ switch ($date_range_filter) {
                                         <td><?php echo $coach['check_out_time'] ? date('M d, g:i A', strtotime($coach['check_out_time'])) : '-'; ?></td>
                                         <td><?php echo $estimated_hours; ?>h</td>
                                     </tr>
+                                <?php endforeach; ?>                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Staff Work Summary (<?php echo $date_range_label; ?>)</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Shift Check-ins</th>
+                                <th>Check in time</th>
+                                <th>Check out time</th>
+                                <th>Estimated Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($staff_hours)): ?>
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-user-cog" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No staff attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Staff work hours will appear here once staff members check in for shifts.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($staff_hours as $staff): ?>
+                                    <?php
+                                    $estimated_hours = 0;
+                                    if (isset($staff['duration_minutes']) && $staff['duration_minutes'] > 0) {
+                                        $estimated_hours = round($staff['duration_minutes'] / 60, 1);
+                                    } elseif ($staff['check_in_time'] && $staff['check_out_time']) {
+                                        // Fallback calculation if duration_minutes is not available
+                                        $first = new DateTime($staff['check_in_time']);
+                                        $last = new DateTime($staff['check_out_time']);
+                                        $estimated_hours = round($last->diff($first)->h + ($last->diff($first)->i / 60), 1);
+                                    }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($staff['First_Name'] . ' ' . $staff['Last_Name']); ?></td>
+                                        <td><?php echo $staff['shift_checkins']; ?></td>
+                                        <td><?php echo $staff['check_in_time'] ? date('M d, g:i A', strtotime($staff['check_in_time'])) : '-'; ?></td>
+                                        <td><?php echo $staff['check_out_time'] ? date('M d, g:i A', strtotime($staff['check_out_time'])) : '-'; ?></td>
+                                        <td><?php echo $estimated_hours; ?>h</td>
+                                    </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -727,7 +808,7 @@ switch ($date_range_filter) {
                 </div>
             </div>
         </main>
-    </div>    <script>
+    </div><script>
         // Handle form submission for filters
         document.querySelectorAll('select').forEach(element => {
             element.addEventListener('change', function() {

@@ -61,8 +61,9 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="icon" type="image/png" href="../assets/images/fa_logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <!-- Add QR Code library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../assets/js/auto-logout.js" defer></script>
     <style>
         :root {
@@ -542,28 +543,31 @@ try {
     <aside class="sidebar">
         <div class="sidebar-header">
             <h2>Fitness Academy</h2>
-        </div>
-        <nav class="sidebar-menu">
+        </div>        <nav class="sidebar-menu">
             <div class="sidebar-menu-header">Dashboard</div>
             <a href="staff_dashboard.php" class="active">
                 <i class="fas fa-home"></i>
                 <span>Overview</span>
             </a>
+            
             <div class="sidebar-menu-header">Attendance</div>
             <a href="staff_attendance.php">
                 <i class="fas fa-user-check"></i>
                 <span>Attendance</span>
             </a>
+
             <div class="sidebar-menu-header">Members</div>
-            <a href="#all_members">
+            <a href="staff_memberlist.php">
                 <i class="fas fa-users"></i>
-                <span>All Members</span>
+                <span>Member List</span>
             </a>
+
             <div class="sidebar-menu-header">POS</div>
             <a href="staff_pos.php">
                 <i class="fas fa-cash-register"></i>
                 <span>POS System</span>
             </a>
+
             <div class="sidebar-menu-header">Account</div>
             <a href="staff_settings.php">
                 <i class="fas fa-cog"></i>
@@ -620,35 +624,25 @@ try {
                     <div class="stat-info">
                         <div class="stat-value"><?= number_format($pending_payments) ?></div>
                         <div class="stat-label">Pending Payments</div>
+                    </div>                </div>            </div>            <!-- QR Code Section -->
+            <div class="activity-card" style="margin-bottom: 2rem;">
+                <div class="activity-header">
+                    <h3 class="activity-title"><i class="fas fa-qrcode" style="margin-right: 10px; color: #6366f1;"></i>QR Code</h3>
+                </div>                <div style="padding: 20px; text-align: center;">
+                    <button onclick="generateStaffQR()" style="padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='#5147e5'" onmouseout="this.style.background='#6366f1'">
+                        <i class="fas fa-qrcode"></i>
+                        Generate QR
+                    </button>
+                    
+                    <!-- QR Code Display -->
+                    <div id="staffQrDisplay" style="display: none; margin-top: 15px;">
+                        <div id="staffQrCodeContainer" style="margin: 15px auto;">
+                            <!-- QR code will be generated here -->
+                        </div>
+                        <p id="staffQrMessage" style="margin: 10px 0; font-weight: 500; color: #6366f1; font-size: 14px;"></p>
+                        <button onclick="hideStaffQRDisplay()" style="padding: 5px 12px; background: #9ca3af; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">×</button>
                     </div>
                 </div>
-            </div>
-
-            <!-- All Members Section -->
-            <div class="activity-card" id="all_members">
-                <div class="activity-header">
-                    <h3 class="activity-title">All Members</h3>
-                </div>
-                <table class="transaction-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $stmt = $conn->prepare("SELECT First_Name, Last_Name, IsActive FROM users WHERE Role = 'Member'");
-                        $stmt->execute();
-                        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $member) {
-                            echo "<tr>
-                                <td>" . htmlspecialchars($member['First_Name'] . ' ' . $member['Last_Name']) . "</td>
-                                <td>" . ($member['IsActive'] ? 'Active' : 'Inactive') . "</td>
-                            </tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
             </div>
 
             <!-- Recent Activity -->
@@ -693,8 +687,60 @@ try {
         </main>
         <footer class="footer">
             <p>&copy; 2025 Fitness Academy. All rights reserved.</p>
-        </footer>
-    </div>
+        </footer>    </div>
+
+    <script>
+        // Staff QR Generation Functions
+        async function generateStaffQR() {
+            try {
+                const response = await fetch('../attendance/generate_static_qr.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayStaffQRCode(data.qr_code_url, data.user_name, data.instructions);
+                } else {
+                    alert('Failed to generate QR code: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                alert('Failed to generate QR code. Please try again.');
+            }
+        }
+
+        function displayStaffQRCode(qrImageUrl, userName, instructions) {
+            // Clear previous QR code if any
+            const qrContainer = document.getElementById('staffQrCodeContainer');
+            qrContainer.innerHTML = '';
+
+            // Create QR code image element
+            const qrImage = document.createElement('img');
+            qrImage.src = qrImageUrl;
+            qrImage.style.width = '200px';
+            qrImage.style.height = '200px';
+            qrImage.style.border = '3px solid #1e40af';
+            qrImage.style.borderRadius = '10px';
+            qrImage.alt = 'Your Attendance QR Code';
+            
+            qrContainer.appendChild(qrImage);
+
+            // Show QR display container
+            document.getElementById('staffQrDisplay').style.display = 'block';
+            document.getElementById('staffQrMessage').innerHTML = `
+                <strong>${userName}'s Attendance QR Code</strong><br>
+                <small style="color: #666;">${instructions}</small>
+            `;
+        }
+        
+        function hideStaffQRDisplay() {
+            document.getElementById('staffQrDisplay').style.display = 'none';
+        }
+    </script>
 </body>
 
 </html>

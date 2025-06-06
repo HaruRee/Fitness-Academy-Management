@@ -1,149 +1,241 @@
 <?php
+// Attendance Dashboard for Staff
 session_start();
-require '../config/database.php';
-require 'activity_tracker.php';
+require_once '../config/database.php';
+
+// Set timezone to Manila, Philippines
 date_default_timezone_set('Asia/Manila');
 
+// Check if user is staff
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Staff') {
-    header('Location: login.php');
-    exit;
-}
-
-// Track page view activity
-if (isset($_SESSION['user_id'])) {
-    trackPageView($_SESSION['user_id'], 'Staff Attendance');
-}
-
-$error = null;
-$success = null;
-
-// Handle QR code attendance (AJAX)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr'])) {
-    $qr = $_POST['qr'];
-    if (preg_match('/^staff_(\d+)$/', $qr, $matches)) {
-        $staff_id = $matches[1];
-        $now = date('Y-m-d H:i:s');
-
-        // Check if staff exists and is active
-        $staff_stmt = $conn->prepare("SELECT UserID, First_Name, Last_Name FROM users WHERE UserID = ? AND Role = 'Staff' AND IsActive = 1");
-        $staff_stmt->execute([$staff_id]);
-        $staff = $staff_stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($staff) {
-            // Check if already checked in today
-            $check_stmt = $conn->prepare("SELECT id, time_out FROM attendance_records WHERE user_id = ? AND DATE(check_in_time) = CURDATE() AND user_type = 'Staff'");
-            $check_stmt->execute([$staff_id]);
-            $attendance = $check_stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($attendance) {
-                if (empty($attendance['time_out'])) {
-                    // Time out
-                    $update_stmt = $conn->prepare("UPDATE attendance_records SET time_out = ? WHERE id = ?");
-                    if ($update_stmt->execute([$now, $attendance['id']])) {
-                        echo json_encode(['success' => true, 'message' => "Time out recorded for " . $staff['First_Name'] . " " . $staff['Last_Name']]);
-                    } else {
-                        echo json_encode(['success' => false, 'message' => "Failed to record time out"]);
-                    }
-                } else {
-                    echo json_encode(['success' => false, 'message' => "Already completed attendance for today"]);
-                }
-            } else {
-                // Time in
-                $insert_stmt = $conn->prepare("INSERT INTO attendance_records (user_id, user_type, attendance_type, check_in_time, location) VALUES (?, 'Staff', 'work_shift', ?, 'Main Office')");
-                if ($insert_stmt->execute([$staff_id, $now])) {
-                    echo json_encode(['success' => true, 'message' => "Time in recorded for " . $staff['First_Name'] . " " . $staff['Last_Name']]);
-                } else {
-                    echo json_encode(['success' => false, 'message' => "Failed to record time in"]);
-                }
-            }
-        } else {
-            echo json_encode(['success' => false, 'message' => "Invalid staff QR code"]);
-        }
-    } else {
-        echo json_encode(['success' => false, 'message' => "Invalid QR code format"]);
-    }
+    header("Location: ../login.php");
     exit;
 }
 
 // Get filter parameters
-$date_filter = $_GET['date'] ?? date('Y-m-d');
-$staff_filter = $_GET['staff'] ?? '';
-$status_filter = $_GET['status'] ?? '';
+$date_range_filter = $_GET['date_range'] ?? 'all_time';
+$user_type_filter = $_GET['user_type'] ?? 'all';
+$attendance_type_filter = $_GET['attendance_type'] ?? 'all';
 
-// Build the query with filters
-$where_conditions = ["DATE(ar.check_in_time) = ?"];
-$params = [$date_filter];
+// Calculate date range based on filter
+$date_conditions = [];
+$date_params = [];
 
-if ($staff_filter) {
-    $where_conditions[] = "u.UserID = ?";
-    $params[] = $staff_filter;
+switch ($date_range_filter) {
+    case 'today':
+        $date_conditions[] = "DATE(ar.check_in_time) = CURDATE()";
+        break;
+    case 'last_7_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+        break;
+    case 'last_30_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        break;
+    case 'last_90_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)";
+        break;
+    case 'last_365_days':
+        $date_conditions[] = "ar.check_in_time >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)";
+        break;
+    case 'all_time':
+    default:
+        // No date filter, show all records
+        break;
 }
 
-if ($status_filter) {
-    if ($status_filter === 'present') {
-        $where_conditions[] = "ar.check_in_time IS NOT NULL";
-    } elseif ($status_filter === 'absent') {
-        $where_conditions[] = "ar.check_in_time IS NULL";
-    }
+// Build query based on filters
+$where_conditions = [];
+$params = [];
+
+// Add date range conditions
+if (!empty($date_conditions)) {
+    $where_conditions = array_merge($where_conditions, $date_conditions);
+    $params = array_merge($params, $date_params);
 }
 
-$where_clause = implode(' AND ', $where_conditions);
+if ($user_type_filter !== 'all') {
+    $where_conditions[] = "ar.user_type = ?";
+    $params[] = $user_type_filter;
+}
 
-// Fetch attendance records
+if ($attendance_type_filter !== 'all') {
+    $where_conditions[] = "ar.attendance_type = ?";
+    $params[] = $attendance_type_filter;
+}
+
+$where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
+
+// Get attendance records
 $stmt = $conn->prepare("
     SELECT 
-        ar.id,
-        u.UserID as user_id,
+        ar.*,
         u.First_Name,
         u.Last_Name,
-        ar.check_in_time,
-        ar.time_out,
-        TIMESTAMPDIFF(HOUR, ar.check_in_time, COALESCE(ar.time_out, NOW())) as hours_worked
-    FROM users u
-    LEFT JOIN attendance_records ar ON u.UserID = ar.user_id 
-        AND DATE(ar.check_in_time) = ?
-    WHERE u.Role = 'Staff' AND u.IsActive = 1
+        u.Email,
+        scanner.First_Name as Scanner_First_Name,
+        scanner.Last_Name as Scanner_Last_Name,
+        CASE 
+            WHEN ar.session_id IS NOT NULL THEN ats.session_name
+            ELSE NULL
+        END as session_name,
+        ar.time_out as check_out_time
+    FROM attendance_records ar
+    JOIN users u ON ar.user_id = u.UserID
+    LEFT JOIN users scanner ON ar.scanned_by_user_id = scanner.UserID
+    LEFT JOIN attendance_sessions ats ON ar.session_id = ats.id
+    $where_clause
     ORDER BY ar.check_in_time DESC
 ");
-$stmt->execute([$date_filter]);
+$stmt->execute($params);
 $attendance_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get all active staff for filter dropdown
-$staff_stmt = $conn->prepare("SELECT UserID, First_Name, Last_Name FROM users WHERE Role = 'Staff' AND IsActive = 1 ORDER BY First_Name, Last_Name");
-$staff_stmt->execute();
-$staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
+// Get statistics for the selected date range
+$stats_where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
+$stats_stmt = $conn->prepare("
+    SELECT 
+        COUNT(*) as total_checkins,
+        COUNT(DISTINCT user_id) as unique_users,
+        SUM(CASE WHEN user_type = 'Member' THEN 1 ELSE 0 END) as member_checkins,
+        SUM(CASE WHEN user_type = 'Coach' THEN 1 ELSE 0 END) as coach_checkins,
+        SUM(CASE WHEN attendance_type = 'gym_entry' THEN 1 ELSE 0 END) as gym_entries,
+        SUM(CASE WHEN attendance_type = 'class_session' THEN 1 ELSE 0 END) as class_attendances
+    FROM attendance_records ar
+    $stats_where_clause
+");
+$stats_stmt->execute($params);
+$daily_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Get coach work hours for the selected date range
+$coach_where_conditions = ['ar.user_type = ?'];
+$coach_params = ['Coach'];
+
+// Add the same date and other filters for coach data
+if (!empty($date_conditions)) {
+    $coach_where_conditions = array_merge($coach_where_conditions, $date_conditions);
+    $coach_params = array_merge($coach_params, $date_params);
+}
+
+$coach_where_clause = 'WHERE ' . implode(' AND ', $coach_where_conditions);
+
+$coach_hours_stmt = $conn->prepare("
+    SELECT 
+        u.First_Name,
+        u.Last_Name,
+        COUNT(DISTINCT ar.session_id) as classes_taught,
+        COUNT(CASE WHEN ar.attendance_type = 'gym_entry' THEN 1 END) as shift_checkins,
+        ar.check_in_time,
+        ar.time_out as check_out_time,
+        TIMESTAMPDIFF(MINUTE, ar.check_in_time, ar.time_out) as duration_minutes
+    FROM attendance_records ar
+    JOIN users u ON ar.user_id = u.UserID
+    $coach_where_clause
+    AND ar.time_out IS NOT NULL
+    GROUP BY ar.user_id, u.First_Name, u.Last_Name, ar.check_in_time, ar.time_out
+    ORDER BY u.First_Name, u.Last_Name, ar.check_in_time DESC
+");
+$coach_hours_stmt->execute($coach_params);
+$coach_hours = $coach_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get staff work hours for the selected date range
+$staff_where_conditions = ['ar.user_type = ?'];
+$staff_params = ['Staff'];
+
+// Add the same date and other filters for staff data
+if (!empty($date_conditions)) {
+    $staff_where_conditions = array_merge($staff_where_conditions, $date_conditions);
+    $staff_params = array_merge($staff_params, $date_params);
+}
+
+$staff_where_clause = 'WHERE ' . implode(' AND ', $staff_where_conditions);
+
+$staff_hours_stmt = $conn->prepare("
+    SELECT 
+        u.First_Name,
+        u.Last_Name,
+        COUNT(CASE WHEN ar.attendance_type = 'gym_entry' THEN 1 END) as shift_checkins,
+        MIN(ar.check_in_time) as check_in_time,
+        MAX(ar.time_out) as check_out_time,
+        TIMESTAMPDIFF(MINUTE, MIN(ar.check_in_time), MAX(ar.time_out)) as duration_minutes
+    FROM attendance_records ar
+    JOIN users u ON ar.user_id = u.UserID
+    $staff_where_clause
+    AND ar.time_out IS NOT NULL
+    GROUP BY ar.user_id, u.First_Name, u.Last_Name, DATE(ar.check_in_time)
+    ORDER BY u.First_Name, u.Last_Name, DATE(ar.check_in_time) DESC
+");
+$staff_hours_stmt->execute($staff_params);
+$staff_hours = $staff_hours_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get the date range label for display
+$date_range_label = 'All Time';
+switch ($date_range_filter) {
+    case 'today':
+        $date_range_label = 'Today (' . date('M j, Y') . ')';
+        break;
+    case 'last_7_days':
+        $date_range_label = 'Last 7 Days';
+        break;
+    case 'last_30_days':
+        $date_range_label = 'Last 30 Days';        break;
+    case 'last_90_days':
+        $date_range_label = 'Last 90 Days';
+        break;
+    case 'last_365_days':
+        $date_range_label = 'Last 365 Days';
+        break;
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <title>Staff Attendance | Fitness Academy</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Dashboard | Fitness Academy</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="icon" type="image/png" href="../assets/images/fa_logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
-    <script src="../assets/js/auto-logout.js" defer></script>
     <style>
+        :root {
+            --primary-color: #1e40af;
+            --secondary-color: #ff6b6b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --light-color: #f3f4f6;
+            --dark-color: #111827;
+            --gray-color: #6b7280;
+            --sidebar-width: 280px;
+            --header-height: 72px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: #f3f4f6;
-            color: #111827;
-            margin: 0;
-            padding: 0;
+            color: var(--dark-color);
+            display: flex;
+            min-height: 100vh;
         }
 
         /* Sidebar Styles */
         .sidebar {
-            width: 280px;
-            background: #111827;
+            width: var(--sidebar-width);
+            background: var(--dark-color);
             color: white;
             position: fixed;
             height: 100vh;
             top: 0;
             left: 0;
             overflow-y: auto;
+            transition: all 0.3s ease;
             z-index: 100;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
@@ -193,7 +285,7 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
         .sidebar a.active {
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            border-left: 4px solid #ff6b6b;
+            border-left: 4px solid var(--secondary-color);
         }
 
         .sidebar a i {
@@ -231,227 +323,203 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         .user-role {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
         }
 
         /* Main Content Styles */
         .main-wrapper {
-            margin-left: 280px;
-            padding: 2rem;
-            min-height: 100vh;
-            background: #f3f4f6;
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
-            margin-bottom: 2rem;
+            height: var(--header-height);
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
+            padding: 0 2rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 90;
         }
 
-        .header h1 {
-            font-size: 1.875rem;
-            font-weight: 600;
-            color: #111827;
-            margin: 0;
-        }
-
-        .date {
-            font-size: 1rem;
-            color: #6b7280;
-        }
-
-        /* QR Scanner Section */
-        .qr-section {
-            background: white;
+        .main-content {
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+
+        .welcome-header {
             margin-bottom: 2rem;
         }
 
-        .qr-section h3 {
-            margin: 0 0 1rem 0;
-            font-size: 1.25rem;
-            color: #111827;
+        .welcome-header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
         }
 
-        .qr-section p {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
+        .welcome-header p {
+            color: var(--gray-color);
+            font-size: 1rem;
         }
 
-        #qr-reader {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        /* Filters Section */
-        .filters {
+        .section {
             background: white;
+            border-radius: 12px;
             padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--dark-color);
+        }
+
+        .filters {
             display: flex;
-            gap: 1.5rem;
-            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
 
         .filter-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            flex: 1;
+            min-width: 200px;
         }
 
         .filter-item label {
+            display: block;
+            margin-bottom: 0.5rem;
             font-weight: 500;
-            color: #374151;
-            min-width: 60px;
+            color: var(--gray-color);
         }
 
         .filter-item select,
         .filter-item input {
+            width: 100%;
             padding: 0.5rem;
-            border: 1px solid #d1d5db;
+            border: 1px solid #e5e7eb;
             border-radius: 6px;
             font-size: 0.95rem;
-            color: #374151;
-            min-width: 200px;
-            background: white;
         }
 
-        .filter-item select:focus,
-        .filter-item input:focus {
-            outline: none;
-            border-color: #60a5fa;
-            ring: 2px solid #60a5fa;
+        .table-container {
+            overflow-x: auto;
         }
 
-        /* Table Styles */
-        .attendance-table {
+        table {
             width: 100%;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             border-collapse: collapse;
-            overflow: hidden;
+            margin-top: 1rem;
         }
 
-        .attendance-table th {
-            background: #f8fafc;
+        th,
+        td {
             padding: 1rem;
             text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
             font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .attendance-table td {
-            padding: 1rem;
-            border-bottom: 1px solid #e5e7eb;
-            color: #4b5563;
-        }
-
-        .attendance-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .attendance-table tr:hover {
+            color: var(--gray-color);
             background: #f9fafb;
         }
 
-        /* Status Badge Styles */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.375rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
             font-weight: 500;
+        }        .badge-member {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
         }
 
-        .status-present {
-            background: #dcfce7;
-            color: #15803d;
+        .badge-coach {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
         }
 
-        .status-absent {
-            background: #fee2e2;
-            color: #b91c1c;
+        .badge-staff {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
         }
 
-        /* QR Button Styles */
-        .qr-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            background: #f3f4f6;
-            color: #4b5563;
-            margin-left: 0.75rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
+        .badge-gym {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
         }
 
-        .qr-btn:hover {
-            background: #e5e7eb;
-            color: #111827;
+        .badge-class {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
         }
 
-        .qr-btn i {
-            font-size: 1rem;
+        .badge-work_shift {
+            background: rgba(139, 69, 19, 0.1);
+            color: #8B4513;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .main-wrapper {
-                margin-left: 0;
-                padding: 1rem;
-            }
-
+        @media (max-width: 992px) {
             .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
+                width: 80px;
             }
 
-            .sidebar.active {
-                transform: translateX(0);
+            .sidebar-header h2,
+            .sidebar a span,
+            .user-info {
+                display: none;
+            }
+
+            .sidebar a i {
+                margin-right: 0;
+            }
+
+            .sidebar a {
+                justify-content: center;
+            }
+
+            .user-profile {
+                justify-content: center;
+            }
+
+            .main-wrapper {
+                margin-left: 80px;
             }
         }
 
         @media (max-width: 768px) {
             .filters {
                 flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
             }
 
             .filter-item {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.5rem;
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header {
+                padding: 0 1rem;
             }
 
-            .filter-item label {
-                min-width: auto;
-            }
-
-            .filter-item select,
-            .filter-item input {
-                min-width: auto;
-                width: 100%;
-            }
-
-            .attendance-table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
+            .main-content {
+                padding: 1.5rem;
             }
         }
     </style>
@@ -463,6 +531,7 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="sidebar-header">
             <h2>Fitness Academy</h2>
         </div>
+
         <nav class="sidebar-menu">
             <div class="sidebar-menu-header">Dashboard</div>
             <a href="staff_dashboard.php">
@@ -475,9 +544,9 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <span>Attendance</span>
             </a>
             <div class="sidebar-menu-header">Members</div>
-            <a href="staff_dashboard.php#all_members">
+            <a href="staff_memberlist.php">
                 <i class="fas fa-users"></i>
-                <span>All Members</span>
+                <span>Member List</span>
             </a>
             <div class="sidebar-menu-header">POS</div>
             <a href="staff_pos.php">
@@ -494,6 +563,7 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <span>Logout</span>
             </a>
         </nav>
+
         <div class="user-profile">
             <img src="../assets/images/avatar.jpg" alt="Staff" onerror="this.src='../assets/images/fa_logo.png'">
             <div class="user-info">
@@ -505,133 +575,215 @@ $staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Main Content -->
     <div class="main-wrapper">
-        <div class="header">
-            <h1>Staff Attendance</h1>
-            <div class="date"><?= date('F d, Y') ?></div>
-        </div>
-
-        <!-- QR Scanner Section -->
-        <div class="qr-section">
-            <h3>QR Code Scanner</h3>
-            <p>Scan staff QR code to record attendance</p>
-            <div id="qr-reader"></div>
-            <div id="qr-reader-results"></div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters">
-            <div class="filter-item">
-                <label for="date">Date:</label>
-                <input type="date" id="date" name="date" value="<?= $date_filter ?>" onchange="applyFilters()">
+        <header class="header">
+            <h1>Attendance Dashboard</h1>            <div class="header-actions">
+                <span><?= htmlspecialchars($_SESSION['user_name'] ?? 'Staff') ?></span>
             </div>
-            <div class="filter-item">
-                <label for="staff">Staff:</label>
-                <select id="staff" name="staff" onchange="applyFilters()">
-                    <option value="">All Staff</option>
-                    <?php foreach ($staff_list as $staff): ?>
-                        <option value="<?= $staff['UserID'] ?>" <?= $staff_filter == $staff['UserID'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($staff['First_Name'] . ' ' . $staff['Last_Name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        </header>
+
+        <main class="main-content">
+            <div class="welcome-header">
+                <p>Track and manage gym attendance records.</p>
+            </div>            <div class="section">
+                <h2>Attendance Statistics (<?php echo $date_range_label; ?>)</h2>
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Total Check-ins</h3>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['total_checkins'] ?? 0; ?></div>
+                    </div>
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Unique Users</h3>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['unique_users'] ?? 0; ?></div>
+                    </div>
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Member Check-ins</h3>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['member_checkins'] ?? 0; ?></div>
+                    </div>
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">Coach Check-ins</h3>
+                        <div style="font-size: 1.8rem; font-weight: 600; color: var(--dark-color);"><?php echo $daily_stats['coach_checkins'] ?? 0; ?></div>
+                    </div>
+                </div>                <form method="GET" action="">
+                <div class="filters">
+                    <div class="filter-item">
+                        <label for="date_range">Date Range</label>
+                        <select id="date_range" name="date_range" onchange="this.form.submit()">
+                            <option value="all_time" <?php echo $date_range_filter === 'all_time' ? 'selected' : ''; ?>>All Time</option>
+                            <option value="today" <?php echo $date_range_filter === 'today' ? 'selected' : ''; ?>>Today</option>
+                            <option value="last_7_days" <?php echo $date_range_filter === 'last_7_days' ? 'selected' : ''; ?>>Last 7 Days</option>
+                            <option value="last_30_days" <?php echo $date_range_filter === 'last_30_days' ? 'selected' : ''; ?>>Last 30 Days</option>
+                            <option value="last_90_days" <?php echo $date_range_filter === 'last_90_days' ? 'selected' : ''; ?>>Last 90 Days</option>
+                            <option value="last_365_days" <?php echo $date_range_filter === 'last_365_days' ? 'selected' : ''; ?>>Last 365 Days</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="user_type">User Type</label>
+                        <select id="user_type" name="user_type" onchange="this.form.submit()">
+                            <option value="all" <?php echo $user_type_filter === 'all' ? 'selected' : ''; ?>>All Users</option>
+                            <option value="Member" <?php echo $user_type_filter === 'Member' ? 'selected' : ''; ?>>Members</option>
+                            <option value="Coach" <?php echo $user_type_filter === 'Coach' ? 'selected' : ''; ?>>Coaches</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="attendance_type">Attendance Type</label>
+                        <select id="attendance_type" name="attendance_type" onchange="this.form.submit()">
+                            <option value="all" <?php echo $attendance_type_filter === 'all' ? 'selected' : ''; ?>>All Types</option>
+                            <option value="gym_entry" <?php echo $attendance_type_filter === 'gym_entry' ? 'selected' : ''; ?>>Gym Entry</option>
+                            <option value="class_session" <?php echo $attendance_type_filter === 'class_session' ? 'selected' : ''; ?>>Class Session</option>
+                        </select>
+                    </div>
+                </div>
+                </form>
+
+                <div class="table-container">
+                    <table>                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Name</th>
+                                <th>User Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead><tbody>                            <?php if (empty($attendance_records)): ?>
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Try selecting a different date range using the dropdown above, or check if there are any recent check-ins.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($attendance_records as $record): ?>
+                                    <tr>
+                                        <td><?php echo date('g:i:s A', strtotime($record['check_in_time'])); ?></td>
+                                        <td><?php echo htmlspecialchars($record['First_Name'] . ' ' . $record['Last_Name']); ?></td>
+                                        <td>
+                                            <span class="badge badge-<?php echo strtolower($record['user_type']); ?>">
+                                                <?php echo $record['user_type']; ?>
+                                            </span>
+                                        </td>                                        <td>
+                                            <span class="badge badge-<?php echo $record['time_out'] ? 'class' : 'gym'; ?>">
+                                                <?php echo $record['time_out'] ? 'Checked out' : 'Checked in'; ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>            <div class="section">
+                <h2>Coach Work Summary (<?php echo $date_range_label; ?>)</h2>
+                <div class="table-container">
+                    <table>                        <thead>
+                            <tr>
+                                <th>Coach Name</th>
+                                <th>Shift Check-ins</th>
+                                <th>Check in time</th>
+                                <th>Check out time</th>
+                                <th>Estimated Hours</th>
+                            </tr>
+                        </thead><tbody>
+                            <?php if (empty($coach_hours)): ?>
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-user-tie" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No coach attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Coach work hours will appear here once coaches check in for shifts or classes.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($coach_hours as $coach): ?>                                    <?php
+                                    $estimated_hours = 0;
+                                    if (isset($coach['duration_minutes']) && $coach['duration_minutes'] > 0) {
+                                        $estimated_hours = round($coach['duration_minutes'] / 60, 1);
+                                    } elseif ($coach['check_in_time'] && $coach['check_out_time']) {
+                                        // Fallback calculation if duration_minutes is not available
+                                        $first = new DateTime($coach['check_in_time']);
+                                        $last = new DateTime($coach['check_out_time']);
+                                        $estimated_hours = round($last->diff($first)->h + ($last->diff($first)->i / 60), 1);
+                                    }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($coach['First_Name'] . ' ' . $coach['Last_Name']); ?></td>
+                                        <td><?php echo $coach['shift_checkins']; ?></td>                                        <td><?php echo $coach['check_in_time'] ? date('M d, g:i A', strtotime($coach['check_in_time'])) : '-'; ?></td>
+                                        <td><?php echo $coach['check_out_time'] ? date('M d, g:i A', strtotime($coach['check_out_time'])) : '-'; ?></td>
+                                        <td><?php echo $estimated_hours; ?>h</td>
+                                    </tr>
+                                <?php endforeach; ?>                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="filter-item">
-                <label for="status">Status:</label>
-                <select id="status" name="status" onchange="applyFilters()">
-                    <option value="">All</option>
-                    <option value="present" <?= $status_filter === 'present' ? 'selected' : '' ?>>Present</option>
-                    <option value="absent" <?= $status_filter === 'absent' ? 'selected' : '' ?>>Absent</option>
-                </select>
+
+            <div class="section">
+                <h2>Staff Work Summary (<?php echo $date_range_label; ?>)</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Shift Check-ins</th>
+                                <th>Check in time</th>
+                                <th>Check out time</th>
+                                <th>Estimated Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($staff_hours)): ?>
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                                        <div style="color: var(--gray-color);">
+                                            <i class="fas fa-user-cog" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                            <strong>No staff attendance records found for <?php echo $date_range_label; ?></strong>
+                                            <br><br>
+                                            <small>Staff work hours will appear here once staff members check in for shifts.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($staff_hours as $staff): ?>
+                                    <?php
+                                    $estimated_hours = 0;
+                                    if (isset($staff['duration_minutes']) && $staff['duration_minutes'] > 0) {
+                                        $estimated_hours = round($staff['duration_minutes'] / 60, 1);
+                                    } elseif ($staff['check_in_time'] && $staff['check_out_time']) {
+                                        // Fallback calculation if duration_minutes is not available
+                                        $first = new DateTime($staff['check_in_time']);
+                                        $last = new DateTime($staff['check_out_time']);
+                                        $estimated_hours = round($last->diff($first)->h + ($last->diff($first)->i / 60), 1);
+                                    }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($staff['First_Name'] . ' ' . $staff['Last_Name']); ?></td>
+                                        <td><?php echo $staff['shift_checkins']; ?></td>
+                                        <td><?php echo $staff['check_in_time'] ? date('M d, g:i A', strtotime($staff['check_in_time'])) : '-'; ?></td>
+                                        <td><?php echo $staff['check_out_time'] ? date('M d, g:i A', strtotime($staff['check_out_time'])) : '-'; ?></td>
+                                        <td><?php echo $estimated_hours; ?>h</td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </main>
+    </div><script>
+        // Handle form submission for filters
+        document.querySelectorAll('select').forEach(element => {
+            element.addEventListener('change', function() {
+                const dateRange = document.getElementById('date_range').value;
+                const userType = document.getElementById('user_type').value;
+                const attendanceType = document.getElementById('attendance_type').value;
 
-        <!-- Attendance Table -->
-        <table class="attendance-table">
-            <thead>
-                <tr>
-                    <th>Staff Name</th>
-                    <th>Time In</th>
-                    <th>Time Out</th>
-                    <th>Hours Worked</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($attendance_records)): ?>
-                    <tr>
-                        <td colspan="5" style="text-align: center;">No attendance records found for the selected date.</td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($attendance_records as $record): ?>
-                        <tr>
-                            <td>
-                                <?= htmlspecialchars($record['First_Name'] . ' ' . $record['Last_Name']) ?>
-                                <a href="generate_staff_qr.php?id=<?= $record['user_id'] ?>" target="_blank" class="qr-btn" title="Generate QR Code">
-                                    <i class="fas fa-qrcode"></i>
-                                </a>
-                            </td>
-                            <td><?= $record['check_in_time'] ? date('h:i A', strtotime($record['check_in_time'])) : '-' ?></td>
-                            <td><?= $record['time_out'] ? date('h:i A', strtotime($record['time_out'])) : '-' ?></td>
-                            <td><?= $record['hours_worked'] ?? '0' ?> hours</td>
-                            <td>
-                                <?php if ($record['check_in_time']): ?>
-                                    <span class="status-badge status-present">Present</span>
-                                <?php else: ?>
-                                    <span class="status-badge status-absent">Absent</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-        // Initialize QR Scanner
-        function onScanSuccess(decodedText, decodedResult) {
-            // Send QR code to server via AJAX
-            fetch('staff_attendance.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'qr=' + encodeURIComponent(decodedText)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        // Reload the page to show updated attendance
-                        window.location.reload();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error processing QR code');
-                });
-        }
-
-        var html5QrcodeScanner = new Html5QrcodeScanner(
-            "qr-reader", {
-                fps: 10,
-                qrbox: 250
+                window.location.href = `staff_attendance.php?date_range=${dateRange}&user_type=${userType}&attendance_type=${attendanceType}`;
             });
-        html5QrcodeScanner.render(onScanSuccess);
-
-        // Filter functionality
-        function applyFilters() {
-            const date = document.getElementById('date').value;
-            const staff = document.getElementById('staff').value;
-            const status = document.getElementById('status').value;
-
-            let url = `staff_attendance.php?date=${date}`;
-            if (staff) url += `&staff=${staff}`;
-            if (status) url += `&status=${status}`;
-
-            window.location.href = url;
-        }
+        });
     </script>
 </body>
 
