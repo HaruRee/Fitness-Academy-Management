@@ -52,9 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }        // Hash the password
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         
-        // Insert user into database
-        $stmt = $conn->prepare("INSERT INTO users (Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) VALUES (:username, :password, :email, :role, :firstName, :lastName, :phone, :address, :dob, :isActive, :isApproved, 1)");
+        // Get next available UserID first
+        $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+        $userIdStmt->execute();
+        $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+        
+        // Insert user into database with explicit UserID
+        $stmt = $conn->prepare("INSERT INTO users (UserID, Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) VALUES (:userId, :username, :password, :email, :role, :firstName, :lastName, :phone, :address, :dob, :isActive, :isApproved, 1)");
 
+        $stmt->bindParam(':userId', $nextUserId, PDO::PARAM_INT);
         $stmt->bindParam(':username', $username);
         $stmt->bindParam(':password', $passwordHash);
         $stmt->bindParam(':email', $email);
@@ -67,34 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->bindParam(':isActive', $isActive, PDO::PARAM_INT);
         $stmt->bindParam(':isApproved', $isApproved, PDO::PARAM_INT);
 
-        try {
-            $stmt->execute();
-        } catch (PDOException $e) {
-            // If UserID field error, try with explicit UserID
-            if (strpos($e->getMessage(), 'UserID') !== false) {
-                // Get next available UserID
-                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
-                $userIdStmt->execute();
-                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
-                
-                $stmtWithId = $conn->prepare("INSERT INTO users (UserID, Username, PasswordHash, Email, Role, First_Name, Last_Name, Phone, Address, DateOfBirth, IsActive, is_approved, email_confirmed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
-                $stmtWithId->execute([
-                    $nextUserId,
-                    $username,
-                    $passwordHash,
-                    $email,
-                    $role,
-                    $firstName,
-                    $lastName,
-                    $phone,
-                    $address,
-                    $dob,
-                    $isActive,
-                    $isApproved
-                ]);            } else {
-                throw $e; // Re-throw if it's a different error
-            }
-        }
+        $stmt->execute();
         
         // Log the action in audit trail
         $audit_stmt = $conn->prepare("INSERT INTO audit_trail (username, action, timestamp) VALUES (:username, :action, NOW())");
