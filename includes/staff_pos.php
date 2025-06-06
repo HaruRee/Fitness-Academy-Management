@@ -29,10 +29,10 @@ $membershipPlans = [];
 $error = '';
 $success = '';
 
-// Get all active membership plans
-try {
-    $stmt = $conn->prepare("
-        SELECT id, package_type, name, price, description, features 
+// Get all active membership plans with new plan type fields
+try {    $stmt = $conn->prepare("
+        SELECT id, name, price, description, features, 
+               plan_type, session_count, duration_months
         FROM membershipplans 
         WHERE is_active = 1 
         ORDER BY sort_order ASC, price ASC
@@ -63,8 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
         $cashAmount = floatval($_POST['cash_amount']);
         $customerAddress = trim($_POST['customer_address'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
-        
-        // Get membership plan details
+          // Get membership plan details
         $planStmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ? AND is_active = 1");
         $planStmt->execute([$planId]);
         $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
@@ -74,14 +73,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
         }
         
         $planPrice = floatval($plan['price']);
-          // Check if user with this email already exists
-        $existingUserStmt = $conn->prepare("SELECT UserID, membership_plan, plan_id, package_type FROM users WHERE Email = ?");
+        
+        // Calculate membership dates and sessions based on plan type
+        $membershipStartDate = date('Y-m-d');
+        $membershipEndDate = null;
+        $sessionsRemaining = null;
+        
+        if ($plan['plan_type'] === 'monthly') {
+            // Monthly plan - calculate end date
+            $durationMonths = intval($plan['duration_months']);
+            $membershipEndDate = date('Y-m-d', strtotime("+{$durationMonths} months"));
+        } elseif ($plan['plan_type'] === 'session') {
+            // Session-based plan - set remaining sessions
+            $sessionsRemaining = intval($plan['session_count']);
+        }
+          // Check if user with this email already exists        $existingUserStmt = $conn->prepare("SELECT UserID, membership_plan, plan_id FROM users WHERE Email = ?");
         $existingUserStmt->execute([$customerEmail]);
         $existingUser = $existingUserStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existingUser) {
             // Check if existing user has an active plan
-            if ($existingUser['plan_id'] || $existingUser['membership_plan'] || $existingUser['package_type']) {
+            if ($existingUser['plan_id'] || $existingUser['membership_plan']) {
                 throw new Exception("A user with email {$customerEmail} already has an active membership plan. Cannot create duplicate membership.");
             }
             throw new Exception("A user with email {$customerEmail} already exists in the system. Please use a different email or contact support.");
@@ -126,23 +138,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             'notes' => $notes,
             'transaction_type' => 'membership_pos',
             'username_created' => $username
-        ]);
-          // Create the member account
+        ]);        // Create the member account with new plan type fields
         $memberSql = "
             INSERT INTO users (
                 Username, PasswordHash, Email, First_Name, Last_Name,
                 Phone, Address, emergency_contact, Role, RegistrationDate,
-                membership_plan, package_type, plan_id, membership_price,
+                membership_plan, plan_id, membership_price,
+                membership_start_date, membership_end_date, current_sessions_remaining,
                 IsActive, email_confirmed, account_status, last_activity_date,
                 DateOfBirth
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, 'Member', NOW(),
-                ?, ?, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?,
                 1, 1, 'active', NOW(),
                 NULL
             )
-        ";          // Execute member creation
+        ";        // Execute member creation
         $memberStmt = $conn->prepare($memberSql);
         try {
             $memberStmt->execute([
@@ -155,9 +168,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
                 $customerAddress,
                 $customerPhone, // Using phone as emergency contact
                 $plan['name'], // membership_plan
-                $_SESSION['package_type'] ?? null, // package_type
                 $planId, // plan_id
-                $planPrice // membership_price
+                $planPrice, // membership_price
+                $membershipStartDate, // membership_start_date
+                $membershipEndDate, // membership_end_date
+                $sessionsRemaining // current_sessions_remaining
             ]);
         } catch (PDOException $e) {
             // If UserID field error, try with explicit UserID
@@ -165,20 +180,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
                 // Get next available UserID
                 $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
                 $userIdStmt->execute();
-                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
-                
-                // Retry with UserID included
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];                // Retry with UserID included
                 $memberSqlWithId = "
                     INSERT INTO users (
                         UserID, Username, PasswordHash, Email, First_Name, Last_Name,
                         Phone, Address, emergency_contact, Role, RegistrationDate,
-                        membership_plan, package_type, plan_id, membership_price,
+                        membership_plan, plan_id, membership_price,
+                        membership_start_date, membership_end_date, current_sessions_remaining,
                         IsActive, email_confirmed, account_status, last_activity_date,
                         DateOfBirth
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, 'Member', NOW(),
-                        ?, ?, ?, ?,
+                        ?, ?, ?,
+                        ?, ?, ?,
                         1, 1, 'active', NOW(),
                         NULL
                     )
@@ -195,9 +210,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
                     $customerAddress,
                     $customerPhone, // Using phone as emergency contact
                     $plan['name'], // membership_plan
-                    $_SESSION['package_type'] ?? null, // package_type
                     $planId, // plan_id
-                    $planPrice // membership_price
+                    $planPrice, // membership_price
+                    $membershipStartDate, // membership_start_date
+                    $membershipEndDate, // membership_end_date
+                    $sessionsRemaining // current_sessions_remaining
                 ]);
             } else {
                 throw $e; // Re-throw if it's a different error
@@ -705,13 +722,36 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             font-weight: 700;
             color: var(--primary-color);
             margin-bottom: 0.5rem;
-        }
-
-        .plan-card .plan-description {
+        }        .plan-card .plan-description {
             color: var(--gray-color);
             font-size: 0.8rem;
             line-height: 1.5;
-        }        /* Form Styles */
+        }
+
+        .plan-card .plan-type {
+            margin: 0.5rem 0;
+        }
+
+        .plan-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .plan-type-badge.monthly {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .plan-type-badge.session {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }/* Form Styles */
         .form-group {
             margin-bottom: 0.75rem;
         }
@@ -1073,12 +1113,22 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
                         <div class="card-header">
                             <h3 class="card-title">Select Membership Plan</h3>
                         </div>
-                        <div class="card-body">
-                            <div class="plans-grid">
+                        <div class="card-body">                            <div class="plans-grid">
                                 <?php foreach ($membershipPlans as $plan): ?>
                                     <div class="plan-card" onclick="selectPlan(<?= $plan['id'] ?>, '<?= htmlspecialchars($plan['name']) ?>', <?= $plan['price'] ?>)">
                                         <div class="plan-name"><?= htmlspecialchars($plan['name']) ?></div>
                                         <div class="plan-price">₱<?= number_format($plan['price'], 2) ?></div>
+                                        <div class="plan-type">
+                                            <?php if ($plan['plan_type'] === 'monthly'): ?>
+                                                <span class="plan-type-badge monthly">
+                                                    <i class="fas fa-calendar-alt"></i> <?= $plan['duration_months'] ?> Month<?= $plan['duration_months'] > 1 ? 's' : '' ?>
+                                                </span>
+                                            <?php elseif ($plan['plan_type'] === 'session'): ?>
+                                                <span class="plan-type-badge session">
+                                                    <i class="fas fa-dumbbell"></i> <?= $plan['session_count'] ?> Session<?= $plan['session_count'] > 1 ? 's' : '' ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="plan-description"><?= htmlspecialchars($plan['description']) ?></div>
                                     </div>
                                 <?php endforeach; ?>

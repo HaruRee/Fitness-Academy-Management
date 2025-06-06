@@ -60,7 +60,7 @@ try {
 
     // Double-check user doesn't already have an active plan (security measure)
     $stmt = $conn->prepare("
-        SELECT plan_id, membership_plan, package_type, membership_price 
+        SELECT plan_id, membership_plan, membership_price 
         FROM users 
         WHERE UserID = ?
     ");
@@ -69,8 +69,7 @@ try {
 
     if ($existingUser && (
         $existingUser['plan_id'] || 
-        $existingUser['membership_plan'] || 
-        $existingUser['package_type'] ||
+        $existingUser['membership_plan'] ||
         $existingUser['membership_price']
     )) {
         throw new Exception('User already has an active membership plan. Cannot process duplicate payment.');

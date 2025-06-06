@@ -113,7 +113,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics & Reports - Fitness Academy</title>
+    <title>Analytics & Reports with AI Insights - Fitness Academy</title>
     <link rel="stylesheet" href="../assets/css/admin-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -541,10 +541,146 @@ try {
 
             .content {
                 padding: 1rem;
-            }
-
-            .chart-container {
+            }            .chart-container {
                 height: 250px;
+            }
+        }
+
+        /* AI Predictions Styles */
+        .ai-predictions {
+            margin-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1.5rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .ai-predictions.loading {
+            opacity: 0.7;
+        }
+
+        .prediction-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .prediction-header i:first-child {
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+        }
+
+        .prediction-header span {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+
+        .prediction-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-predictions {
+            background: none;
+            border: none;
+            color: var(--gray-color);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+
+        .refresh-predictions:hover {
+            background: #f3f4f6;
+            color: var(--primary-color);
+        }
+
+        .prediction-loader {
+            color: var(--primary-color);
+            font-size: 0.875rem;
+        }
+
+        .prediction-content {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .prediction-main {
+            margin-bottom: 0.75rem;
+        }
+
+        .prediction-text {
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .prediction-insights {
+            margin-top: 0.75rem;
+        }
+
+        .insights-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .insights-list li {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+            margin-bottom: 0.4rem;
+            padding-left: 1rem;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .insights-list li:before {
+            content: '•';
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .insights-list li:last-child {
+            margin-bottom: 0;
+        }        .insights-list strong {
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        /* Report Card Hover Effects */
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .report-card .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Responsive adjustments for report cards */
+        @media (max-width: 768px) {
+            .report-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .report-card {
+                margin-bottom: 1rem;
             }
         }
     </style>
@@ -628,9 +764,11 @@ try {
     </aside>
 
     <!-- Main Content -->
-    <div class="main-wrapper">
-        <div class="header">
-            <h1 class="page-title">Analytics & Reports</h1>
+    <div class="main-wrapper">        <div class="header">
+            <h1 class="page-title">Analytics & Reports with AI Insights</h1>
+            <p style="color: var(--gray-color); font-size: 0.9rem; margin-top: 0.5rem;">
+                Comprehensive business intelligence with AI-powered predictions and recommendations
+            </p>
         </div>
 
         <div class="content">
@@ -640,9 +778,7 @@ try {
 
             <?php if (!empty($success)): ?>
                 <div class="alert alert-success"><?php echo $success; ?></div>
-            <?php endif; ?>
-
-            <!-- Date Filter Controls -->
+            <?php endif; ?>            <!-- Date Filter Controls -->
             <div class="filter-controls">
                 <form method="GET" action="" class="filter-form">
                     <div class="form-group">
@@ -660,6 +796,10 @@ try {
                         </button>
                     </div>
                 </form>
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 0.85rem; color: #0c4a6e;">
+                    <i class="fas fa-info-circle" style="margin-right: 0.5rem; color: #0ea5e9;"></i>
+                    <strong>AI Insights:</strong> Each chart includes AI-powered predictions and recommendations that automatically refresh every 5 minutes. Click the refresh button for instant updates.
+                </div>
             </div>
 
             <!-- Revenue Statistics Grid -->
@@ -692,17 +832,37 @@ try {
                     <div class="stat-label">Average Transaction</div>
                     <div class="stat-subtitle">per payment</div>
                 </div>
-            </div>
-
-            <!-- Revenue Chart -->
+            </div>            <!-- Revenue Chart with AI Insights -->
             <div class="content-card">
                 <div class="card-header">
                     <i class="fas fa-chart-line"></i>
                     Revenue Trend Analysis
-                </div>
-                <div class="card-body">
+                </div>                <div class="card-body">
                     <div class="chart-container">
                         <canvas id="revenueChart"></canvas>
+                    </div>
+                    <!-- AI Predictions Section for Revenue -->
+                    <div class="ai-predictions" id="revenuePredictions">
+                        <div class="prediction-header">
+                            <i class="fas fa-brain"></i>
+                            <span>AI Insights</span>
+                            <div class="prediction-actions">
+                                <button class="refresh-predictions" title="Get fresh insights" data-target="revenue">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <div class="prediction-loader" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="prediction-content">
+                            <div class="prediction-main">
+                                <span class="prediction-text">Loading predictions...</span>
+                            </div>
+                            <div class="prediction-insights">
+                                <ul class="insights-list"></ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -713,10 +873,32 @@ try {
                     <div class="card-header">
                         <i class="fas fa-pie-chart"></i>
                         Membership Distribution
-                    </div>
-                    <div class="card-body">
+                    </div>                    <div class="card-body">
                         <div class="chart-container">
                             <canvas id="membershipChart"></canvas>
+                        </div>
+                        <!-- AI Predictions Section for Membership -->
+                        <div class="ai-predictions" id="membershipPredictions">
+                            <div class="prediction-header">
+                                <i class="fas fa-brain"></i>
+                                <span>AI Insights</span>
+                                <div class="prediction-actions">
+                                    <button class="refresh-predictions" title="Get fresh insights" data-target="membership">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <div class="prediction-loader" style="display: none;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="prediction-content">
+                                <div class="prediction-main">
+                                    <span class="prediction-text">Loading predictions...</span>
+                                </div>
+                                <div class="prediction-insights">
+                                    <ul class="insights-list"></ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -726,16 +908,36 @@ try {
                     <div class="card-header">
                         <i class="fas fa-user-plus"></i>
                         Registration Trend
-                    </div>
-                    <div class="card-body">
+                    </div>                    <div class="card-body">
                         <div class="chart-container">
                             <canvas id="registrationChart"></canvas>
                         </div>
+                        <!-- AI Predictions Section for Registration -->
+                        <div class="ai-predictions" id="registrationPredictions">
+                            <div class="prediction-header">
+                                <i class="fas fa-brain"></i>
+                                <span>AI Insights</span>
+                                <div class="prediction-actions">
+                                    <button class="refresh-predictions" title="Get fresh insights" data-target="registration">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <div class="prediction-loader" style="display: none;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="prediction-content">
+                                <div class="prediction-main">
+                                    <span class="prediction-text">Loading predictions...</span>
+                                </div>
+                                <div class="prediction-insights">
+                                    <ul class="insights-list"></ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Report Generation -->
+            </div>            <!-- Report Generation -->
             <div class="content-card">
                 <div class="card-header">
                     <i class="fas fa-file-export"></i>
@@ -751,7 +953,7 @@ try {
                             <i class="fas fa-users"></i>
                             Membership Report
                         </a>
-                        <a href="generate_report.php?type=attendance" class="btn btn-outline-info">
+                        <a href="generate_report.php?type=attendance&start_date=<?php echo $startDate; ?>&end_date=<?php echo $endDate; ?>" class="btn btn-outline-info">
                             <i class="fas fa-calendar-check"></i>
                             Attendance Report
                         </a>
@@ -896,7 +1098,131 @@ try {
                         }
                     }
                 }
+            }        });        // AI Predictions functionality
+        async function fetchPredictions() {
+            const membershipLoader = document.querySelector('#membershipPredictions .prediction-loader');
+            const revenueLoader = document.querySelector('#revenuePredictions .prediction-loader');
+            const registrationLoader = document.querySelector('#registrationPredictions .prediction-loader');
+            const membershipContainer = document.getElementById('membershipPredictions');
+            const revenueContainer = document.getElementById('revenuePredictions');
+            const registrationContainer = document.getElementById('registrationPredictions');
+            
+            try {
+                // Show loaders and add loading class
+                membershipLoader.style.display = 'block';
+                revenueLoader.style.display = 'block';
+                registrationLoader.style.display = 'block';
+                membershipContainer.classList.add('loading');
+                revenueContainer.classList.add('loading');
+                registrationContainer.classList.add('loading');
+
+                const response = await fetch('../api/get_predictions.php');
+                if (!response.ok) throw new Error('Failed to fetch predictions');
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updatePredictionDisplay('membershipPredictions', result.predictions.membership);
+                    updatePredictionDisplay('revenuePredictions', result.predictions.revenue);
+                    // Use revenue predictions for registration if not available separately
+                    updatePredictionDisplay('registrationPredictions', result.predictions.registration || result.predictions.revenue);
+                } else {
+                    throw new Error(result.error || 'Failed to generate predictions');
+                }
+            } catch (error) {
+                console.error('Error fetching predictions:', error);
+                // Show error message
+                const errorPrediction = {
+                    prediction: 'Unable to generate predictions',
+                    confidence: 'low',
+                    insights: ['Prediction service temporarily unavailable']
+                };
+                updatePredictionDisplay('membershipPredictions', errorPrediction);
+                updatePredictionDisplay('revenuePredictions', errorPrediction);
+                updatePredictionDisplay('registrationPredictions', errorPrediction);
+            } finally {
+                // Hide loaders and remove loading class
+                membershipLoader.style.display = 'none';
+                revenueLoader.style.display = 'none';
+                registrationLoader.style.display = 'none';
+                membershipContainer.classList.remove('loading');
+                revenueContainer.classList.remove('loading');
+                registrationContainer.classList.remove('loading');
             }
+        }
+
+        function updatePredictionDisplay(elementId, prediction) {
+            const element = document.getElementById(elementId);
+            const textElement = element.querySelector('.prediction-text');
+            const insightsList = element.querySelector('.insights-list');
+
+            // Update prediction text
+            textElement.textContent = prediction.prediction || 'No prediction available';
+
+            // Update insights
+            insightsList.innerHTML = '';
+            if (prediction.insights && Array.isArray(prediction.insights)) {
+                prediction.insights.forEach(insight => {
+                    const li = document.createElement('li');
+                    // Clean up any incorrect formatting first
+                    let cleanedText = insight.replace(/\*+/g, function(match) {
+                        return match.length % 2 === 0 ? match : match + '*';
+                    });
+                    
+                    // Convert markdown-style bold (**text**) to HTML bold
+                    // Handle nested and multiple bold sections
+                    let formattedText = '';
+                    let bold = false;
+                    let lastIndex = 0;
+                    let regex = /\*\*/g;
+                    let match;
+                    
+                    while ((match = regex.exec(cleanedText)) !== null) {
+                        // Add the text before this match
+                        formattedText += cleanedText.substring(lastIndex, match.index);
+                        // Add the appropriate opening or closing tag
+                        formattedText += bold ? '</strong>' : '<strong>';
+                        // Toggle bold state
+                        bold = !bold;
+                        // Update last index
+                        lastIndex = match.index + 2;
+                    }
+                    
+                    // Add any remaining text
+                    formattedText += cleanedText.substring(lastIndex);
+                    
+                    // Make sure we close any open tags
+                    if (bold) formattedText += '</strong>';
+                    
+                    li.innerHTML = formattedText;
+                    insightsList.appendChild(li);
+                });
+            }
+        }
+
+        // Load predictions on page load and refresh every 5 minutes
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPredictions();
+            
+            // Set up refresh interval
+            setInterval(fetchPredictions, 5 * 60 * 1000); // Refresh every 5 minutes
+            
+            // Set up refresh button click handlers
+            document.querySelectorAll('.refresh-predictions').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Add spinning animation to the refresh icon
+                    const icon = this.querySelector('i');
+                    icon.classList.add('fa-spin');
+                    
+                    // Fetch fresh predictions
+                    fetchPredictions().finally(() => {
+                        // Remove spinning animation after 1 second
+                        setTimeout(() => {
+                            icon.classList.remove('fa-spin');
+                        }, 1000);
+                    });
+                });
+            });
         });
     </script>
 </body>

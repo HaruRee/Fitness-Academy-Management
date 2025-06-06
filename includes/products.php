@@ -20,12 +20,12 @@ $error_message = '';
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'add':
-                try {
-                    $stmt = $conn->prepare("INSERT INTO membershipplans (package_type, name, price, description, features, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        switch ($_POST['action']) {            case 'add':
+                try {                    $stmt = $conn->prepare("INSERT INTO membershipplans (plan_type, session_count, duration_months, name, price, description, features, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([
-                        $_POST['package_type'],
+                        $_POST['plan_type'],
+                        $_POST['plan_type'] == 'session' ? $_POST['session_count'] : null,
+                        $_POST['plan_type'] == 'monthly' ? $_POST['duration_months'] : null,
                         $_POST['name'],
                         $_POST['price'],
                         $_POST['description'],
@@ -38,12 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message = "Error adding product: " . $e->getMessage();
                 }
                 break;
-                
-            case 'edit':
-                try {
-                    $stmt = $conn->prepare("UPDATE membershipplans SET package_type = ?, name = ?, price = ?, description = ?, features = ?, is_active = ?, sort_order = ? WHERE id = ?");
+                  case 'edit':
+                try {                    $stmt = $conn->prepare("UPDATE membershipplans SET plan_type = ?, session_count = ?, duration_months = ?, name = ?, price = ?, description = ?, features = ?, is_active = ?, sort_order = ? WHERE id = ?");
                     $stmt->execute([
-                        $_POST['package_type'],
+                        $_POST['plan_type'],
+                        $_POST['plan_type'] == 'session' ? $_POST['session_count'] : null,
+                        $_POST['plan_type'] == 'monthly' ? $_POST['duration_months'] : null,
                         $_POST['name'],
                         $_POST['price'],
                         $_POST['description'],
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get all products
 try {
-    $stmt = $conn->prepare("SELECT * FROM membershipplans ORDER BY sort_order ASC, package_type ASC");
+    $stmt = $conn->prepare("SELECT * FROM membershipplans ORDER BY sort_order ASC, name ASC");
     $stmt->execute();
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -96,7 +96,7 @@ try {
 <html lang="en">
 
 <head>
-    <title>Products Management | Fitness Academy</title>
+    <title>Membership Plans | Fitness Academy</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../assets/css/style.css">
@@ -501,17 +501,102 @@ try {
             font-weight: 500;
             padding: 0.35em 0.65em;
         }
-        
-        .package-badge-a {
-            background-color: #dbeafe;
-            color: #1e40af;
+          /* Card styling */
+        .card {
             border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
         }
         
-        .package-badge-b {
-            background-color: #fef3c7;
-            color: #92400e;
-            border: none;
+        .card:hover {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, #1e40af, #3b82f6);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            border-bottom: none;
+        }
+        
+        .card-title {
+            margin-bottom: 0;
+        }
+        
+        /* Table styling */
+        .table {
+            margin-bottom: 0;
+            border-color: #e5e7eb;
+        }
+        
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+            padding: 0.75rem;
+            border-top: none;
+        }
+        
+        .table td {
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+        
+        /* Plan type badges */
+        .badge-plan-session {
+            background-color: #dbeafe;
+            color: #1e40af;
+            font-weight: 500;
+        }
+        
+        .badge-plan-monthly {
+            background-color: #dcfce7;
+            color: #047857;
+            font-weight: 500;
+        }
+        
+        /* Form controls */
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+            border-color: #93c5fd;
+        }
+        
+        /* Button styling */
+        .btn-primary {
+            background-color: #1e40af;
+            border-color: #1e40af;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1c3879;
+            border-color: #1c3879;
+        }
+        
+        .btn-success {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+            border-color: #059669;
+        }
+        
+        /* Feature pills */
+        .feature-pill {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #f3f4f6;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+            color: #4b5563;
         }
     </style>
 </head>
@@ -606,43 +691,90 @@ try {
         </header>
 
         <!-- Content -->
-        <div class="content">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4>Manage Membership Plans and Packages</h4>
-                    <p class="text-muted">Create and manage products available for purchase</p>
+        <div class="content">            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card welcome-card mb-0">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="mb-1">Membership Plans Management</h4>
+                                <p class="text-muted mb-0">Create and manage membership plans available for purchase</p>
+                            </div>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                <i class="fas fa-plus me-2"></i>Add New Plan
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                    <i class="fas fa-plus me-2"></i>Add New Product
-                </button>
             </div>
-            <?php if ($success_message): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success_message) ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            
+            <?php if ($success_message || $error_message): ?>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <?php if ($success_message): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success_message) ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($error_message): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error_message) ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            <?php endif; ?>
-
-            <?php if ($error_message): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error_message) ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            <?php endif; ?>
-
-            <div class="card">
-                <div class="card-header">
+            <?php endif; ?>            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-box me-2"></i>Membership Products
+                        <i class="fas fa-id-card me-2"></i>Membership Plans
                     </h5>
-                </div>
-                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-success me-2"><?= count($products) ?> Plans</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                                <li><a class="dropdown-item" href="#" onclick="printTable()"><i class="fas fa-print me-2"></i>Print List</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportToCSV()"><i class="fas fa-file-csv me-2"></i>Export to CSV</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>                <div class="card-body">
+                    <!-- Search and filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="planSearch" placeholder="Search plans..." onkeyup="filterPlans()">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="planTypeFilter" onchange="filterPlans()">
+                                <option value="">All Plan Types</option>
+                                <option value="session">Session-Based</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter" onchange="filterPlans()">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
+                        <table class="table table-hover"><thead>
                                 <tr>
-                                    <th>Package</th>
                                     <th>Name</th>
+                                    <th>Plan Type</th>
+                                    <th>Sessions/Duration</th>
                                     <th>Price</th>
                                     <th>Description</th>
                                     <th>Features</th>
@@ -651,51 +783,86 @@ try {
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php if (empty($products)): ?>
+                            <tbody>                                <?php if (empty($products)): ?>
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">
+                                        <td colspan="9" class="text-center py-4">
                                             <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                                             <p class="text-muted">No products found</p>
                                         </td>
                                     </tr>
                                 <?php else: ?>
-                                    <?php foreach ($products as $product): ?>
-                                        <tr>
+                                    <?php foreach ($products as $product): ?>                                        <tr>                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="plan-icon me-3 rounded-circle bg-light p-2 text-center" style="width: 40px; height: 40px;">
+                                                        <?php if ($product['plan_type'] === 'session'): ?>
+                                                            <i class="fas fa-ticket-alt text-info"></i>
+                                                        <?php else: ?>
+                                                            <i class="fas fa-calendar-alt text-success"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0"><?= htmlspecialchars($product['name']) ?></h6>
+                                                        <small class="text-muted">ID: <?= $product['id'] ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td>
-                                                <span class="badge package-badge-<?= strtolower($product['package_type']) ?>">
-                                                    Package <?= htmlspecialchars($product['package_type']) ?>
+                                                <span class="badge rounded-pill badge-plan-<?= $product['plan_type'] ?>">
+                                                    <?= ucfirst($product['plan_type'] ?? 'N/A') ?>
                                                 </span>
                                             </td>
-                                            <td><?= htmlspecialchars($product['name']) ?></td>
-                                            <td>₱<?= number_format($product['price'], 2) ?></td>
                                             <td>
-                                                <span data-bs-toggle="tooltip" title="<?= htmlspecialchars($product['description']) ?>">
+                                                <?php if ($product['plan_type'] === 'session'): ?>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-info text-dark me-2"><?= $product['session_count'] ?? 0 ?></span>
+                                                        Sessions
+                                                    </div>
+                                                <?php elseif ($product['plan_type'] === 'monthly'): ?>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-success text-white me-2"><?= $product['duration_months'] ?? 0 ?></span>
+                                                        Months
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted">N/A</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <h6 class="mb-0 text-primary">₱<?= number_format($product['price'], 2) ?></h6>
+                                            </td>
+                                            <td>
+                                                <div data-bs-toggle="tooltip" title="<?= htmlspecialchars($product['description']) ?>">
                                                     <?= htmlspecialchars(strlen($product['description']) > 30 ? substr($product['description'], 0, 30) . '...' : $product['description']) ?>
-                                                </span>
+                                                </div>
                                             </td>
                                             <td>
                                                 <?php 
                                                 $features = explode('|', $product['features']);
-                                                echo '<small>' . htmlspecialchars(implode(', ', array_slice($features, 0, 2))) . '</small>';
-                                                if (count($features) > 2) echo '<small class="text-muted"> +' . (count($features) - 2) . ' more</small>';
+                                                foreach (array_slice($features, 0, 2) as $feature) {
+                                                    echo '<span class="feature-pill">' . htmlspecialchars($feature) . '</span> ';
+                                                }
+                                                if (count($features) > 2) echo '<span class="badge bg-light text-dark">+' . (count($features) - 2) . ' more</span>';
                                                 ?>
                                             </td>
-                                            <td>                                                <form method="POST" class="d-inline">
+                                            <td>
+                                                <form method="POST" class="d-inline">
                                                     <input type="hidden" name="action" value="toggle_status">
                                                     <input type="hidden" name="id" value="<?= $product['id'] ?>">
                                                     <input type="hidden" name="is_active" value="<?= $product['is_active'] ? 0 : 1 ?>">
-                                                    <span class="badge rounded-pill <?= $product['is_active'] ? 'bg-success' : 'bg-secondary' ?>">
+                                                    <button type="submit" class="btn btn-sm btn-light border <?= $product['is_active'] ? 'border-success text-success' : 'border-secondary text-secondary' ?>" title="Click to toggle status">
+                                                        <i class="fas <?= $product['is_active'] ? 'fa-check-circle' : 'fa-times-circle' ?> me-1"></i>
                                                         <?= $product['is_active'] ? 'Active' : 'Inactive' ?>
-                                                    </span>
+                                                    </button>
                                                 </form>
                                             </td>
-                                            <td><?= $product['sort_order'] ?></td>
-                                            <td>                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="editProduct(<?= htmlspecialchars(json_encode($product)) ?>)">
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark"><?= $product['sort_order'] ?></span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex">
+                                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct(<?= htmlspecialchars(json_encode($product)) ?>)" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name']) ?>')">
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name']) ?>')" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -707,44 +874,50 @@ try {
                         </table>
                     </div>
                 </div>
-            </div>
-
+            </div>            <?php if (count($products) > 10): ?>
             <!-- Pagination -->
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
                     <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        <a class="page-link" href="#" tabindex="-1">
+                            <i class="fas fa-chevron-left me-1"></i> Previous
+                        </a>
                     </li>
                     <li class="page-item active"><a class="page-link" href="#">1</a></li>
                     <li class="page-item"><a class="page-link" href="#">2</a></li>
                     <li class="page-item"><a class="page-link" href="#">3</a></li>
                     <li class="page-item">
-                        <a class="page-link" href="#">Next</a>
+                        <a class="page-link" href="#">
+                            Next <i class="fas fa-chevron-right ms-1"></i>
+                        </a>
                     </li>
                 </ul>
             </nav>
+            <?php endif; ?>
         </div>
-    </div>
-
-    <!-- Add Product Modal -->
+    </div>    <!-- Add Product Modal -->
     <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addProductModalLabel">Add New Product</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="addProductModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Membership Plan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="add">
-                        
-                        <div class="row">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Create a new membership plan for customers to purchase.
+                        </div><div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="package_type" class="form-label">Package Type</label>
-                                    <select class="form-select" id="package_type" name="package_type" required>
-                                        <option value="A">Package A</option>
-                                        <option value="B">Package B</option>
+                                    <label for="plan_type" class="form-label">Plan Type</label>
+                                    <select class="form-select" id="plan_type" name="plan_type" required onchange="togglePlanFields()">
+                                        <option value="session">Session-Based</option>
+                                        <option value="monthly">Time-Based (Monthly)</option>
                                     </select>
                                 </div>
                             </div>
@@ -752,6 +925,19 @@ try {
                                 <div class="mb-3">
                                     <label for="sort_order" class="form-label">Sort Order</label>
                                     <input type="number" class="form-control" id="sort_order" name="sort_order" value="0" required>
+                                </div>
+                            </div>
+                        </div>                        <div class="row">
+                            <div class="col-md-6" id="session_count_div">
+                                <div class="mb-3">
+                                    <label for="session_count" class="form-label">Number of Sessions</label>
+                                    <input type="number" class="form-control" id="session_count" name="session_count" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="duration_months_div" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="duration_months" class="form-label">Duration (Months)</label>
+                                    <input type="number" class="form-control" id="duration_months" name="duration_months" min="1">
                                 </div>
                             </div>
                         </div>
@@ -782,36 +968,41 @@ try {
                                 Active
                             </label>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Product</button>
+                    </div>                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Add Plan
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
-
-    <!-- Edit Product Modal -->
+    </div>    <!-- Edit Product Modal -->
     <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editProductModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Membership Plan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="editProductForm">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="edit">
                         <input type="hidden" name="id" id="edit_id">
-                        
-                        <div class="row">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Changes will apply to all future purchases. Existing memberships will not be affected.
+                        </div><div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_package_type" class="form-label">Package Type</label>
-                                    <select class="form-select" id="edit_package_type" name="package_type" required>
-                                        <option value="A">Package A</option>
-                                        <option value="B">Package B</option>
+                                    <label for="edit_plan_type" class="form-label">Plan Type</label>
+                                    <select class="form-select" id="edit_plan_type" name="plan_type" required onchange="toggleEditPlanFields()">
+                                        <option value="session">Session-Based</option>
+                                        <option value="monthly">Time-Based (Monthly)</option>
                                     </select>
                                 </div>
                             </div>
@@ -819,6 +1010,19 @@ try {
                                 <div class="mb-3">
                                     <label for="edit_sort_order" class="form-label">Sort Order</label>
                                     <input type="number" class="form-control" id="edit_sort_order" name="sort_order" required>
+                                </div>
+                            </div>
+                        </div>                        <div class="row">
+                            <div class="col-md-6" id="edit_session_count_div">
+                                <div class="mb-3">
+                                    <label for="edit_session_count" class="form-label">Number of Sessions</label>
+                                    <input type="number" class="form-control" id="edit_session_count" name="session_count" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="edit_duration_months_div" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="edit_duration_months" class="form-label">Duration (Months)</label>
+                                    <input type="number" class="form-control" id="edit_duration_months" name="duration_months" min="1">
                                 </div>
                             </div>
                         </div>
@@ -849,58 +1053,218 @@ try {
                                 Active
                             </label>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Product</button>
+                    </div>                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Plan
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
+    </div>    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteProductModalLabel">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteProductModalLabel">
+                        <i class="fas fa-trash-alt me-2"></i>Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete this product?</p>
-                    <p><strong id="deleteProductName"></strong></p>
-                    <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</p>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+                    <p>Are you sure you want to delete the following membership plan?</p>
+                    <div class="card mt-3 mb-3">
+                        <div class="card-body text-center">
+                            <h5 id="deleteProductName" class="mb-0"></h5>
+                        </div>
+                    </div>
+                    <p class="mb-0">This will permanently remove this membership plan from the system.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
                     <form method="POST" id="deleteProductForm" class="d-inline">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="id" id="delete_id">
-                        <button type="submit" class="btn btn-danger">Delete Product</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash-alt me-2"></i>Delete Plan
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>    <script>
         // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+            
+            // Initialize any other components here
         });
 
-        function editProduct(product) {
+        function togglePlanFields() {
+            const planType = document.getElementById('plan_type').value;
+            const sessionDiv = document.getElementById('session_count_div');
+            const monthsDiv = document.getElementById('duration_months_div');
+            const sessionInput = document.getElementById('session_count');
+            const monthsInput = document.getElementById('duration_months');
+            
+            if (planType === 'session') {
+                sessionDiv.style.display = 'block';
+                monthsDiv.style.display = 'none';
+                sessionInput.required = true;
+                monthsInput.required = false;
+            } else {
+                sessionDiv.style.display = 'none';
+                monthsDiv.style.display = 'block';
+                sessionInput.required = false;
+                monthsInput.required = true;
+            }
+        }
+
+        function toggleEditPlanFields() {
+            const planType = document.getElementById('edit_plan_type').value;
+            const sessionDiv = document.getElementById('edit_session_count_div');
+            const monthsDiv = document.getElementById('edit_duration_months_div');
+            const sessionInput = document.getElementById('edit_session_count');
+            const monthsInput = document.getElementById('edit_duration_months');
+            
+            if (planType === 'session') {
+                sessionDiv.style.display = 'block';
+                monthsDiv.style.display = 'none';
+                sessionInput.required = true;
+                monthsInput.required = false;
+            } else {
+                sessionDiv.style.display = 'none';
+                monthsDiv.style.display = 'block';
+                sessionInput.required = false;
+                monthsInput.required = true;
+            }
+        }
+        
+        // Print table function
+        function printTable() {
+            const printContents = document.querySelector('.table-responsive').innerHTML;
+            const originalContents = document.body.innerHTML;
+            
+            document.body.innerHTML = `
+                <div style="padding: 20px;">
+                    <h1 style="text-align: center; margin-bottom: 20px;">Membership Plans</h1>
+                    ${printContents}
+                </div>
+            `;
+            
+            window.print();
+            document.body.innerHTML = originalContents;
+            location.reload();
+        }
+          // Export table to CSV function
+        function exportToCSV() {
+            const table = document.querySelector('.table');
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = [], cols = rows[i].querySelectorAll('td, th');
+                
+                for (let j = 0; j < cols.length; j++) {
+                    // Replace HTML with text content only and escape commas
+                    let text = cols[j].innerText.replace(/,/g, ';');
+                    row.push(text);
+                }
+                
+                csv.push(row.join(','));
+            }
+            
+            // Download CSV file
+            const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+            const downloadLink = document.createElement('a');
+            
+            downloadLink.download = 'membership_plans_' + new Date().toISOString().slice(0, 10) + '.csv';
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = 'none';
+            
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+        
+        // Filter plans function
+        function filterPlans() {
+            const searchInput = document.getElementById('planSearch').value.toLowerCase();
+            const planTypeFilter = document.getElementById('planTypeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            const rows = document.querySelectorAll('table tbody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const planType = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                
+                // Check status - Active or Inactive (get from the status button text)
+                const status = row.querySelector('td:nth-child(7)').textContent.toLowerCase();
+                
+                const nameMatch = name.includes(searchInput);
+                const planTypeMatch = planTypeFilter === '' || planType.includes(planTypeFilter.toLowerCase());
+                const statusMatch = statusFilter === '' || status.includes(statusFilter.toLowerCase());
+                
+                if (nameMatch && planTypeMatch && statusMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show a message if no plans match the filter
+            const noResultsRow = document.getElementById('noResultsRow');
+            if (visibleCount === 0) {
+                if (!noResultsRow) {
+                    const tbody = document.querySelector('table tbody');
+                    const newRow = document.createElement('tr');
+                    newRow.id = 'noResultsRow';
+                    newRow.innerHTML = `<td colspan="9" class="text-center py-3">
+                        <i class="fas fa-search me-2"></i>No matching plans found. Try adjusting your filters.
+                    </td>`;
+                    tbody.appendChild(newRow);
+                } else {
+                    noResultsRow.style.display = '';
+                }
+            } else if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+        }function editProduct(product) {
             document.getElementById('edit_id').value = product.id;
-            document.getElementById('edit_package_type').value = product.package_type;
+            document.getElementById('edit_plan_type').value = product.plan_type;
             document.getElementById('edit_name').value = product.name;
             document.getElementById('edit_price').value = product.price;
             document.getElementById('edit_description').value = product.description || '';
             document.getElementById('edit_features').value = product.features || '';
             document.getElementById('edit_sort_order').value = product.sort_order;
             document.getElementById('edit_is_active').checked = product.is_active == 1;
+            
+            // Set plan-specific fields
+            if (product.plan_type === 'session') {
+                document.getElementById('edit_session_count').value = product.session_count || '';
+                document.getElementById('edit_duration_months').value = '';
+            } else {
+                document.getElementById('edit_session_count').value = '';
+                document.getElementById('edit_duration_months').value = product.duration_months || '';
+            }
+            
+            // Toggle fields based on plan type
+            toggleEditPlanFields();
             
             const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
             editModal.show();
@@ -912,7 +1276,13 @@ try {
             
             const deleteModal = new bootstrap.Modal(document.getElementById('deleteProductModal'));
             deleteModal.show();
-        }    </script>
+        }
+
+        // Initialize the form on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            togglePlanFields();
+        });
+    </script>
       <!-- Initialize tooltips -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {

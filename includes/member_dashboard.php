@@ -22,6 +22,23 @@ try {
 } catch (PDOException $e) {
     error_log("Failed to fetch announcements: " . $e->getMessage());
 }
+
+// Get user's membership details
+$membership_data = null;
+try {
+    $member_stmt = $conn->prepare("
+        SELECT u.First_Name, u.Last_Name, u.current_sessions_remaining, u.membership_start_date, 
+               u.membership_end_date, u.membership_plan, u.membership_price,
+               mp.plan_type, mp.session_count, mp.duration_months, mp.name as plan_name, mp.description
+        FROM users u
+        LEFT JOIN membershipplans mp ON u.plan_id = mp.id
+        WHERE u.UserID = ?
+    ");
+    $member_stmt->execute([$_SESSION['user_id']]);
+    $membership_data = $member_stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Failed to fetch membership data: " . $e->getMessage());
+}
 ?>
 
 <?php include '../assets/format/member_header.php'; ?>
@@ -31,7 +48,152 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
+<?php if (isset($_GET['debug'])): ?>
+<div class="container mt-3">
+    <div class="card bg-dark">
+        <div class="card-header bg-danger text-white">
+            Debug Info (Admin Only)
+        </div>
+        <div class="card-body">
+            <h5 class="card-title text-white">User ID: <?php echo $_SESSION['user_id']; ?></h5>
+            <div class="bg-dark text-light p-3" style="overflow-x: auto;">
+                <pre><?php print_r($membership_data); ?></pre>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="container">
+    <!-- Membership Status Section -->
+    <div class="card mb-4 shadow-lg">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-id-card me-3 text-danger"></i>
+            <h4 class="mb-0 text-white">My Membership Status</h4>
+        </div>
+        <div class="card-body">
+            <?php if ($membership_data): ?>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="membership-info-card h-100">
+                            <h5 class="text-danger mb-3">
+                                <i class="fas fa-star me-2"></i>Plan Details
+                            </h5>
+                            <p class="mb-2"><strong>Plan:</strong> <span class="text-light"><?php echo htmlspecialchars($membership_data['plan_name'] ?? $membership_data['membership_plan'] ?? 'N/A'); ?></span></p>
+                            <p class="mb-2"><strong>Type:</strong> 
+                                <span class="badge <?php echo $membership_data['plan_type'] === 'session' ? 'bg-info' : 'bg-success'; ?>">
+                                    <?php echo ucfirst($membership_data['plan_type'] ?? 'Unknown'); ?>
+                                </span>
+                            </p>                            <p class="mb-2"><strong>Price:</strong> <span class="text-warning">₱<?php echo number_format($membership_data['membership_price'] ?? 0, 2); ?></span></p>
+                            <?php 
+                            // Only show description if it's different from the plan name
+                            $plan_name = $membership_data['plan_name'] ?? $membership_data['membership_plan'] ?? 'N/A';
+                            $description = $membership_data['description'] ?? '';
+                            if ($description && $description !== $plan_name): 
+                            ?>
+                                <p class="mb-0 text-muted small"><?php echo htmlspecialchars($description); ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="membership-status-card h-100">
+                            <h5 class="text-danger mb-3">
+                                <i class="fas fa-clock me-2"></i>Status
+                            </h5>
+                            <?php if ($membership_data['plan_type'] === 'session'): ?>
+                                <div class="sessions-remaining">
+                                    <p class="mb-2"><strong>Sessions Remaining:</strong></p>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <?php 
+                                        $sessions_remaining = $membership_data['current_sessions_remaining'] ?? 0;
+                                        $total_sessions = $membership_data['session_count'] ?? 1;
+                                        $percentage = ($sessions_remaining / $total_sessions) * 100;
+                                        $bar_color = $percentage > 50 ? 'bg-success' : ($percentage > 20 ? 'bg-warning' : 'bg-danger');
+                                        ?>
+                                        <div class="progress-bar <?php echo $bar_color; ?>" style="width: <?php echo $percentage; ?>%">
+                                            <?php echo $sessions_remaining; ?> / <?php echo $total_sessions; ?>
+                                        </div>
+                                    </div>
+                                    <?php if ($sessions_remaining <= 5): ?>
+                                        <div class="alert alert-warning py-2 mb-0">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            <?php if ($sessions_remaining == 0): ?>
+                                                No sessions remaining! Please renew your membership.
+                                            <?php else: ?>
+                                                Low sessions remaining. Consider renewing soon.
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php elseif ($membership_data['plan_type'] === 'monthly'): ?>                                <div class="membership-dates">
+                                    <?php
+                                    // Format dates for proper comparison
+                                    $start_date = new DateTime($membership_data['membership_start_date']);
+                                    $end_date = new DateTime($membership_data['membership_end_date']);
+                                    $today = new DateTime();
+                                    
+                                    // For comparison, normalize to beginning of day
+                                    $today_normalized = new DateTime($today->format('Y-m-d'));
+                                    $end_date_normalized = new DateTime($end_date->format('Y-m-d'));
+                                    
+                                    // Calculate days remaining - if end date is today, show 0 days
+                                    $days_remaining = $today_normalized < $end_date_normalized ? $today_normalized->diff($end_date_normalized)->days : 0;
+                                    
+                                    // Check if today is after end date or the exact same day as end date
+                                    $is_expired = $today_normalized >= $end_date_normalized;
+                                    
+                                    // For debugging
+                                    if (isset($_GET['debug'])) {
+                                        echo "<div class='alert alert-info mb-3'>";
+                                        echo "Today: " . $today_normalized->format('Y-m-d') . "<br>";
+                                        echo "End Date: " . $end_date_normalized->format('Y-m-d') . "<br>";
+                                        echo "Days Remaining: " . $days_remaining . "<br>";
+                                        echo "Is Expired: " . ($is_expired ? 'Yes' : 'No') . "<br>";
+                                        echo "</div>";
+                                    }
+                                    ?>
+                                    <p class="mb-2"><strong>Start Date:</strong> <span class="text-light"><?php echo $start_date->format('M d, Y'); ?></span></p>
+                                    <p class="mb-2"><strong>End Date:</strong> <span class="text-light"><?php echo $end_date->format('M d, Y'); ?></span></p>
+                                    <p class="mb-2"><strong>Status:</strong> 
+                                        <?php if ($is_expired): ?>
+                                            <span class="badge bg-danger">Expired</span>
+                                        <?php elseif ($days_remaining <= 7): ?>
+                                            <span class="badge bg-warning">Expires Soon</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-success">Active</span>
+                                        <?php endif; ?>
+                                    </p>
+                                    <?php if (!$is_expired): ?>
+                                        <p class="mb-0"><strong>Days Remaining:</strong> <span class="text-info"><?php echo $days_remaining; ?> days</span></p>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($is_expired): ?>
+                                        <div class="alert alert-danger py-2 mb-0">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            Your membership has expired. Please renew to continue accessing the gym.
+                                        </div>
+                                    <?php elseif ($days_remaining <= 7): ?>
+                                        <div class="alert alert-warning py-2 mb-0">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            Your membership expires in <?php echo $days_remaining; ?> days. Consider renewing soon.
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-muted">Plan type information not available.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Membership information not available. Please contact support.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- QR Attendance Section -->
     <div class="card mb-4 shadow-lg">
         <div class="card-header d-flex align-items-center">
@@ -75,9 +237,57 @@ try {
         <i class="fas fa-bullhorn me-3 text-danger fs-4"></i>
         <h2 class="mb-0">Announcements</h2>
     </div>
-    
-    <!-- Enhanced announcements styling -->
+      <!-- Enhanced announcements styling -->
     <style>
+        .membership-info-card,
+        .membership-status-card {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+            border: 1px solid #404040;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .membership-info-card:hover,
+        .membership-status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border-color: var(--primary-red);
+        }
+
+        .sessions-remaining .progress {
+            background-color: #404040;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .sessions-remaining .progress-bar {
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 25px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            transition: width 0.6s ease;
+        }
+
+        .membership-dates p {
+            margin-bottom: 8px;
+        }
+
+        .membership-dates .badge {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+        }
+
+        @media (max-width: 768px) {
+            .membership-info-card,
+            .membership-status-card {
+                margin-bottom: 15px;
+                padding: 15px;
+            }
+        }
+
         .announcement-container {
             background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
             border: 1px solid #404040;

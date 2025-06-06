@@ -18,12 +18,27 @@ function sanitize($data)
 
 // Fetch current user data
 try {
-    $stmt = $conn->prepare("SELECT Username, Email, First_Name, Last_Name, Phone, Address, DateOfBirth, ProfileImage, RegistrationDate FROM users WHERE UserID = ?");
+    $stmt = $conn->prepare("SELECT Username, Email, First_Name, Last_Name, Phone, Address, 
+                           DateOfBirth, ProfileImage, RegistrationDate, membership_start_date, 
+                           membership_plan, plan_id
+                           FROM users WHERE UserID = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
         die("User not found.");
+    }
+    
+    // Get membership data
+    if ($user['plan_id']) {
+        $planStmt = $conn->prepare("SELECT plan_type, name, description FROM membershipplans WHERE id = ?");
+        $planStmt->execute([$user['plan_id']]);
+        $planData = $planStmt->fetch(PDO::FETCH_ASSOC);
+        if ($planData) {
+            $user['plan_type'] = $planData['plan_type'];
+            $user['plan_name'] = $planData['name'];
+            $user['plan_description'] = $planData['description'];
+        }
     }
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
@@ -712,12 +727,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span>************</span>
                         <a href="#change-password" class="edit-icon" title="Change Password"><i class="fa fa-pen-to-square"></i></a>
                     </div>
-                </div>
-                <div class="profile-summary-row">
+                </div>                <div class="profile-summary-row">
                     <div>
                         <span class="summary-label">Member since</span>
-                        <span><?= htmlspecialchars(date('F j, Y', strtotime($user['RegistrationDate']))) ?></span>
+                        <span><?= htmlspecialchars(date('F j, Y', strtotime($user['membership_start_date'] ?? $user['RegistrationDate']))) ?></span>
                     </div>
+                    <?php if (!empty($user['membership_plan'])): ?>
+                    <div>
+                        <span class="summary-label">Current Plan</span>
+                        <span><?= htmlspecialchars($user['membership_plan']) ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

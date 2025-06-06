@@ -43,15 +43,14 @@ if (isset($_GET['step'])) {
 
 // Reset registration process if requested or coming from a different page
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-if (isset($_GET['reset']) || (strpos($http_referer, 'register.php') === false && !empty($http_referer))) {
-    // Clear registration session variables
+if (isset($_GET['reset']) || (strpos($http_referer, 'register.php') === false && !empty($http_referer))) {    // Clear registration session variables
     unset($_SESSION['registration_step']);
     unset($_SESSION['verification_code']);
     unset($_SESSION['email']);
     unset($_SESSION['selected_plan']);
     unset($_SESSION['plan_price']);
     unset($_SESSION['plan_id']);
-    unset($_SESSION['package_type']);
+    unset($_SESSION['plan_type']);
     unset($_SESSION['user_data']);
 }
 
@@ -60,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['select_plan'])) {
     $_SESSION['selected_plan'] = $_POST['plan'];
     $_SESSION['plan_price'] = $_POST['price'];
     $_SESSION['plan_id'] = $_POST['plan_id'];
-    $_SESSION['package_type'] = $_POST['package_type'];
+    $_SESSION['plan_type'] = $_POST['plan_type'];
     $_SESSION['registration_step'] = 2;
     header('Location: register.php');
     exit;
@@ -1408,9 +1407,13 @@ function sendVerificationEmail($email, $verification_code)
 
                 if (!$tableExists) {
                     throw new Exception("membershipplans table doesn't exist yet");
-                }
-
-                $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE is_active = 1 ORDER BY package_type, sort_order");
+                }                $stmt = $conn->prepare("
+                    SELECT id, name, price, description, features, 
+                           plan_type, session_count, duration_months
+                    FROM membershipplans 
+                    WHERE is_active = 1 
+                    ORDER BY sort_order
+                ");
                 $stmt->execute();
                 $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1424,15 +1427,20 @@ function sendVerificationEmail($email, $verification_code)
 
                     <div class="plans-grid">
                         <?php foreach ($plans as $plan): ?>
-                            <form method="POST" action="register.php">
-                                <input type="hidden" name="plan" value="<?php echo htmlspecialchars($plan['name']); ?>">
+                            <form method="POST" action="register.php">                                <input type="hidden" name="plan" value="<?php echo htmlspecialchars($plan['name']); ?>">
                                 <input type="hidden" name="price" value="<?php echo htmlspecialchars($plan['price']); ?>">
                                 <input type="hidden" name="plan_id" value="<?php echo htmlspecialchars($plan['id']); ?>">
-                                <input type="hidden" name="package_type" value="<?php echo htmlspecialchars($plan['package_type']); ?>">
+                                <input type="hidden" name="plan_type" value="<?php echo htmlspecialchars($plan['plan_type']); ?>">
                                 <div class="plan-card">
                                     <div class="plan-name"><?php echo htmlspecialchars($plan['name']); ?></div>
                                     <div class="plan-price">₱<?php echo number_format($plan['price'], 0); ?></div>
-                                    <div class="price-period">per month</div>
+                                    <div class="price-period">
+                                        <?php if (isset($plan['plan_type']) && $plan['plan_type'] === 'session'): ?>
+                                            per session
+                                        <?php else: ?>
+                                            per month
+                                        <?php endif; ?>
+                                    </div>
                                     <?php if (!empty($plan['features'])): ?>
                                         <div class="plan-features">
                                             <?php foreach (explode('|', $plan['features']) as $feature): ?>
@@ -1477,10 +1485,19 @@ function sendVerificationEmail($email, $verification_code)
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span>Membership:</span>
                             <span><?php echo isset($_SESSION['selected_plan']) ? $_SESSION['selected_plan'] : ''; ?></span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        </div>                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span>Price:</span>
-                            <span style="color: #e41e26; font-weight: bold;">₱<?php echo isset($_SESSION['plan_price']) ? $_SESSION['plan_price'] : '0.00'; ?> <span style="color: #666; font-weight: normal;">per month</span></span>
+                            <span style="color: #e41e26; font-weight: bold;">₱<?php echo isset($_SESSION['plan_price']) ? $_SESSION['plan_price'] : '0.00'; ?> 
+                                <span style="color: #666; font-weight: normal;">
+                                <?php 
+                                    if (isset($_SESSION['plan_type']) && $_SESSION['plan_type'] === 'session') {
+                                        echo 'per session';
+                                    } else {
+                                        echo 'per month';
+                                    }
+                                ?>
+                                </span>
+                            </span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span>Joining Fee:</span>
@@ -1701,18 +1718,36 @@ function sendVerificationEmail($email, $verification_code)
                         <div class="summary-row">
                             <span>Plan:</span>
                             <span><?php echo htmlspecialchars($_SESSION['selected_plan']); ?></span>
-                        </div>
-                        <div class="summary-row">
+                        </div>                        <div class="summary-row">
                             <span>Original Amount:</span>
-                            <span class="price">₱<?php echo number_format($_SESSION['plan_price'], 2); ?></span>
+                            <span class="price">₱<?php echo number_format($_SESSION['plan_price'], 2); ?> 
+                                <small style="color: #666; font-weight: normal;">
+                                <?php 
+                                    if (isset($_SESSION['plan_type']) && $_SESSION['plan_type'] === 'session') {
+                                        echo 'per session';
+                                    } else {
+                                        echo 'per month';
+                                    }
+                                ?>
+                                </small>
+                            </span>
                         </div>
                         <div class="summary-row discount-row" id="discount-row" style="display: none;">
                             <span>Discount (10%):</span>
                             <span class="discount-amount">-₱<span id="discount-amount">0.00</span></span>
-                        </div>
-                        <div class="summary-row total">
+                        </div>                        <div class="summary-row total">
                             <span>Total:</span>
-                            <span class="price" id="final-total">₱<?php echo number_format($_SESSION['plan_price'], 2); ?></span>
+                            <span class="price" id="final-total">₱<?php echo number_format($_SESSION['plan_price'], 2); ?>
+                                <small style="color: #666; font-weight: normal;">
+                                <?php 
+                                    if (isset($_SESSION['plan_type']) && $_SESSION['plan_type'] === 'session') {
+                                        echo 'per session';
+                                    } else {
+                                        echo 'per month';
+                                    }
+                                ?>
+                                </small>
+                            </span>
                         </div>
                     </div>
                 </div><!-- Payment Options Container -->
@@ -1949,19 +1984,21 @@ function sendVerificationEmail($email, $verification_code)
                     .finally(() => {
                         verifyButton.disabled = false;
                     });
-            }
-
-            function applyDiscount(discountType) {
+            }            function applyDiscount(discountType) {
                 const discountPercentage = 10;
                 const discountAmount = originalPrice * (discountPercentage / 100);
                 const finalAmount = originalPrice - discountAmount;
 
+                // Get the pricing period text
+                const pricingPeriod = <?php echo isset($_SESSION['plan_type']) && $_SESSION['plan_type'] === 'session' 
+                    ? "'per session'" : "'per month'"; ?>;
+                
                 // Update UI
                 discountAmountSpan.textContent = discountAmount.toFixed(2);
-                finalTotalSpan.textContent = '₱' + finalAmount.toLocaleString('en-US', {
+                finalTotalSpan.innerHTML = '₱' + finalAmount.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
-                });
+                }) + ' <small style="color: #666; font-weight: normal;">' + pricingPeriod + '</small>';
                 discountRow.style.display = 'flex';
 
                 // Update payment button
@@ -1977,15 +2014,17 @@ function sendVerificationEmail($email, $verification_code)
                 finalAmountHidden.value = finalAmount.toFixed(2);
 
                 currentDiscountApplied = true;
-            }
-
-            function removeDiscount() {
+            }            function removeDiscount() {
+                // Get the pricing period text
+                const pricingPeriod = <?php echo isset($_SESSION['plan_type']) && $_SESSION['plan_type'] === 'session' 
+                    ? "'per session'" : "'per month'"; ?>;
+                
                 // Reset UI
                 discountRow.style.display = 'none';
-                finalTotalSpan.textContent = '₱' + originalPrice.toLocaleString('en-US', {
+                finalTotalSpan.innerHTML = '₱' + originalPrice.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
-                });
+                }) + ' <small style="color: #666; font-weight: normal;">' + pricingPeriod + '</small>';
 
                 // Reset payment button
                 paymentButton.innerHTML = `Proceed to Checkout ₱${originalPrice.toLocaleString('en-US', {

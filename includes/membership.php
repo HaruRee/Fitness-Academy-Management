@@ -22,28 +22,23 @@ try {
         WHERE u.UserID = ?
     ");
     $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // Check if user has an active subscription/plan
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);    // Check if user has an active subscription/plan
     // Any of these fields being set indicates an active plan
     if ($user && (
         !empty($user['plan_id']) || 
-        !empty($user['membership_plan']) || 
-        !empty($user['package_type']) ||
+        !empty($user['membership_plan']) ||
         !empty($user['membership_price'])
     )) {
-        $hasActivePlan = true;
-        $activePlan = [
+        $hasActivePlan = true;        $activePlan = [
             'plan_name' => $user['membership_plan'] ?? ($user['plan_name'] ?? 'Active Plan'),
             'price' => $user['membership_price'] ?? ($user['price'] ?? 0),
-            'features' => $user['features'] ?? '',
-            'package_type' => $user['package_type'] ?? ''
+            'features' => $user['features'] ?? ''
         ];
     }
 
     // Get all active membership plans only if user doesn't have active plan
     if (!$hasActivePlan) {
-        $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE is_active = 1 ORDER BY package_type, price");
+        $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE is_active = 1 ORDER BY price");
         $stmt->execute();
         $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -372,10 +367,8 @@ echo str_replace('</head>', $bootstrapLinks, $header);
         <div class="active-plan-alert">
             <div class="alert alert-info">
                 <h4><i class="fas fa-info-circle"></i> Active Membership</h4>
-                <p>You currently have an active membership plan:</p>
-                <ul>
+                <p>You currently have an active membership plan:</p>                <ul>
                     <li><strong>Plan:</strong> <?= htmlspecialchars($activePlan['plan_name']) ?></li>
-                    <li><strong>Package Type:</strong> <?= htmlspecialchars($activePlan['package_type'] ?? 'N/A') ?></li>
                     <li><strong>Amount Paid:</strong> ₱<?= number_format($activePlan['price'], 2) ?></li>
                 </ul>
                 <p><strong>Important:</strong> You cannot select or purchase a new membership plan while you have an active subscription. Please contact our support team if you need to make changes to your current plan.</p>

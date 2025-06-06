@@ -35,7 +35,7 @@ if (!isset($_POST['plan_id']) || !isset($_POST['amount']) || !isset($_POST['emai
 try {
     // First, check if user already has an active subscription/plan
     $stmt = $conn->prepare("
-        SELECT UserID, plan_id, membership_plan, package_type, membership_price, 
+        SELECT UserID, plan_id, membership_plan, membership_price, 
                First_Name, Last_Name, Email, Phone 
         FROM users 
         WHERE UserID = ?
@@ -45,10 +45,8 @@ try {
 
     if (!$user) {
         throw new Exception('User not found');
-    }
-
-    // Check if user has an active subscription/plan (any of these fields indicate an active plan)
-    if ($user['plan_id'] || $user['membership_plan'] || $user['package_type']) {
+    }    // Check if user has an active subscription/plan (any of these fields indicate an active plan)
+    if ($user['plan_id'] || $user['membership_plan']) {
         throw new Exception('You already have an active membership plan. Please wait for your current plan to expire before purchasing a new one.');
     }
 

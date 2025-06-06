@@ -141,18 +141,36 @@ try {
         $conn->beginTransaction();
 
         // Get user data from session
-        $userData = $_SESSION['user_data'];
-
-        // Hash the password
+        $userData = $_SESSION['user_data'];        // Hash the password
         $hashed_password = password_hash($userData['password'], PASSWORD_DEFAULT);
 
         // Generate email token
-        $email_token = bin2hex(random_bytes(32));        // Insert user into database
-        $stmt = $conn->prepare("INSERT INTO users (
-            Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
+        $email_token = bin2hex(random_bytes(32));
+
+        // Get plan details to set membership fields
+        $planStmt = $conn->prepare("SELECT plan_type, session_count, duration_months FROM membershipplans WHERE id = ?");
+        $planStmt->execute([$_SESSION['plan_id']]);
+        $planDetails = $planStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Calculate membership dates and sessions based on plan type
+        $membershipStartDate = date('Y-m-d');
+        $membershipEndDate = null;
+        $currentSessionsRemaining = null;
+
+        if ($planDetails && $planDetails['plan_type'] === 'session') {
+            // Session-based plan: set sessions, no end date
+            $currentSessionsRemaining = $planDetails['session_count'];
+        } elseif ($planDetails && $planDetails['plan_type'] === 'monthly') {
+            // Monthly plan: set end date, no sessions
+            $membershipEndDate = date('Y-m-d', strtotime("+{$planDetails['duration_months']} months"));
+        }
+
+        // Insert user into database
+        $stmt = $conn->prepare("INSERT INTO users (            Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
             Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
-            membership_plan, membership_price, plan_id, package_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
+            membership_plan, membership_price, plan_id, current_sessions_remaining, 
+            membership_start_date, membership_end_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
 
         try {
             $stmt->execute([
@@ -170,7 +188,9 @@ try {
                 $_SESSION['selected_plan'],
                 $_SESSION['plan_price'],
                 $_SESSION['plan_id'],
-                $_SESSION['package_type']
+                $currentSessionsRemaining,
+                $membershipStartDate,
+                $membershipEndDate
             ]);
         } catch (PDOException $e) {
             // If UserID field error, try with explicit UserID
@@ -178,13 +198,12 @@ try {
                 // Get next available UserID
                 $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
                 $userIdStmt->execute();
-                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
-
-                $stmtWithId = $conn->prepare("INSERT INTO users (
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];                $stmtWithId = $conn->prepare("INSERT INTO users (
                     UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
                     Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
-                    membership_plan, membership_price, plan_id, package_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)");
+                    membership_plan, membership_price, plan_id, current_sessions_remaining, 
+                    membership_start_date, membership_end_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
 
                 $stmtWithId->execute([
                     $nextUserId,
@@ -202,7 +221,9 @@ try {
                     $_SESSION['selected_plan'],
                     $_SESSION['plan_price'],
                     $_SESSION['plan_id'],
-                    $_SESSION['package_type']
+                    $currentSessionsRemaining,
+                    $membershipStartDate,
+                    $membershipEndDate
                 ]);
             } else {
                 throw $e; // Re-throw if it's a different error
@@ -295,14 +316,12 @@ try {
         // Commit the transaction
         $conn->commit();
 
-        // Clear session data including discount information
-        unset($_SESSION['registration_step']);
+        // Clear session data including discount information        unset($_SESSION['registration_step']);
         unset($_SESSION['verification_code']);
         unset($_SESSION['email']);
         unset($_SESSION['selected_plan']);
         unset($_SESSION['plan_price']);
         unset($_SESSION['plan_id']);
-        unset($_SESSION['package_type']);
         unset($_SESSION['user_data']);
         unset($_SESSION['paymongo_checkout_id']);
         unset($_SESSION['discount_applied']);
