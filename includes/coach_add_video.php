@@ -76,9 +76,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($description)) {
         $error_message = "Video description is required.";
     } elseif ($access_type === 'paid' && ($subscription_price < 20.00 || $subscription_price > 9999.99)) {
-        $error_message = "Please enter a valid subscription price between ₱20.00 and ₱9,999.99. (PayMongo requires a minimum of ₱20.00)";
-    } elseif (!isset($_FILES['video_file']) || $_FILES['video_file']['error'] !== UPLOAD_ERR_OK) {
-        $error_message = "Please select a valid video file.";
+        $error_message = "Please enter a valid subscription price between ₱20.00 and ₱9,999.99. (PayMongo requires a minimum of ₱20.00)";    } elseif (!isset($_FILES['video_file']) || $_FILES['video_file']['error'] !== UPLOAD_ERR_OK) {
+        // Provide more specific error messages based on upload error
+        if (isset($_FILES['video_file']['error'])) {
+            switch ($_FILES['video_file']['error']) {
+                case UPLOAD_ERR_INI_SIZE:
+                    $error_message = "Video file is too large. Maximum allowed size is " . ini_get('upload_max_filesize') . ".";
+                    break;
+                case UPLOAD_ERR_FORM_SIZE:
+                    $error_message = "Video file exceeds the form's maximum size limit.";
+                    break;
+                case UPLOAD_ERR_PARTIAL:
+                    $error_message = "Video file was only partially uploaded. Please try again.";
+                    break;
+                case UPLOAD_ERR_NO_FILE:
+                    $error_message = "Please select a video file to upload.";
+                    break;
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    $error_message = "Server error: Missing temporary directory. Please contact the administrator.";
+                    break;
+                case UPLOAD_ERR_CANT_WRITE:
+                    $error_message = "Server error: Cannot write file to disk. Please contact the administrator.";
+                    break;
+                case UPLOAD_ERR_EXTENSION:
+                    $error_message = "Server error: Upload stopped by extension. Please contact the administrator.";
+                    break;
+                default:
+                    $error_message = "Unknown upload error occurred. Please try again.";
+                    break;
+            }
+        } else {
+            $error_message = "Please select a valid video file.";
+        }
     } else {
         // Validate video file
         $video_file = $_FILES['video_file'];
