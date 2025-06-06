@@ -3,6 +3,7 @@
 session_start();
 require '../config/database.php';
 require 'activity_tracker.php';
+date_default_timezone_set('Asia/Manila');
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header('Location: login.php');
