@@ -63,97 +63,180 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Add this style block before your closing </head> tag or before the calendar div -->
 <style>
-/* Calendar background and border */
+/* Main calendar container with dark theme */
 #calendar {
-    background: #222;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    padding-bottom: 10px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px var(--shadow-dark);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Calendar header (month/year title) */
+#calendar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-red), #ff4449, var(--primary-red));
+}
+
+/* Calendar header styling */
 .fc-toolbar-title {
-    color: #fff !important;
-    font-size: 2.5rem;
-    font-weight: bold;
+    color: var(--text-primary) !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
     letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* Calendar navigation buttons */
-.fc-button {
-    background: #d62328 !important;
-    color: #fff !important;
+/* Calendar buttons */
+.fc-button-primary {
+    background: linear-gradient(135deg, var(--primary-red), #ff4449) !important;
     border: none !important;
-    border-radius: 6px !important;
-    margin-right: 5px;
-    font-weight: bold;
-    font-size: 1.1rem;
-    transition: background 0.2s;
-}
-.fc-button.fc-button-primary:not(:disabled):hover {
-    background: #a81a1e !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 3px 10px rgba(214, 35, 40, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
-/* Today button */
-.fc-button.fc-today-button {
-    background: #232a32 !important;
-    color: #fff !important;
-    border-radius: 6px !important;
-    margin-right: 5px;
+.fc-button-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(214, 35, 40, 0.4) !important;
 }
 
-/* View switch buttons (month/week/day) */
-.fc-button-group .fc-button {
-    background: #232a32 !important;
-    color: #fff !important;
-}
-.fc-button-group .fc-button.fc-button-active {
-    background: #d62328 !important;
-    color: #fff !important;
+.fc-button-primary:disabled {
+    background: #666 !important;
+    opacity: 0.5 !important;
+    transform: none !important;
 }
 
-/* Calendar weekday header */
-.fc .fc-col-header-cell-cushion {
-    color: #fff !important;
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-.fc .fc-col-header-cell {
-    background: #222 !important;
-    border: none !important;
+/* Today button active state */
+.fc-today-button {
+    background: linear-gradient(135deg, #333, #555) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
 }
 
-/* Calendar grid */
-.fc-theme-standard .fc-scrollgrid,
-.fc-theme-standard td, 
-.fc-theme-standard th {
-    border: 1px solid #fff1 !important;
+/* Calendar day headers */
+.fc-col-header-cell {
+    background: linear-gradient(135deg, #333333, #404040) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Calendar day cells */
+.fc-daygrid-day {
+    background: var(--darker-bg) !important;
+    border-color: var(--border-color) !important;
+    transition: all 0.3s ease !important;
+}
+
+.fc-daygrid-day:hover {
+    background: rgba(214, 35, 40, 0.1) !important;
+}
+
+/* Today's date highlighting */
+.fc-day-today {
+    background: rgba(214, 35, 40, 0.2) !important;
+    border: 2px solid var(--primary-red) !important;
 }
 
 /* Day numbers */
 .fc-daygrid-day-number {
-    color: #fff !important;
-    font-size: 1.1rem;
-    font-weight: normal;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    padding: 8px !important;
 }
 
-/* Days outside current month */
-.fc-day-other .fc-daygrid-day-number {
-    color: #888 !important;
+.fc-day-today .fc-daygrid-day-number {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
 }
 
-/* Today highlight */
-.fc-day-today {
-    background: #444 !important;
-}
-
-/* Event colors */
-.fc-event, .fc-event-dot {
-    background: #d62328 !important;
+/* Events */
+.fc-event {
+    background: linear-gradient(135deg, var(--primary-red), #ff4449) !important;
     border: none !important;
-    color: #fff !important;
-    font-weight: bold;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    box-shadow: 0 2px 8px rgba(214, 35, 40, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.fc-event:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 4px 12px rgba(214, 35, 40, 0.4) !important;
+}
+
+/* Event text */
+.fc-event-title {
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+}
+
+/* More events link */
+.fc-daygrid-more-link {
+    color: var(--primary-red) !important;
+    font-weight: 600 !important;
+}
+
+.fc-daygrid-more-link:hover {
+    color: #ff4449 !important;
+    text-decoration: underline !important;
+}
+
+/* Calendar grid borders */
+.fc-scrollgrid {
+    border-color: var(--border-color) !important;
+}
+
+.fc-scrollgrid-section > * {
+    border-color: var(--border-color) !important;
+}
+
+/* Week view and day view styles */
+.fc-timegrid-slot {
+    border-color: var(--border-color) !important;
+}
+
+.fc-timegrid-axis {
+    background: var(--card-bg) !important;
+    color: var(--text-secondary) !important;
+}
+
+.fc-timegrid-col {
+    background: var(--darker-bg) !important;
+}
+
+/* Loading indicator */
+.fc-loading {
+    color: var(--primary-red) !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .fc-toolbar-title {
+        font-size: 1.5rem !important;
+    }
+    
+    .fc-button {
+        padding: 6px 10px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    #calendar {
+        padding: 15px !important;
+    }
 }
 </style>
 

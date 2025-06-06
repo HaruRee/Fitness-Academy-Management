@@ -62,6 +62,83 @@ function getStatusBadgeClass($status)
 
 <?php include '../assets/format/member_header.php'; ?>
 
+<!-- Enhanced Member Class Styling -->
+<style>
+    .table-dark td {
+        color: #ffffff !important;
+        border-color: #404040 !important;
+    }
+    
+    .table-dark td .text-muted {
+        color: #888888 !important;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 6px 10px;
+        border-radius: 6px;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #d62328, #ff4449);
+        border: none;
+        box-shadow: 0 3px 10px rgba(214, 35, 40, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(214, 35, 40, 0.4);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-red), #ff4449);
+        border: none;
+        box-shadow: 0 3px 10px rgba(214, 35, 40, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(214, 35, 40, 0.4);
+    }
+    
+    .modal-content {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        border-bottom: 2px solid var(--primary-red);
+        background: linear-gradient(135deg, #333333, #404040);
+    }
+    
+    .modal-title {
+        color: var(--text-primary);
+    }
+    
+    .btn-close {
+        filter: invert(1);
+    }
+    
+    .empty-state {
+        background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+        border: 2px dashed #404040;
+        border-radius: 12px;
+        padding: 50px 30px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+    
+    .empty-state i {
+        font-size: 3.5rem;
+        margin-bottom: 20px;
+        color: var(--primary-red);
+        opacity: 0.7;
+    }
+</style>
+
 <div class="container mt-4 mb-5">
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -79,29 +156,25 @@ function getStatusBadgeClass($status)
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         <?php unset($_SESSION['error_message']); ?>
-    <?php endif; ?>
-
-    <!-- Enrolled Classes Section -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0">
-                <i class="fas fa-dumbbell text-primary me-2"></i>
-                My Enrolled Classes
-            </h5>
+    <?php endif; ?>    <!-- Enrolled Classes Section -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-dumbbell text-danger me-3 fs-5"></i>
+            <h5 class="mb-0 text-white fw-bold">My Enrolled Classes</h5>
         </div>
         <div class="card-body">
             <?php if (count($enrolled_classes) > 0): ?>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead>
                             <tr>
-                                <th>Class Name</th>
-                                <th>Coach</th>
-                                <th>Date & Time</th>
-                                <th>Difficulty</th>
-                                <th>Requirements</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th class="text-white fw-bold">Class Name</th>
+                                <th class="text-white fw-bold">Coach</th>
+                                <th class="text-white fw-bold">Date & Time</th>
+                                <th class="text-white fw-bold">Difficulty</th>
+                                <th class="text-white fw-bold">Requirements</th>
+                                <th class="text-white fw-bold">Status</th>
+                                <th class="text-white fw-bold">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -151,11 +224,11 @@ function getStatusBadgeClass($status)
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div>
-            <?php else: ?>
-                <div class="text-center py-4">
-                    <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
-                    <p class="text-muted mb-0">You are not enrolled in any classes yet.</p>
+                </div>            <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p class="mb-0 h5">You are not enrolled in any classes yet.</p>
+                    <p class="text-muted">Browse available classes below to get started!</p>
                 </div>
             <?php endif; ?>
         </div>

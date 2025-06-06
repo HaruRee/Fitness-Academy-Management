@@ -18,7 +18,7 @@ function sanitize($data)
 
 // Fetch current user data
 try {
-    $stmt = $conn->prepare("SELECT Username, Email, First_Name, Last_Name, Phone, Address, DateOfBirth, ProfileImage FROM users WHERE UserID = ?");
+    $stmt = $conn->prepare("SELECT Username, Email, First_Name, Last_Name, Phone, Address, DateOfBirth, ProfileImage, RegistrationDate FROM users WHERE UserID = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -700,9 +700,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="success">
                     <?= htmlspecialchars($success) ?>
                 </div>
-            <?php endif; ?>
-
-            <!-- Profile Summary Card -->
+            <?php endif; ?>            <!-- Profile Summary Card -->
             <div class="profile-summary-card">
                 <div class="profile-summary-row">
                     <div>
@@ -713,6 +711,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span class="summary-label">Password</span>
                         <span>************</span>
                         <a href="#change-password" class="edit-icon" title="Change Password"><i class="fa fa-pen-to-square"></i></a>
+                    </div>
+                </div>
+                <div class="profile-summary-row">
+                    <div>
+                        <span class="summary-label">Member since</span>
+                        <span><?= htmlspecialchars(date('F j, Y', strtotime($user['RegistrationDate']))) ?></span>
                     </div>
                 </div>
             </div>

@@ -156,22 +156,22 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
     <title>Subscribe to Coach | Fitness Academy</title>
     <link rel="icon" type="image/png" href="../assets/images/fa_logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">    <style>
         :root {
-            --primary-color: #e41e26;
-            --primary-dark: #c71e24;
-            --text-color: #333;
-            --text-light: #666;
-            --bg-light: #f8f9fa;
-            --border-color: #eee;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
+            --primary-color: #dc2626;
+            --primary-dark: #b91c1c;
+            --text-color: #f3f4f6;
+            --text-light: #d1d5db;
+            --bg-dark: #0f0f0f;
+            --card-bg: #1f1f1f;
+            --border-color: #374151;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-light);
+            background-color: var(--bg-dark);
             margin: 0;
             color: var(--text-color);
             line-height: 1.5;
@@ -181,19 +181,18 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             max-width: 500px;
             margin: 30px auto;
             padding: 15px;
-        }
-
-        .card {
-            background: #fff;
+        }        .card {
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         }
 
         .subscription-header {
@@ -225,10 +224,8 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             margin: 0 0 5px;
             color: var(--text-color);
             font-weight: 600;
-        }
-
-        .coach-info {
-            background: var(--bg-light);
+        }        .coach-info {
+            background: #2d2d2d;
             border-radius: 10px;
             padding: 18px;
             margin-bottom: 22px;
@@ -238,8 +235,8 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
         }
 
         .coach-info:hover {
-            border-color: #d0d0d0;
-            background: #f3f4f6;
+            border-color: var(--primary-color);
+            background: #333;
         }
 
         .coach-name {
@@ -294,9 +291,8 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             flex-shrink: 0;
             margin-top: 4px;
         }
-        
-        .benefit-item span {
-            color: #444;
+          .benefit-item span {
+            color: var(--text-light);
         }
 
         .payment-info {
@@ -304,7 +300,8 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             text-align: center;
             padding: 12px;
             border-radius: 8px;
-            background-color: rgba(248, 249, 250, 0.7);
+            background-color: #2d2d2d;
+            border: 1px solid var(--border-color);
         }
 
         .payment-info p {
@@ -319,22 +316,20 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             margin-bottom: 5px;
             gap: 10px;
             flex-wrap: wrap;
-        }
-
-        .payment-icon {
+        }        .payment-icon {
             width: 40px;
             height: 40px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #f1f3f5;
+            background: #3d3d3d;
             border-radius: 8px;
-            color: #555;
+            color: var(--text-light);
             transition: all 0.2s ease;
         }
 
         .payment-icon:hover {
-            background: #e9ecef;
+            background: #4d4d4d;
             transform: translateY(-2px);
             color: var(--primary-color);
         }
@@ -380,17 +375,16 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
 
         .btn-primary:active {
             transform: translateY(0);
-        }
-
-        .btn-secondary {
+        }        .btn-secondary {
             background-color: transparent;
             color: var(--text-light);
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
         }
 
         .btn-secondary:hover {
-            background-color: #f5f5f5;
-            border-color: #ccc;
+            background-color: #2d2d2d;
+            border-color: var(--primary-color);
+            color: var(--text-color);
         }
 
         .btn i {
@@ -433,24 +427,20 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
         .alert i {
             margin-right: 10px;
             margin-top: 2px;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
+        }        .alert-success {
+            background-color: #1a2f1a;
             border-left: 4px solid var(--success-color);
-            color: #155724;
+            color: #a3e6a3;
         }
 
         .alert-danger {
-            background-color: #f8d7da;
+            background-color: #2f1a1a;
             border-left: 4px solid var(--danger-color);
-            color: #721c24;
-        }
-
-        .back-link {
+            color: #f5a3a3;
+        }        .back-link {
             display: inline-flex;
             align-items: center;
-            color: #555;
+            color: var(--text-light);
             text-decoration: none;
             margin-bottom: 15px;
             font-size: 0.9rem;
@@ -462,7 +452,7 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
 
         .back-link:hover {
             color: var(--primary-color);
-            background-color: rgba(0, 0, 0, 0.03);
+            background-color: rgba(220, 38, 38, 0.1);
         }
 
         .back-link i {
@@ -496,23 +486,22 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             .btn {
                 padding: 12px;
             }
-        }
-
-        /* High-contrast mode for accessibility */
+        }        /* High-contrast mode for accessibility */
         @media (prefers-contrast: more) {
             :root {
-                --primary-color: #c00;
-                --primary-dark: #900;
-                --text-color: #000;
-                --text-light: #333;
-                --bg-light: #fff;
-                --border-color: #666;
-                --success-color: #006400;
-                --danger-color: #a00;
+                --primary-color: #ff4444;
+                --primary-dark: #cc3333;
+                --text-color: #ffffff;
+                --text-light: #e5e5e5;
+                --bg-dark: #000000;
+                --card-bg: #222222;
+                --border-color: #888888;
+                --success-color: #00ff00;
+                --danger-color: #ff0000;
             }
             
             .card {
-                box-shadow: 0 0 0 1px #000;
+                box-shadow: 0 0 0 1px #ffffff;
             }
             
             .alert {
@@ -520,11 +509,11 @@ if ($_POST && $_POST['action'] === 'create_checkout') {
             }
             
             .btn-primary {
-                border: 1px solid #000;
+                border: 1px solid #ffffff;
             }
             
             .btn-secondary {
-                border: 1px solid #000;
+                border: 1px solid #ffffff;
             }
         }
     </style>

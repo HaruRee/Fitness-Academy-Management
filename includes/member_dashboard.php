@@ -31,101 +31,159 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
-<div class="container">    <!-- QR Attendance Section -->
-    <div style="background: #333; padding: 25px; border-radius: 6px; border: 1px solid #444; margin-bottom: 30px;">
-        <h3 style="margin-bottom: 20px; color: #eee; border-bottom: 2px solid #d62328; padding-bottom: 6px;">
-            <i class="fas fa-qrcode" style="margin-right: 10px; color: #d62328;"></i>My Attendance QR Code
-        </h3>
-
-        <p style="color: #bbb; margin-bottom: 20px; text-align: center;">
-            Generate your personal QR code for gym attendance. Show this QR code at the gym entrance/exit scanners.
-        </p><div style="text-align: center; margin-bottom: 20px;">
-            <button onclick="generateMemberQR()" style="padding: 15px 30px; background: #d62328; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                <i class="fas fa-qrcode"></i>
-                Generate My QR Code
-            </button>        </div>
-
-        <!-- QR Code Display -->
-        <div id="memberQrDisplay" style="display: none; text-align: center; padding: 20px; background: #222; border-radius: 6px; border: 1px solid #444; margin-top: 20px;">
-            <h4 style="margin-bottom: 15px; color: #eee;">Your Attendance QR Code</h4>
-            <div id="memberQrCodeContainer" style="margin: 20px auto; display: flex; justify-content: center; align-items: center;">
-                <!-- QR code will be generated here -->
-            </div>            <p id="memberQrMessage" style="margin-bottom: 15px; font-weight: 600; color: #eee;"></p>
-            <p style="color: #888; font-size: 0.9rem;">
-                <i class="fas fa-info-circle"></i> Show this QR code at gym entrance/exit scanners
-            </p>
-            <button onclick="hideMemberQRDisplay()" style="padding: 8px 16px; background: #555; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;">Close</button>
+<div class="container">
+    <!-- QR Attendance Section -->
+    <div class="card mb-4 shadow-lg">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-qrcode me-3 text-danger"></i>
+            <h4 class="mb-0 text-white">My Attendance QR Code</h4>
         </div>
-    </div>
+        <div class="card-body">
+            <p class="text-center text-light mb-4 lead">
+                Generate your personal QR code for gym attendance. Show this QR code at the gym entrance/exit scanners.
+            </p>
+            
+            <div class="text-center mb-4">
+                <button onclick="generateMemberQR()" class="btn btn-primary btn-lg px-5 py-3 shadow">
+                    <i class="fas fa-qrcode me-2"></i>
+                    Generate My QR Code
+                </button>
+            </div>
 
-    <h2>Announcements</h2>
-    <!-- Add this CSS inside a <style> tag or your CSS file -->
+            <!-- QR Code Display -->
+            <div id="memberQrDisplay" style="display: none;" class="card bg-dark border-danger mt-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-white mb-3">
+                        <i class="fas fa-qrcode me-2 text-danger"></i>
+                        Your Attendance QR Code
+                    </h5>
+                    <div id="memberQrCodeContainer" class="d-flex justify-content-center align-items-center mb-3">
+                        <!-- QR code will be generated here -->
+                    </div>
+                    <p id="memberQrMessage" class="text-white fw-bold mb-3"></p>
+                    <p class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Show this QR code at gym entrance/exit scanners
+                    </p>
+                    <button onclick="hideMemberQRDisplay()" class="btn btn-outline-secondary btn-sm mt-2">
+                        <i class="fas fa-times me-1"></i>Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>    <div class="d-flex align-items-center mb-4">
+        <i class="fas fa-bullhorn me-3 text-danger fs-4"></i>
+        <h2 class="mb-0">Announcements</h2>
+    </div>
+    
+    <!-- Enhanced announcements styling -->
     <style>
-        /* General container styling */
         .announcement-container {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+            border: 1px solid #404040;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 20px;
-            padding: 15px;
-            background: #222;
-            border-radius: 8px;
-            border: 1px solid #444;
             display: flex;
             align-items: flex-start;
-            gap: 15px;
+            gap: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        /* Profile image or initials styling */
+        .announcement-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border-color: var(--primary-red);
+        }
+
         .profile-image,
         .profile-initials {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
+            font-weight: 700;
+            font-size: 20px;
             object-fit: cover;
-            border: 2px solid #d62328;
+            border: 3px solid var(--primary-red);
+            box-shadow: 0 4px 15px rgba(214, 35, 40, 0.3);
+            transition: all 0.3s ease;
         }
 
         .profile-initials {
-            background: #d62328;
+            background: linear-gradient(135deg, var(--primary-red), #ff4449);
             color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Announcement text styling */
+        .announcement-container:hover .profile-image,
+        .announcement-container:hover .profile-initials {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(214, 35, 40, 0.4);
+        }
+
         .announcement-text {
             flex: 1;
         }
 
         .announcement-text strong {
-            color: #eee;
+            color: var(--text-primary);
             display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
         }
 
         .announcement-text small {
-            color: #bbb;
+            color: var(--text-muted);
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .announcement-text p {
-            color: #ddd;
+            color: var(--text-secondary);
             margin-top: 10px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .no-announcements {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+            border: 2px dashed #404040;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .no-announcements i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--primary-red);
+            opacity: 0.7;
         }
 
         /* Responsive design for mobile */
         @media (max-width: 600px) {
             .announcement-container {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: center;
+                text-align: center;
+                padding: 15px;
             }
 
             .profile-image,
             .profile-initials {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
             }
 
             .announcement-text strong {
@@ -133,7 +191,7 @@ try {
             }
 
             .announcement-text small {
-                font-size: 0.9rem;
+                font-size: 0.85rem;
             }
 
             .announcement-text p {
@@ -168,9 +226,11 @@ try {
                     <p><?php echo nl2br(htmlspecialchars($announcement['announcement'])); ?></p>
                 </div>
             </div>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <div style="color:#bbb; font-size:1.1em; margin:20px 0;">There are no current announcements.</div>
+        <?php endforeach; ?>    <?php else: ?>
+        <div class="no-announcements">
+            <i class="fas fa-bullhorn"></i>
+            <p class="mb-0">There are no current announcements.</p>
+        </div>
     <?php endif; ?>
 </div>
 

@@ -71,536 +71,544 @@ $paid_videos = array_filter($all_videos, function ($video) {
     <link rel="icon" type="image/png" href="../assets/images/fa_logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <!-- Enhanced Member Online Courses Styling -->
     <style>
+        :root {
+            --primary-red: #d62328;
+            --dark-bg: #1a1a1a;
+            --darker-bg: #121212;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-muted: #888888;
+            --shadow-light: rgba(255, 255, 255, 0.1);
+            --shadow-dark: rgba(0, 0, 0, 0.5);
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
         body {
             font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
-            background: #18191a;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
             margin: 0;
-            color: #f5f6fa;
+            color: var(--text-primary);
             min-height: 100vh;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px 16px;
-        }
-
+        
         .hero-section {
-            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
-            color: #fff;
-            padding: 48px 0 32px 0;
-            margin-bottom: 32px;
-            border-radius: 0 0 24px 24px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--darker-bg) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin: 2rem 0;
+            padding: 3rem 2rem;
+            position: relative;
+            overflow: hidden;
         }
-
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-red), #ff4449, var(--primary-red));
+        }
+        
         .hero-flex {
             display: flex;
             align-items: center;
-            gap: 32px;
-            flex-wrap: wrap;
+            gap: 2rem;
         }
-
+        
         .hero-icon {
-            background: rgba(24, 25, 26, 0.13);
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            font-size: 4rem;
+            color: var(--primary-red);
+            text-shadow: 0 0 20px rgba(214, 35, 40, 0.5);
         }
-
-        .hero-icon i {
-            font-size: 2.5rem;
-            color: #fff;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
-        }
-
+        
         .hero-section h1 {
-            font-size: 2.1rem;
-            margin-bottom: 10px;
+            color: var(--text-primary);
+            font-size: 2.5rem;
             font-weight: 700;
-            letter-spacing: 1px;
-            color: #fff;
-            text-shadow: 0 2px 8px rgba(24, 25, 26, 0.10);
+            margin: 0 0 1rem 0;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
+        
         .hero-desc {
-            font-size: 1.13rem;
-            font-weight: 500;
-            color: #f9f9f9;
-            opacity: 0.98;
-            max-width: 700px;
-            text-shadow: 0 2px 8px rgba(24, 25, 26, 0.10);
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 0;
         }
-
-        .section-title {
-            font-size: 1.3rem;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            color: #fff;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .section-title i {
-            margin-right: 12px;
-            color: #ff5252;
-            font-size: 1.2em;
-        }
-
+        
         .filter-tabs {
             display: flex;
-            margin-bottom: 24px;
-            background: #23272f;
-            border-radius: 10px;
-            padding: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
+            gap: 1rem;
+            margin: 2rem 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0;
         }
-
+        
         .filter-tab {
-            flex: 1;
-            padding: 12px 0;
-            text-align: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
             cursor: pointer;
-            border-radius: 8px;
+            transition: all 0.3s ease;
             font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.2s;
-            color: #b0b3b8;
-            background: none;
-            border: none;
-            outline: none;
-            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
         }
-
+        
+        .filter-tab:hover {
+            background: var(--darker-bg);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        
         .filter-tab.active {
-            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(228, 30, 38, 0.10);
+            background: var(--primary-red);
+            color: white;
+            border-color: var(--primary-red);
+            box-shadow: 0 -4px 15px rgba(214, 35, 40, 0.3);
         }
-
-        .filter-tab:not(.active):hover {
-            background: #23272f;
-            color: #fff;
+        
+        .filter-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-red);
         }
-
+        
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease;
         }
-
+        
         .tab-content.active {
             display: block;
         }
-
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            color: var(--text-primary);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 2rem 0 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--primary-red);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: #ff4449;
+        }
+        
+        .section-title i {
+            color: var(--primary-red);
+        }
+        
         .video-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 28px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
         }
-
+        
         .video-card {
-            background: #23272f;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.13);
-            transition: transform 0.18s, box-shadow 0.18s;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
             position: relative;
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            min-height: 380px;
         }
-
+        
         .video-card:hover {
-            transform: translateY(-4px) scale(1.015);
-            box-shadow: 0 10px 32px rgba(228, 30, 38, 0.10);
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border-color: var(--primary-red);
         }
-
+        
         .video-thumbnail {
+            position: relative;
             width: 100%;
-            height: 180px;
-            background: #18191a;
+            height: 220px;
+            overflow: hidden;
+            background: var(--darker-bg);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            overflow: hidden;
         }
-
+        
         .video-thumbnail img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-bottom: 1px solid #23272f;
-            transition: filter 0.2s;
+            transition: transform 0.3s ease;
         }
-
+        
+        .video-card:hover .video-thumbnail img {
+            transform: scale(1.05);
+        }
+        
         .video-thumbnail i {
             font-size: 3rem;
-            color: #ff5252;
-            opacity: 0.7;
+            color: var(--text-muted);
         }
-
+        
         .play-overlay {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.22);
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.3s ease;
         }
-
+        
         .video-card:hover .play-overlay {
             opacity: 1;
         }
-
+        
         .play-button {
-            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
-            color: #fff;
-            border: none;
+            width: 70px;
+            height: 70px;
+            background: rgba(214, 35, 40, 0.9);
+            border: 3px solid white;
             border-radius: 50%;
-            width: 54px;
-            height: 54px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
-            transition: background 0.2s, transform 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            font-size: 24px;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
-
-        .play-button:hover {
-            background: linear-gradient(90deg, #c71e24 0%, #ff5252 100%);
-            transform: scale(1.07);
+        
+        .video-card:hover .play-button {
+            transform: scale(1);
+            background: var(--primary-red);
         }
-
-        .video-info {
-            padding: 18px 18px 14px 18px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .video-title {
-            font-weight: 700;
-            font-size: 1.08rem;
-            margin-bottom: 7px;
-            color: #fff;
-            line-height: 1.3;
-            letter-spacing: 0.1px;
-        }
-
-        .coach-name {
-            color: #ff5252;
-            font-weight: 600;
-            font-size: 0.93rem;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .coach-name i {
-            font-size: 1em;
-            color: #ff5252;
-        }
-
-        .video-description {
-            color: #b0b3b8;
-            font-size: 0.97rem;
-            margin-bottom: 12px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.4;
-            min-height: 2.7em;
-        }
-
-        .video-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.89rem;
-            color: #b0b3b8;
-            margin-bottom: 10px;
-            gap: 8px;
-        }
-
-        .access-badge {
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            border: none;
-            display: inline-block;
-        }
-
-        .access-free {
-            background: #1e4620;
-            color: #7fff7f;
-            border: 1px solid #2e7d32;
-        }
-
-        .access-paid {
-            background: #2d1d00;
-            color: #ffc107;
-            border: 1px solid #f57c00;
-        }
-
+        
         .locked-overlay {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(24, 25, 26, 0.93);
+            background: rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            z-index: 2;
-            padding: 0 10px;
+            color: var(--text-muted);
         }
-
+        
         .locked-overlay i {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            color: #ffc107;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-red);
         }
-
+        
         .locked-overlay p {
-            text-align: center;
             margin: 0;
             font-weight: 600;
-            font-size: 1.05em;
-            color: #fff;
-        }
-
-        .btn {
-            padding: 10px 0;
-            border: none;
-            border-radius: 25px;
-            font-size: 0.98rem;
-            font-weight: 700;
-            text-decoration: none;
-            display: inline-block;
-            cursor: pointer;
-            transition: all 0.2s;
             text-align: center;
-            width: 100%;
-            margin-top: 8px;
-            letter-spacing: 0.2px;
         }
-
-        .btn-primary {
-            background: linear-gradient(90deg, #e41e26 0%, #ff6b6b 100%);
-            color: #fff;
-            border: none;
+        
+        .video-info {
+            padding: 1.5rem;
         }
-
-        .btn-primary:hover {
-            background: linear-gradient(90deg, #c71e24 0%, #ff5252 100%);
-            color: #fff;
-            transform: translateY(-2px) scale(1.03);
-        }
-
-        .btn-secondary {
-            background: #444950;
-            color: #fff;
-            border: 1.5px solid #888;
-        }
-
-        .btn-secondary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #b0b3b8;
-        }
-
-        .empty-state i {
-            font-size: 3.5rem;
-            margin-bottom: 18px;
-            color: #23272f;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 8px;
-            color: #fff;
-            font-size: 1.2rem;
+        
+        .video-title {
+            color: var(--text-primary);
+            font-size: 1.1rem;
             font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-
-        /* Video Modal */
-        #videoModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.96);
-            z-index: 1000;
+        
+        .coach-name {
+            color: var(--primary-red);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .video-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .video-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .video-meta span {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .access-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .access-free {
+            background: linear-gradient(135deg, var(--success-color), #34d058);
+            color: white;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .access-paid {
+            background: linear-gradient(135deg, var(--primary-red), #ff4449);
+            color: white;
+            box-shadow: 0 2px 8px rgba(214, 35, 40, 0.3);
+        }
+        
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
         }
-
-        #videoModal.active {
-            display: flex;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-red), #ff4449);
+            color: white;
+            box-shadow: 0 4px 15px rgba(214, 35, 40, 0.3);
         }
-
-        #videoModal>div {
-            position: relative;
-            width: 95vw;
-            max-width: 800px;
-            background: #18191a;
-            border-radius: 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            padding: 0;
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(214, 35, 40, 0.4);
         }
-
-        #videoModal button[onclick^="closeVideoModal"] {
-            position: absolute;
-            top: -44px;
-            right: 0;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 2.2rem;
-            cursor: pointer;
-            z-index: 10;
-            transition: color 0.2s;
+        
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
         }
-
-        #videoModal button[onclick^="closeVideoModal"]:hover {
-            color: #ff5252;
+        
+        .empty-state {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            margin: 2rem 0;
         }
-
-        #modalVideo {
-            width: 100%;
-            border-radius: 10px;
-            background: #000;
-            min-height: 220px;
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-red);
+            opacity: 0.7;
         }
-
+        
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .empty-state p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        /* Modal Styles */
+        #videoModal {
+            backdrop-filter: blur(5px);
+        }
+        
+        #videoModal video {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        
+        #videoModal button {
+            transition: all 0.3s ease;
+        }
+        
+        #videoModal button:hover {
+            transform: scale(1.1);
+            color: var(--primary-red) !important;
+        }
+        
         /* Responsive Design */
-        @media (max-width: 900px) {
-            .container {
-                padding: 12px 4vw;
+        @media (max-width: 768px) {
+            .hero-flex {
+                flex-direction: column;
+                text-align: center;
+                gap: 1.5rem;
             }
-
-            .video-grid {
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                gap: 18px;
-            }
-
-            .video-thumbnail {
-                height: 140px;
-            }
-
-            .video-card {
-                min-height: 320px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 6px 2vw;
-            }
-
-            .hero-section {
-                padding: 36px 0 22px 0;
-                border-radius: 0 0 12px 12px;
-            }
-
+            
             .hero-section h1 {
-                font-size: 1.25rem;
+                font-size: 2rem;
             }
-
-            .hero-section p {
-                font-size: 0.97rem;
+            
+            .hero-desc {
+                font-size: 1rem;
             }
-
+            
+            .filter-tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .filter-tab {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            
+            .filter-tab:first-child {
+                border-radius: 12px 12px 0 0;
+                border-left: 1px solid var(--border-color);
+                border-right: 1px solid var(--border-color);
+            }
+            
+            .filter-tab:last-child {
+                border-left: 1px solid var(--border-color);
+                border-right: 1px solid var(--border-color);
+            }
+            
             .section-title {
-                font-size: 1.05rem;
+                font-size: 1.5rem;
+                margin: 1.5rem 0 1rem;
             }
-
+            
             .video-grid {
                 grid-template-columns: 1fr;
-                gap: 12px;
+                gap: 1.5rem;
             }
-
-            .video-thumbnail {
-                height: 110px;
-            }
-
-            .video-card {
-                min-height: 220px;
-            }
-
+            
             .video-info {
-                padding: 12px 10px 10px 10px;
+                padding: 1.25rem;
             }
-
-            .btn,
-            .btn-primary,
-            .btn-secondary {
-                font-size: 0.93rem;
-                padding: 8px 0;
+            
+            .video-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
             }
-
-            #videoModal>div {
-                width: 99vw;
-                max-width: 99vw;
+            
+            .btn {
+                width: 100%;
             }
-
-            #modalVideo {
-                min-height: 120px;
+            
+            .empty-state {
+                padding: 3rem 1.5rem;
+            }
+            
+            .empty-state i {
+                font-size: 3rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-section {
+                padding: 2rem 1rem;
+                margin: 1rem 0;
+            }
+            
+            .hero-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .filter-tab {
+                padding: 0.75rem 1rem;
             }
         }
     </style>
 </head>
 
 <body>
-    <?php include '../assets/format/member_header.php'; ?>
-
-    <div class="hero-section">
-        <div class="container hero-flex">
-            <div class="hero-icon">
-                <i class="fas fa-dumbbell"></i>
-            </div>
-            <div>
-                <h1>Unlock Your Fitness Potential</h1>
-                <p class="hero-desc">
-                    Access a curated library of expert-led fitness video courses—covering strength, mobility, nutrition, and more. Learn at your own pace, from anywhere, with both free and premium content designed for real results.
-                </p>
+    <?php include '../assets/format/member_header.php'; ?>    <div class="container">
+        <div class="hero-section">
+            <div class="hero-flex">
+                <div class="hero-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div>
+                    <h1>Online Fitness Academy</h1>
+                    <p class="hero-desc">
+                        Access a curated library of expert-led fitness video courses—covering strength, mobility, nutrition, and more. Learn at your own pace, from anywhere, with both free and premium content designed for real results.
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="container">
         <!-- Filter Tabs -->
         <div class="filter-tabs">
             <div id="free-tab-btn" class="filter-tab active" onclick="showTab('free')">
@@ -619,10 +627,10 @@ $paid_videos = array_filter($all_videos, function ($video) {
 
             <?php if (count($free_videos) > 0): ?>
                 <div class="video-grid">
-                    <?php foreach ($free_videos as $video): ?>
-                        <div class="video-card" onclick="watchVideo(<?= $video['id'] ?>)">                            <div class="video-thumbnail">
+                    <?php foreach ($free_videos as $video): ?>                        <div class="video-card" onclick="watchVideo(<?= $video['id'] ?>)">
+                            <div class="video-thumbnail">
                                 <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
+                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="<?= htmlspecialchars($video['title']) ?>">
                                 <?php else: ?>
                                     <i class="fas fa-play-circle"></i>
                                 <?php endif; ?>
@@ -635,17 +643,19 @@ $paid_videos = array_filter($all_videos, function ($video) {
                             <div class="video-info">
                                 <div class="video-title"><?= htmlspecialchars($video['title']) ?></div>
                                 <div class="coach-name">
-                                    <i class="fas fa-user"></i>
+                                    <i class="fas fa-user-tie"></i>
                                     <?= htmlspecialchars($video['First_Name'] . ' ' . $video['Last_Name']) ?>
                                 </div>
                                 <div class="video-description"><?= htmlspecialchars($video['description']) ?></div>
                                 <div class="video-meta">
                                     <span><i class="fas fa-eye"></i> <?= number_format($video['total_views']) ?> views</span>
-                                    <span class="access-badge access-free">Free</span>
+                                    <span class="access-badge access-free">
+                                        <i class="fas fa-gift"></i> Free
+                                    </span>
                                 </div>
                                 <?php if (isset($video['user_has_viewed']) && $video['user_has_viewed']): ?>
-                                    <div style="color: #28a745; font-size: 0.85rem;">
-                                        <i class="fas fa-check-circle"></i> Watched
+                                    <div style="color: #28a745; font-size: 0.85rem; margin-top: 0.5rem;">
+                                        <i class="fas fa-check-circle"></i> Completed
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -672,10 +682,10 @@ $paid_videos = array_filter($all_videos, function ($video) {
                     <?php foreach ($paid_videos as $video): ?>
                         <?php
                         $can_access = in_array($video['coach_id'], $subscribed_coaches);
-                        ?>
-                        <div class="video-card" <?= $can_access ? 'onclick="watchVideo(' . $video['id'] . ')"' : '' ?>>                            <div class="video-thumbnail">
+                        ?>                        <div class="video-card" <?= $can_access ? 'onclick="watchVideo(' . $video['id'] . ')"' : '' ?>>
+                            <div class="video-thumbnail">
                                 <?php if (isset($video['thumbnail_path']) && $video['thumbnail_path']): ?>
-                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail">
+                                    <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="<?= htmlspecialchars($video['title']) ?>">
                                 <?php else: ?>
                                     <i class="fas fa-play-circle"></i>
                                 <?php endif; ?>
@@ -696,36 +706,38 @@ $paid_videos = array_filter($all_videos, function ($video) {
                             <div class="video-info">
                                 <div class="video-title"><?= htmlspecialchars($video['title']) ?></div>
                                 <div class="coach-name">
-                                    <i class="fas fa-user"></i>
+                                    <i class="fas fa-user-tie"></i>
                                     <?= htmlspecialchars($video['First_Name'] . ' ' . $video['Last_Name']) ?>
                                 </div>
                                 <div class="video-description"><?= htmlspecialchars($video['description']) ?></div>
                                 <div class="video-meta">
                                     <span><i class="fas fa-eye"></i> <?= number_format($video['total_views']) ?> views</span>
                                     <span class="access-badge access-paid">
-                                        ₱<?= number_format($video['subscription_price'], 2) ?>/mo
+                                        <i class="fas fa-crown"></i> ₱<?= number_format($video['subscription_price'], 2) ?>/mo
                                     </span>
-                                    <?php if ($video['subscription_price'] < 20): ?>
-                                        <div style="color: #dc3545; font-size: 0.8rem; margin-top: 5px;">
-                                            <i class="fas fa-exclamation-triangle"></i> Price below payment minimum - Contact coach
-                                        </div>
-                                    <?php endif; ?>
                                 </div>
+                                
+                                <?php if ($video['subscription_price'] < 20): ?>
+                                    <div style="color: #dc3545; font-size: 0.8rem; margin: 0.5rem 0;">
+                                        <i class="fas fa-exclamation-triangle"></i> Price below minimum - Contact coach
+                                    </div>
+                                <?php endif; ?>
+                                
                                 <?php if ($can_access): ?>
                                     <?php if ($video['user_has_viewed']): ?>
-                                        <div style="color: #28a745; font-size: 0.85rem;">
-                                            <i class="fas fa-check-circle"></i> Watched
+                                        <div style="color: #28a745; font-size: 0.85rem; margin-top: 0.5rem;">
+                                            <i class="fas fa-check-circle"></i> Completed
                                         </div>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <?php if ($video['subscription_price'] < 20): ?>
-                                        <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" disabled>
-                                            <i class="fas fa-exclamation-triangle"></i> Unavailable (Price too low)
+                                        <button class="btn btn-secondary" style="width: 100%; margin-top: 0.75rem;" disabled>
+                                            <i class="fas fa-exclamation-triangle"></i> Unavailable
                                         </button>
                                     <?php else: ?>
-                                        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;"
+                                        <button class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;"
                                             onclick="event.stopPropagation(); subscribeToCoach(<?= $video['coach_id'] ?>, '<?= htmlspecialchars($video['First_Name'] . ' ' . $video['Last_Name']) ?>', <?= $video['subscription_price'] ?>)">
-                                            <i class="fas fa-crown"></i> Subscribe
+                                            <i class="fas fa-crown"></i> Subscribe Now
                                         </button>
                                     <?php endif; ?>
                                 <?php endif; ?>
