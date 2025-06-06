@@ -342,25 +342,23 @@ private function getMembershipTrends() {
         
         return $context;
     }
-    
-    private function buildSystemPrompt($type) {
+      private function buildSystemPrompt($type) {
         // Create system prompts based on prediction type
         if ($type === 'membership') {
-            return 'You are a data-driven membership growth analyst for a fitness gym. Analyze the data and provide exactly 3 concise, actionable insights about membership trends and retention. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious.';
+            return 'You are a data-driven membership growth analyst for a fitness gym in the Philippines. Analyze the data and provide exactly 3 concise, actionable insights about membership trends and retention. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious. Use Philippine Peso (₱) for all currency amounts.';
         } 
         elseif ($type === 'revenue') {
-            return 'You are a revenue optimization specialist for a fitness gym. Analyze the data and provide exactly 3 concise, actionable insights about revenue patterns and opportunities. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious.';
+            return 'You are a revenue optimization specialist for a fitness gym in the Philippines. Analyze the data and provide exactly 3 concise, actionable insights about revenue patterns and opportunities. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious. Use Philippine Peso (₱) for all currency amounts.';
         }
     }
-    
-    private function buildUserPrompt($type, $dataContext) {
+      private function buildUserPrompt($type, $dataContext) {
         // Format data as stringified JSON for the AI
         $dataJson = json_encode($dataContext, JSON_PRETTY_PRINT);
         
         if ($type === 'membership') {
-            return "Based on this membership data from our gym, provide 3 specific insights about membership trends and retention. Be concise and actionable.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for new members next week based on these patterns. Be creative but data-driven.";
+            return "Based on this membership data from our fitness gym in the Philippines, provide 3 specific insights about membership trends and retention. Be concise and actionable. Use Philippine Peso (₱) for any currency amounts.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for new members next week based on these patterns. Be creative but data-driven.";
         }        elseif ($type === 'revenue') {
-            return "Based on this revenue data from our gym, provide 3 specific insights about revenue patterns and opportunities. Be concise and actionable.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for next week's revenue based on these patterns. Include an exact number. Be creative but data-driven.";
+            return "Based on this revenue data from our fitness gym in the Philippines, provide 3 specific insights about revenue patterns and opportunities. Be concise and actionable. Use Philippine Peso (₱) for any currency amounts.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for next week's revenue in Philippine Peso (₱) based on these patterns. Include an exact number. Be creative but data-driven.";
         }
     }
     
@@ -559,11 +557,10 @@ private function getMembershipTrends() {
                 preg_match('/(\d+)(?:\s+new)?\s+members/i', $content, $matches);
             }
               $prediction = !empty($matches[1]) ? intval($matches[1]) : 0;
-            
-            return [
+              return [
                 'trend' => $this->detectTrend($rawData, $type),
                 'prediction' => "Predicted {$prediction} new members next week",
-                'insights' => array_slice($insights, 0, 3)
+                'insights' => array_map([$this, 'convertCurrencyToPeso'], array_slice($insights, 0, 3))
             ];
         }        elseif ($type === 'revenue') {
             // Try to find revenue prediction patterns with currency - more comprehensive approach
@@ -589,11 +586,10 @@ private function getMembershipTrends() {
                 preg_match('/\b(\d{4,}(?:,\d{3})*(?:\.\d{1,2})?)\b/i', $content, $matches); // Match any 4+ digit number
             }            // Get the prediction amount directly from the match without fallback calculation
             $amount = !empty($matches[1]) ? str_replace(',', '', $matches[1]) : 0;
-            
-            return [
+              return [
                 'trend' => $this->detectTrend($rawData, $type),
                 'prediction' => "Projected revenue: ₱" . number_format(floatval($amount), 2) . " next week",
-                'insights' => array_slice($insights, 0, 3)
+                'insights' => array_map([$this, 'convertCurrencyToPeso'], array_slice($insights, 0, 3))
             ];
         }
     }
@@ -644,6 +640,13 @@ private function getMembershipTrends() {
         }
         
         return 'steady';
+    }    // Helper function to convert dollar signs to Philippine peso
+    private function convertCurrencyToPeso($text) {
+        // Convert dollar signs to Philippine peso symbols (various formats)
+        $text = preg_replace('/\$(\d+(?:,\d{3})*(?:\.\d{1,2})?)/m', '₱$1', $text);
+        // Also handle formats like "USD 100" or "US$100"
+        $text = preg_replace('/(?:USD|US\$)\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/mi', '₱$1', $text);
+        return $text;
     }
   
 }

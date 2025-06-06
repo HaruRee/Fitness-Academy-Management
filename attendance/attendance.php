@@ -220,11 +220,9 @@ $scanner_location = $_SESSION['scanner_location'];
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(211, 47, 47, 0.3);
             transition: all 0.3s ease;
-        }
-
-        #scanner {
+        }        #scanner {
             width: 100%;
-            height: 220px;
+            height: 370px;
             border-radius: 13px;
         }
 
@@ -242,118 +240,29 @@ $scanner_location = $_SESSION['scanner_location'];
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
-            font-size: 1.5rem;
             backdrop-filter: blur(5px);
+            text-align: center;
+            padding: 2rem;
+            z-index: 10;
         }
 
         .scanner-overlay i {
-            margin-bottom: 0.5rem;
-            opacity: 0.7;
+            margin-bottom: 1rem;
+            opacity: 0.8;
             color: var(--primary-red);
+            font-size: 2.5rem;
+            display: block;
         }
 
         .scanner-overlay p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 0.8rem;
-            margin-bottom: 1rem;
-            justify-content: center;
-        }
-
-        .btn {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.6rem 1.2rem;
-            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(211, 47, 47, 0.4);
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn.stop {
-            background: linear-gradient(135deg, var(--light-gray), var(--dark-gray));
-        }
-
-        .btn.stop:hover {
-            box-shadow: 0 8px 20px rgba(66, 66, 66, 0.4);
-        }
-
-        /* Manual input */
-        .manual-input {
-            margin-bottom: 1rem;
-        }
-
-        .input-group {
-            position: relative;
-        }        .manual-input input {
-            width: 100%;
-            padding: 0.6rem 0.8rem 0.6rem 2.2rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--glass-border);
-            border-radius: 25px;
+            font-size: 1rem;
             color: var(--text-primary);
-            font-size: 0.8rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .manual-input input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .manual-input input:focus {
-            outline: none;
-            border-color: var(--primary-red);
-            box-shadow: 0 0 15px rgba(211, 47, 47, 0.3);
-            transform: translateY(-1px);
-        }        .input-icon {
-            position: absolute;
-            left: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 0.8rem;
-        }
-
-        /* Status message */
+            font-weight: 600;
+            line-height: 1.5;
+            margin: 0 auto;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }/* Status message */
         .status-message {
             display: flex;
             align-items: center;
@@ -388,11 +297,7 @@ $scanner_location = $_SESSION['scanner_location'];
 
         .status-message.warning {
             background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 183, 77, 0.2));
-            border-color: rgba(255, 152, 0, 0.4);
-            animation: error-shake 0.3s ease-out;
-        }        .status-message.ready {
-            background: rgba(30, 41, 59, 0.6);
-            border-color: var(--glass-border);
+            border-color: rgba(255, 152, 0, 0.4);            animation: error-shake 0.3s ease-out;
         }
 
         @keyframes loading-pulse {
@@ -461,10 +366,58 @@ $scanner_location = $_SESSION['scanner_location'];
 
         .activity-item.checkout {
             border-left-color: var(--warning-color);
-        }        .activity-time {
+        }        .activity-layout {
+            display: grid;
+            grid-template-columns: 1fr auto 100px;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .activity-user {
+            justify-self: start;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .activity-time {
+            justify-self: center;
             font-size: 0.6rem;
             color: var(--text-muted);
-            margin-top: 0.05rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .activity-action {
+            justify-self: end;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .activity-action.checkin {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.15));
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-action.checkout {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.15));
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         /* Time display */        .time-display {
@@ -481,8 +434,7 @@ $scanner_location = $_SESSION['scanner_location'];
             color: var(--primary-red);
         }
 
-        /* Responsive design */
-        @media (max-width: 640px) {
+        /* Responsive design */        @media (max-width: 640px) {
             .attendance-container {
                 margin: 0.5rem;
                 padding: 1.2rem;
@@ -496,23 +448,16 @@ $scanner_location = $_SESSION['scanner_location'];
                 width: 180px;
                 height: 38px;
             }
-            
-            #scanner {
-                height: 200px;
-            }
-            
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
 
-        @media (max-width: 480px) {
+            #scanner {
+                height: 320px;
+            }
+            
+            .activity-layout {
+                grid-template-columns: 1fr auto 90px;
+                gap: 0.4rem;
+            }
+        }@media (max-width: 480px) {
             .attendance-container {
                 padding: 1rem;
             }
@@ -520,6 +465,34 @@ $scanner_location = $_SESSION['scanner_location'];
             .toggle-switch {
                 width: 160px;
                 height: 36px;
+            }
+            
+            #scanner {
+                height: 280px;
+            }
+            
+            .activity-layout {
+                grid-template-columns: 1fr auto 80px;
+                gap: 0.3rem;
+            }
+            
+            .activity-action {
+                font-size: 0.55rem;
+                padding: 0.15rem 0.35rem;
+                letter-spacing: 0.5px;
+            }
+            
+            .activity-time {
+                font-size: 0.55rem;
+            }
+              .scanner-overlay p {
+                font-size: 0.9rem;
+                padding: 0 1rem;
+            }
+            
+            .scanner-overlay i {
+                font-size: 2rem;
+                margin-bottom: 0.8rem;
             }
         }
     </style>
@@ -576,29 +549,9 @@ $scanner_location = $_SESSION['scanner_location'];
                     <i class="fas fa-qrcode"></i>
                     <p>Position QR code within the frame</p>
                 </div>
-            </div>
-
-            <div class="controls">
-                <button id="startBtn" class="btn">
-                    <i class="fas fa-play"></i>
-                    <span>Start Scanner</span>
-                </button>
-                <button id="stopBtn" class="btn stop" style="display: none;">
-                    <i class="fas fa-stop"></i>
-                    <span>Stop Scanner</span>
-                </button>
-            </div>
-
-            <div class="manual-input">
-                <div class="input-group">
-                    <input type="text" id="manualQR" placeholder="Enter QR code manually">
-                    <i class="fas fa-keyboard input-icon"></i>
-                </div>
-            </div>
-
-            <div id="statusMessage" class="status-message ready">
+            </div>            <div id="statusMessage" class="status-message" style="display: none;">
                 <i class="fas fa-info-circle"></i>
-                <span>Ready to scan QR codes for CHECK-IN</span>
+                <span></span>
             </div>
         </div>
 
@@ -640,8 +593,7 @@ $scanner_location = $_SESSION['scanner_location'];
             // Update time every minute
             updateTime();
             setInterval(updateTime, 60000);
-            
-            // Toggle mode change handler
+              // Toggle mode change handler
             toggleOptions.forEach(option => {
                 option.addEventListener('click', function() {
                     const mode = this.dataset.mode;
@@ -661,20 +613,16 @@ $scanner_location = $_SESSION['scanner_location'];
                         toggleContainer.classList.remove('checkout');
                     }
                     
-                    // Update status message
-                    updateStatus(`Ready to scan QR codes for ${mode.toUpperCase()}`, 'ready');
-                    
-                    // If scanner is running, restart it to update the mode
+                    // Always restart scanner when mode changes
                     if (isScanning) {
                         stopScanner();
-                        setTimeout(() => startScanner(), 500);
+                        setTimeout(() => startScanner(), 300);
+                    } else {
+                        startScanner();
                     }
                 });
-            });
-
-            function updateStatus(message, type = 'ready') {
+            });            function updateStatus(message, type = 'loading') {
                 const icons = {
-                    ready: 'fas fa-info-circle',
                     loading: 'fas fa-spinner fa-spin',
                     success: 'fas fa-check-circle',
                     error: 'fas fa-exclamation-circle',
@@ -693,8 +641,8 @@ $scanner_location = $_SESSION['scanner_location'];
                 
                 if (type === 'success' || type === 'error' || type === 'warning') {
                     setTimeout(() => {
-                        updateStatus(`Ready to scan QR codes for ${currentMode.toUpperCase()}`, 'ready');
-                    }, 4000);
+                        statusMessage.style.display = 'none';
+                    }, 3000);
                 }
             }
 
@@ -715,40 +663,29 @@ $scanner_location = $_SESSION['scanner_location'];
                 };
 
                 html5QrcodeScanner = new Html5Qrcode("scanner");
-                
-                html5QrcodeScanner.start(
+                  html5QrcodeScanner.start(
                     { facingMode: "environment" },
                     config,
                     onScanSuccess,
-                    onScanFailure
-                ).then(() => {
+                    onScanFailure                ).then(() => {
                     isScanning = true;
-                    document.getElementById('startBtn').style.display = 'none';
-                    document.getElementById('stopBtn').style.display = 'flex';
-                    updateStatus(`Scanning for ${currentMode.toUpperCase()}...`, 'loading');
+                    statusMessage.style.display = 'none';
                 }).catch(err => {
                     console.error('Scanner start error:', err);
                     updateStatus('Failed to start camera. Please check permissions.', 'error');
-                    scannerOverlay.style.display = 'block';
+                    scannerOverlay.style.display = 'flex';
                 });
-            }
-
-            function stopScanner() {
+            }            function stopScanner() {
                 if (!isScanning || !html5QrcodeScanner) return;
                 
                 html5QrcodeScanner.stop().then(() => {
                     html5QrcodeScanner.clear();
                     isScanning = false;
-                    document.getElementById('startBtn').style.display = 'flex';
-                    document.getElementById('stopBtn').style.display = 'none';
-                    updateStatus(`Ready to scan QR codes for ${currentMode.toUpperCase()}`, 'ready');
-                    scannerOverlay.style.display = 'block';
+                    scannerOverlay.style.display = 'flex';
                 }).catch(err => {
                     console.error('Scanner stop error:', err);
                     isScanning = false;
-                    document.getElementById('startBtn').style.display = 'flex';
-                    document.getElementById('stopBtn').style.display = 'none';
-                    scannerOverlay.style.display = 'block';
+                    scannerOverlay.style.display = 'flex';
                 });
             }
 
@@ -757,18 +694,8 @@ $scanner_location = $_SESSION['scanner_location'];
                 
                 stopScanner();
                 processAttendance(decodedText);
-            }
-
-            function onScanFailure(error) {
+            }            function onScanFailure(error) {
                 // Ignore scan failures - they're too frequent and noisy
-            }
-
-            function processManualQR() {
-                const qrCode = document.getElementById('manualQR').value.trim();
-                if (qrCode) {
-                    document.getElementById('manualQR').value = '';
-                    processAttendance(qrCode);
-                }
             }
 
             async function processAttendance(qrCode) {
@@ -853,28 +780,24 @@ $scanner_location = $_SESSION['scanner_location'];
                 
                 const activityItem = document.createElement('div');
                 activityItem.className = `activity-item ${action}`;
-                  let content = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong style="color: var(--text-primary); font-size: 0.7rem;">${userName}</strong>
-                            <span style="margin-left: 0.4rem; font-size: 0.65rem; opacity: 0.8; color: var(--text-secondary);">
-                                ${action.toUpperCase()}
-                            </span>
-                `;
+                
+                let userSection = `<strong style="color: var(--text-primary); font-size: 0.7rem;">${userName}</strong>`;
                 
                 // Add role badge if available
                 if (role) {
                     const roleColor = role.toLowerCase() === 'member' ? '#10b981' : role.toLowerCase() === 'coach' ? '#f59e0b' : '#64748b';
-                    content += `<span style="margin-left: 0.4rem; font-size: 0.6rem; padding: 0.05rem 0.3rem; background: rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.2); color: ${roleColor}; border-radius: 8px; border: 1px solid rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.3);">${role}</span>`;
+                    userSection += `<span style="margin-left: 0.4rem; font-size: 0.6rem; padding: 0.05rem 0.3rem; background: rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.2); color: ${roleColor}; border-radius: 8px; border: 1px solid rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.3);">${role}</span>`;
                 }
                 
                 if (duration && action === 'checkout') {
-                    content += `<span style="margin-left: 0.4rem; font-size: 0.65rem; color: #f59e0b;">(${duration})</span>`;
+                    userSection += `<span style="margin-left: 0.4rem; font-size: 0.65rem; color: #f59e0b;">(${duration})</span>`;
                 }
                 
-                content += `
-                        </div>
+                let content = `
+                    <div class="activity-layout">
+                        <div class="activity-user">${userSection}</div>
                         <div class="activity-time">${timeString}</div>
+                        <div class="activity-action ${action}">${action.toUpperCase()}</div>
                     </div>
                 `;
                 
@@ -934,31 +857,26 @@ $scanner_location = $_SESSION['scanner_location'];
                             minute: '2-digit',
                             hour12: true 
                         });
-                        
-                        const activityItem = document.createElement('div');
+                          const activityItem = document.createElement('div');
                         activityItem.className = `activity-item ${item.action}`;
-                          let content = `
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: var(--text-primary);">${item.user_name}</strong>
-                                    <span style="margin-left: 0.5rem; font-size: 0.7rem; opacity: 0.8; color: var(--text-secondary);">
-                                        ${item.action.toUpperCase()}
-                                    </span>
-                        `;
+                        
+                        let userSection = `<strong style="color: var(--text-primary);">${item.user_name}</strong>`;
                         
                         // Add role badge if available
                         if (item.role) {
                             const roleColor = item.role.toLowerCase() === 'member' ? '#10b981' : item.role.toLowerCase() === 'coach' ? '#f59e0b' : '#64748b';
-                            content += `<span style="margin-left: 0.5rem; font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.2); color: ${roleColor}; border-radius: 10px; border: 1px solid rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.3);">${item.role}</span>`;
+                            userSection += `<span style="margin-left: 0.5rem; font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.2); color: ${roleColor}; border-radius: 10px; border: 1px solid rgba(${roleColor === '#10b981' ? '16, 185, 129' : roleColor === '#f59e0b' ? '245, 158, 11' : '100, 116, 139'}, 0.3);">${item.role}</span>`;
                         }
                         
                         if (item.duration && item.action === 'checkout') {
-                            content += `<span style="margin-left: 0.5rem; font-size: 0.7rem; color: #f59e0b;">(${item.duration})</span>`;
+                            userSection += `<span style="margin-left: 0.5rem; font-size: 0.7rem; color: #f59e0b;">(${item.duration})</span>`;
                         }
                         
-                        content += `
-                                </div>
+                        let content = `
+                            <div class="activity-layout">
+                                <div class="activity-user">${userSection}</div>
                                 <div class="activity-time">${timeString}</div>
+                                <div class="activity-action ${item.action}">${item.action.toUpperCase()}</div>
                             </div>
                         `;
                         
@@ -982,17 +900,8 @@ $scanner_location = $_SESSION['scanner_location'];
                         </div>
                     `;
                 }
-            }
-
-            // Event listeners
-            document.getElementById('startBtn').addEventListener('click', startScanner);
-            document.getElementById('stopBtn').addEventListener('click', stopScanner);
-            
-            document.getElementById('manualQR').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    processManualQR();
-                }
-            });
+            }            // Auto-start scanner when page loads
+            startScanner();
 
             // Initial load
             loadRecentActivity();
