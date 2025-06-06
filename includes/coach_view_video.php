@@ -470,21 +470,11 @@ $updated_at = $video['updated_at'];
                     <div class="nav-section-title">Members</div>
                     <a href="coach_my_clients.php" class="nav-item"><i class="fas fa-users"></i><span>My Clients</span></a>
                     <a href="coach_progress_tracking.php" class="nav-item"><i class="fas fa-chart-line"></i><span>Progress Tracking</span></a>
-                </div>
-
-                <div class="nav-section">
+                </div>                <div class="nav-section">
                     <div class="nav-section-title">Content</div>
                     <a href="coach_add_video.php" class="nav-item">
                         <i class="fas fa-video"></i>
                         <span>Add Video</span>
-                    </a>
-                    <a href="coach_view_video.php" class="nav-item active">
-                        <i class="fas fa-play"></i>
-                        <span>My Videos</span>
-                    </a>
-                    <a href="coach_edit_video.php" class="nav-item">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Videos</span>
                     </a>
                 </div>
 
@@ -497,9 +487,8 @@ $updated_at = $video['updated_at'];
         </aside>
 
         <!-- Main Content -->
-        <div class="main-content">
-            <a href="coach_my_classes.php" class="back-link">
-                <i class="fas fa-arrow-left"></i> Back to Videos
+        <div class="main-content">            <a href="coach_my_classes.php" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to My Classes
             </a>
 
             <div class="welcome-banner">
@@ -549,9 +538,8 @@ $updated_at = $video['updated_at'];
                 <div class="card">
                     <h3><i class="fas fa-play-circle"></i> Video Preview</h3>
                     <div class="video-player-container">
-                        <?php if ($video['status'] === 'approved'): ?>
-                            <video controls class="video-player" style="width: 100%; height: 450px;">
-                                <source src="/uploads/coach_videos/<?= basename($video['video_path']) ?>" type="video/mp4">
+                        <?php if ($video['status'] === 'approved'): ?>                            <video controls class="video-player" style="width: 100%; height: 450px;">
+                                <source src="../uploads/coach_videos/<?= basename($video['video_path']) ?>" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         <?php else: ?>

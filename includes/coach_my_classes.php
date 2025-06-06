@@ -511,21 +511,11 @@ function formatTime($time)
                     <div class="nav-section-title">Members</div>
                     <a href="coach_my_clients.php" class="nav-item"><i class="fas fa-users"></i><span>My Clients</span></a>
                     <a href="coach_progress_tracking.php" class="nav-item"><i class="fas fa-chart-line"></i><span>Progress Tracking</span></a>
-                </div>
-
-                <div class="nav-section">
+                </div>                <div class="nav-section">
                     <div class="nav-section-title">Content</div>
                     <a href="coach_add_video.php" class="nav-item">
                         <i class="fas fa-video"></i>
                         <span>Add Video</span>
-                    </a>
-                    <a href="coach_view_video.php" class="nav-item">
-                        <i class="fas fa-play"></i>
-                        <span>My Videos</span>
-                    </a>
-                    <a href="coach_edit_video.php" class="nav-item">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Videos</span>
                     </a>
                 </div>
 
@@ -606,9 +596,7 @@ function formatTime($time)
                         </button>
                     </div>
                 <?php endif; ?>
-            </div>
-
-            <!-- Online Courses Section -->
+            </div>            <!-- Online Courses Section -->
             <div class="section-header">
                 <div class="section-title"><i class="fas fa-video"></i> Online Courses</div>
                 <a href="coach_add_video.php" class="btn-primary">
@@ -620,7 +608,8 @@ function formatTime($time)
                 <?php if (count($videos) > 0): ?>
                     <div class="video-grid">
                         <?php foreach ($videos as $video): ?>
-                            <div class="video-card">                                <div class="video-thumbnail">
+                            <div class="video-card">
+                                <div class="video-thumbnail">
                                     <?php if ($video['thumbnail_path']): ?>
                                         <img src="../<?= htmlspecialchars(fixThumbnailPath($video['thumbnail_path'])) ?>" alt="Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
                                     <?php else: ?>

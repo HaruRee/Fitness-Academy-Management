@@ -103,6 +103,17 @@ $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $conn->prepare("UPDATE users SET LastLogin = NOW() WHERE UserID = ?");
 $stmt->execute([$coach_id]);
 
+// Get recent announcements by this coach
+$stmt = $conn->prepare("
+    SELECT announcement, created_at 
+    FROM coach_announcements 
+    WHERE coach_id = ? 
+    ORDER BY created_at DESC 
+    LIMIT 5
+");
+$stmt->execute([$coach_id]);
+$recentAnnouncements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Function to format time from 24-hour to 12-hour format
 function formatTime($time)
 {
@@ -643,11 +654,42 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
 
         .notification-text {
             margin-bottom: 5px;
-        }
-
-        .notification-time {
+        }        .notification-time {
             font-size: 0.8rem;
             color: var(--gray-color);
+        }
+
+        /* Alert styles for announcements */
+        .alert {
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        /* Announcement item styles */
+        .announcement-item {
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .announcement-item:hover {
+            border-left-color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         /* Empty states */
@@ -805,21 +847,15 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                         <i class="fas fa-chart-line"></i>
                         <span>Progress Tracking</span>
                     </a>
-                </div>
-
-                <div class="nav-section">
+                </div>                <div class="nav-section">
                     <div class="nav-section-title">Content</div>
                     <a href="coach_add_video.php" class="nav-item">
                         <i class="fas fa-video"></i>
                         <span>Add Video</span>
                     </a>
-                    <a href="coach_view_video.php" class="nav-item">
-                        <i class="fas fa-play"></i>
-                        <span>My Videos</span>
-                    </a>
-                    <a href="coach_edit_video.php" class="nav-item">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Videos</span>
+                    <a href="#announcements" class="nav-item" onclick="scrollToAnnouncements()">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Announcements</span>
                     </a>
                 </div>
 
@@ -876,8 +912,7 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                 <div class="dashboard-section">
                     <div class="section-title">
                         <i class="fas fa-bolt"></i>
-                        Quick Actions
-                    </div>
+                        Quick Actions                    </div>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
                         <!-- QR Code Section -->
@@ -905,6 +940,65 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                                     <button class="btn btn-sm" onclick="hideQRDisplay()">Close</button>
                                 </div>
                             </div>                        </div>
+
+                        <!-- Announcements Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-bullhorn"></i> Make Announcement</h3>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: var(--gray-color); margin-bottom: 20px;">Share important updates with your members</p>
+                                <form id="announcementForm" onsubmit="addAnnouncement(event)">
+                                    <textarea 
+                                        id="announcementText" 
+                                        name="announcement" 
+                                        placeholder="Enter your announcement here..." 
+                                        maxlength="500" 
+                                        required
+                                        style="width: 100%; min-height: 100px; padding: 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; margin-bottom: 15px;"
+                                    ></textarea>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <small id="charCount" style="color: var(--gray-color);">0/500 characters</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px;">
+                                        <i class="fas fa-bullhorn"></i>
+                                        Post Announcement
+                                    </button>
+                                </form>
+                                
+                                <!-- Success/Error Messages -->
+                                <div id="announcementMessage" style="display: none; margin-top: 15px; padding: 10px; border-radius: 6px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Announcements -->
+                    <div id="announcements" class="dashboard-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-bullhorn"></i> My Recent Announcements
+                        </h3>                        <div class="card">
+                            <div class="card-body">
+                                <div id="announcementsList">
+                                    <?php if (count($recentAnnouncements) > 0): ?>
+                                        <?php foreach ($recentAnnouncements as $announcement): ?>
+                                            <div class="announcement-item" style="padding: 15px; border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 15px; background: #f8f9fa;">
+                                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                                    <span style="font-size: 0.9rem; color: var(--gray-color);">
+                                                        <i class="fas fa-clock"></i> <?= date('M d, Y g:i A', strtotime($announcement['created_at'])) ?>
+                                                    </span>
+                                                </div>
+                                                <p style="margin: 0; color: var(--text-color); line-height: 1.5;"><?= htmlspecialchars($announcement['announcement']) ?></p>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="empty-state">
+                                            <i class="fas fa-bullhorn"></i>
+                                            <p>No announcements yet. Create your first announcement above!</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1426,14 +1520,132 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                 qrCodeContainer.innerHTML = `<p class="error" style="color: var(--danger-color);">Failed to generate QR code: ${error.message}</p>`;
                 qrMessage.innerHTML = '';
             }
-        }
-
-        function hideQRDisplay() {
+        }        function hideQRDisplay() {
             const qrDisplay = document.getElementById('qrDisplay');
             if (qrDisplay) {
                 qrDisplay.style.display = 'none';
             }
         }
+
+        // Announcement functionality
+        function addAnnouncement(event) {
+            event.preventDefault();
+            
+            const form = document.getElementById('announcementForm');
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('announcementMessage');
+            
+            // Show loading state
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+            submitBtn.disabled = true;
+            
+            fetch('../api/add_announcement.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    messageDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
+                    messageDiv.className = 'alert alert-success';
+                    messageDiv.style.display = 'block';
+                    
+                    // Clear form
+                    form.reset();
+                    updateCharCount();
+                    
+                    // Add announcement to list
+                    addAnnouncementToList(data.announcement, data.created_at);
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        messageDiv.style.display = 'none';
+                    }, 3000);
+                } else {
+                    // Show error message
+                    messageDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message}`;
+                    messageDiv.className = 'alert alert-danger';
+                    messageDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to post announcement. Please try again.';
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.style.display = 'block';
+            })
+            .finally(() => {
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function addAnnouncementToList(announcement, createdAt) {
+            const announcementsList = document.getElementById('announcementsList');
+            
+            // Remove empty state if exists
+            const emptyState = announcementsList.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            // Create new announcement element
+            const announcementElement = document.createElement('div');
+            announcementElement.className = 'announcement-item';
+            announcementElement.style.cssText = `
+                padding: 15px;
+                border: 1px solid #e1e5e9;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                background: #f8f9fa;
+            `;
+            
+            const formattedDate = new Date(createdAt).toLocaleString();
+            
+            announcementElement.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <span style="font-size: 0.9rem; color: var(--gray-color);">
+                        <i class="fas fa-clock"></i> Just now
+                    </span>
+                </div>
+                <p style="margin: 0; color: var(--text-color); line-height: 1.5;">${announcement}</p>
+            `;
+            
+            // Add to top of list
+            announcementsList.insertBefore(announcementElement, announcementsList.firstChild);
+        }
+        
+        function updateCharCount() {
+            const textarea = document.getElementById('announcementText');
+            const charCount = document.getElementById('charCount');
+            const currentLength = textarea.value.length;
+            charCount.textContent = `${currentLength}/500 characters`;
+            
+            if (currentLength > 450) {
+                charCount.style.color = '#dc3545';
+            } else if (currentLength > 400) {
+                charCount.style.color = '#ffc107';
+            } else {
+                charCount.style.color = 'var(--gray-color)';
+            }
+        }
+        
+        function scrollToAnnouncements() {
+            document.getElementById('announcements').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Initialize character count
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('announcementText');
+            if (textarea) {
+                textarea.addEventListener('input', updateCharCount);
+                updateCharCount();
+            }
+        });
     </script>
 </body>
 

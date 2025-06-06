@@ -871,6 +871,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
             </a>
+            <a href="products.php">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
 
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>

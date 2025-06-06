@@ -468,21 +468,11 @@ if (count($clients) > 0) {
                     <a href="coach_progress_tracking.php" class="nav-item active">
                         <i class="fas fa-chart-line"></i><span>Progress Tracking</span>
                     </a>
-                </div>
-
-                <div class="nav-section">
+                </div>                <div class="nav-section">
                     <div class="nav-section-title">Content</div>
                     <a href="coach_add_video.php" class="nav-item">
                         <i class="fas fa-video"></i>
                         <span>Add Video</span>
-                    </a>
-                    <a href="coach_view_video.php" class="nav-item">
-                        <i class="fas fa-play"></i>
-                        <span>My Videos</span>
-                    </a>
-                    <a href="coach_edit_video.php" class="nav-item">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Videos</span>
                     </a>
                 </div>
 

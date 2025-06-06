@@ -546,10 +546,13 @@ try {
             <a href="coach_applications.php">
                 <i class="fas fa-user-tie"></i>
                 <span>Coach Applications</span>
-            </a>
-            <a href="admin_video_approval.php">
+            </a>            <a href="admin_video_approval.php">
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
+            </a>
+            <a href="products.php">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
             </a>
             <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>

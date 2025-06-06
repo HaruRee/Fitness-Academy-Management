@@ -832,9 +832,7 @@ try {
             <a href="admin_dashboard.php" class="active">
                 <i class="fas fa-home"></i>
                 <span>Overview</span>
-            </a>
-
-            <div class="sidebar-menu-header">Management</div>
+            </a>            <div class="sidebar-menu-header">Management</div>
             <a href="manage_users.php">
                 <i class="fas fa-users-cog"></i>
                 <span>Manage Users</span>
@@ -848,11 +846,17 @@ try {
                 <span>Coach Applications</span>
             </a>
             <a href="admin_video_approval.php">
-                <i class="fas fa-video"></i>                <span>Video Approval</span>
-            </a>            <a href="employee_list.php">
+                <i class="fas fa-video"></i>
+                <span>Video Approval</span>
+            </a>
+            <a href="products.php">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>
-            </a>            <div class="sidebar-menu-header">Reports</div>
+            </a><div class="sidebar-menu-header">Reports</div>
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>

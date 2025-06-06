@@ -426,40 +426,69 @@ function sendVerificationEmail($email, $verification_code)
             justify-content: center;
             gap: 20px;
             margin-top: 20px;
-        }
-
-        .plan-card {
-            background: #fff;
+        }        .plan-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
             border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 25px 20px;
+            border-radius: 16px;
+            padding: 25px 15px;
             text-align: center;
             transition: all 0.3s ease;
             height: 100%;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e41e26, #ff4449);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .plan-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(228, 30, 38, 0.15);
             border-color: #e41e26;
         }
-
-        .plan-name {
-            font-weight: bold;
-            font-size: 1.1rem;
+        
+        .plan-card:hover::before {
+            opacity: 1;
+        }        .plan-name {
+            font-weight: 700;
+            font-size: 1.15rem;
             margin-bottom: 15px;
             flex-grow: 0;
-            color: #333;
+            color: #222;
+            position: relative;
+            padding-bottom: 10px;
+            letter-spacing: 0.3px;
+        }
+        
+        .plan-name::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: #e41e26;
         }
 
         .plan-price {
             color: #e41e26;
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-bottom: 15px;
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .price-period {
@@ -471,30 +500,58 @@ function sendVerificationEmail($email, $verification_code)
         .plan-features {
             margin-bottom: 20px;
             flex-grow: 1;
+        }        .feature-item {
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 7px;
+            position: relative;
+            padding-left: 18px;
         }
-
-        .feature-item {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .select-button {
-            background: #e41e26;
+        
+        .feature-item:before {
+            content: "✓";
+            color: #e41e26;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }.select-button {
+            background: linear-gradient(135deg, #e41e26 0%, #c71e26 100%);
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
+            padding: 12px 15px;
+            border-radius: 30px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.3s ease;
             width: 100%;
             text-transform: uppercase;
             margin-top: auto;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(228, 30, 38, 0.2);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.9rem;
+        }
+        
+        .select-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transition: left 0.5s ease;
         }
 
         .select-button:hover {
-            background: #c81a21;
+            background: linear-gradient(135deg, #ff3a42 0%, #e41e26 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(228, 30, 38, 0.3);
+        }
+        
+        .select-button:hover::after {
+            left: 100%;
         }
 
         /* Email verification styles */
@@ -632,24 +689,43 @@ function sendVerificationEmail($email, $verification_code)
         .bottom-nav .btn {
             width: auto;
             padding: 10px 25px;
-        }
-
-        /* Package Header and Inclusions */
+        }        /* Package Header and Inclusions */
         .package-header {
             width: 100%;
             text-align: center;
-            margin: 30px 0 20px;
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+            margin: 40px 0 30px;
+            position: relative;
         }
 
         .package-header h2 {
             margin: 0;
-            color: #333;
-            font-size: 1.4rem;
+            color: #222;
+            font-size: 1.6rem;
             text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+        
+        .package-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: #e41e26;
+        }
+        
+        .price-period {
+            display: block;
+            font-size: 0.9rem;
+            color: #777;
+            font-weight: 400;
+            margin-top: 3px;
         }
 
         .inclusions-section {
@@ -685,27 +761,25 @@ function sendVerificationEmail($email, $verification_code)
             content: '• ';
             color: #e41e26;
             font-weight: bold;
-        }
-
-        /* Plan Grid */
+        }        /* Plan Grid */
         .plans-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            /* Force 4 equal columns */
+            grid-template-columns: repeat(5, 1fr);
+            /* Now 5 equal columns */
             gap: 20px;
             width: 100%;
-            max-width: 1200px;
-            /* Slightly wider to accommodate 4 columns better */
+            max-width: 1400px;
+            /* Wider to accommodate 5 columns better */
             margin: 0 auto 30px;
         }
 
         /* Responsive Grid */
-        @media (max-width: 1200px) {
+        @media (max-width: 1400px) {
             .plans-grid {
                 grid-template-columns: repeat(4, 1fr);
-                /* Still 4 columns */
+                /* 4 columns on slightly smaller screens */
                 gap: 15px;
-                /* Slightly reduce gap */
+                max-width: 1200px;
             }
         }
 
@@ -1342,78 +1416,36 @@ function sendVerificationEmail($email, $verification_code)
 
                 if (empty($plans)) {
                     echo '<div class="alert alert-warning">No membership plans found. Please contact an administrator.</div>';
-                } else {
-                    // Group plans by package type (using regular loops for compatibility)
-                    $packageA = array();
-                    $packageB = array();
+                } else {                    // Display a single header for all membership plans
+                    ?>
+                    <div class="package-header">
+                        <h2>Select Your Membership Plan</h2>
+                    </div>
 
-                    foreach ($plans as $plan) {
-                        if ($plan['package_type'] === 'A') {
-                            $packageA[] = $plan;
-                        } elseif ($plan['package_type'] === 'B') {
-                            $packageB[] = $plan;
-                        }
-                    }
-
-                    // Render Package A plans if any exist
-                    if (!empty($packageA)): ?>
-                        <div class="package-header">
-                            <h2>PACKAGE A - GYM ACCESS</h2>
-                        </div>
-
-                        <div class="plans-grid">
-                            <?php foreach ($packageA as $plan): ?>
-                                <form method="POST" action="register.php">
-                                    <input type="hidden" name="plan" value="<?php echo htmlspecialchars($plan['name']); ?>">
-                                    <input type="hidden" name="price" value="<?php echo htmlspecialchars($plan['price']); ?>">
-                                    <input type="hidden" name="plan_id" value="<?php echo htmlspecialchars($plan['id']); ?>">
-                                    <input type="hidden" name="package_type" value="<?php echo htmlspecialchars($plan['package_type']); ?>">
-                                    <div class="plan-card">
-                                        <div class="plan-name"><?php echo htmlspecialchars($plan['name']); ?></div>
-                                        <div class="plan-price">₱<?php echo number_format($plan['price'], 0); ?></div>
-                                        <?php if (!empty($plan['features'])): ?>
-                                            <div class="plan-features">
-                                                <?php foreach (explode('|', $plan['features']) as $feature): ?>
-                                                    <div class="feature-item"><?php echo htmlspecialchars($feature); ?></div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        <button type="submit" name="select_plan" class="select-button">Select</button>
-                                    </div>
-                                </form>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- Package B: Time-based -->
-                    <?php if (!empty($packageB)): ?>
-                        <div class="package-header">
-                            <h2>PACKAGE B - GYM ACCESS</h2>
-                        </div>
-
-                        <div class="plans-grid">
-                            <?php foreach ($packageB as $plan): ?>
-                                <form method="POST" action="register.php">
-                                    <input type="hidden" name="plan" value="<?php echo htmlspecialchars($plan['name']); ?>">
-                                    <input type="hidden" name="price" value="<?php echo htmlspecialchars($plan['price']); ?>">
-                                    <input type="hidden" name="plan_id" value="<?php echo htmlspecialchars($plan['id']); ?>">
-                                    <input type="hidden" name="package_type" value="<?php echo htmlspecialchars($plan['package_type']); ?>">
-                                    <div class="plan-card">
-                                        <div class="plan-name"><?php echo htmlspecialchars($plan['name']); ?></div>
-                                        <div class="plan-price">₱<?php echo number_format($plan['price'], 0); ?></div>
-                                        <?php if (!empty($plan['features'])): ?>
-                                            <div class="plan-features">
-                                                <?php foreach (explode('|', $plan['features']) as $feature): ?>
-                                                    <div class="feature-item"><?php echo htmlspecialchars($feature); ?></div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        <button type="submit" name="select_plan" class="select-button">Select</button>
-                                    </div>
-                                </form>
-                            <?php endforeach; ?>
-                        </div>
-            <?php endif;
+                    <div class="plans-grid">
+                        <?php foreach ($plans as $plan): ?>
+                            <form method="POST" action="register.php">
+                                <input type="hidden" name="plan" value="<?php echo htmlspecialchars($plan['name']); ?>">
+                                <input type="hidden" name="price" value="<?php echo htmlspecialchars($plan['price']); ?>">
+                                <input type="hidden" name="plan_id" value="<?php echo htmlspecialchars($plan['id']); ?>">
+                                <input type="hidden" name="package_type" value="<?php echo htmlspecialchars($plan['package_type']); ?>">
+                                <div class="plan-card">
+                                    <div class="plan-name"><?php echo htmlspecialchars($plan['name']); ?></div>
+                                    <div class="plan-price">₱<?php echo number_format($plan['price'], 0); ?></div>
+                                    <div class="price-period">per month</div>
+                                    <?php if (!empty($plan['features'])): ?>
+                                        <div class="plan-features">
+                                            <?php foreach (explode('|', $plan['features']) as $feature): ?>
+                                                <div class="feature-item"><?php echo htmlspecialchars($feature); ?></div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <button type="submit" name="select_plan" class="select-button">Select</button>
+                                </div>
+                            </form>
+                        <?php endforeach; ?>
+                    </div>
+            <?php
                 }
             } catch (Exception $e) {
                 echo '<div class="error-message">Database error: ' . htmlspecialchars($e->getMessage()) . '</div>';
