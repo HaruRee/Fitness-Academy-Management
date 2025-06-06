@@ -52,19 +52,22 @@ class BusinessIntelligenceService {
         try {
             $startTime = microtime(true);
             error_log("[{$this->requestId}] Starting business intelligence predictions generation");
-            
-            // Get data for analysis from database
+              // Get data for analysis from database
             $membershipData = $this->getMembershipTrends();
             $revenueData = $this->getRevenueTrends();
             $attendanceData = $this->getAttendancePatterns();
-              // Generate insights using AI
+            $registrationData = $this->getRegistrationTrends();
+            
+            // Generate insights using AI
             $membershipPredictions = $this->generateAIInsights('membership', $membershipData, $revenueData);
             $revenuePredictions = $this->generateAIInsights('revenue', $revenueData, $membershipData);
+            $registrationPredictions = $this->generateAIInsights('registration', $registrationData, $membershipData);
             
             // Format and return predictions
             $predictions = [
                 'membership' => $membershipPredictions,
-                'revenue' => $revenuePredictions
+                'revenue' => $revenuePredictions,
+                'registration' => $registrationPredictions
             ];
             
             $duration = round((microtime(true) - $startTime) * 1000, 2);
@@ -245,6 +248,54 @@ private function getMembershipTrends() {
         ];
     }
     
+    private function getRegistrationTrends() {
+        $dailyRegistrations = [];
+        $registrationStats = ['total_registrations' => 0, 'members' => 0, 'coaches' => 0];
+
+        try {
+            // Get daily registrations for the past 30 days
+            $stmt = $this->conn->prepare("
+                SELECT 
+                    DATE(RegistrationDate) as reg_date,
+                    COUNT(*) as total_registrations,
+                    SUM(CASE WHEN Role = 'Member' THEN 1 ELSE 0 END) as members,
+                    SUM(CASE WHEN Role = 'Coach' THEN 1 ELSE 0 END) as coaches
+                FROM users
+                WHERE RegistrationDate >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                GROUP BY DATE(RegistrationDate)
+                ORDER BY reg_date ASC
+            ");
+            $stmt->execute();
+            $dailyRegistrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get overall registration stats
+            $stmt = $this->conn->prepare("
+                SELECT 
+                    COUNT(*) as total_registrations,
+                    SUM(CASE WHEN Role = 'Member' THEN 1 ELSE 0 END) as members,
+                    SUM(CASE WHEN Role = 'Coach' THEN 1 ELSE 0 END) as coaches
+                FROM users
+                WHERE RegistrationDate >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+            ");
+            $stmt->execute();
+            $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($stats) {
+                $registrationStats = $stats;
+            }
+
+        } catch (PDOException $e) {
+            // Log error but continue with default empty values
+            error_log("[{$this->requestId}] Database error in getRegistrationTrends: " . $e->getMessage());
+        }
+
+        return [
+            'daily_registrations' => $dailyRegistrations,
+            'registration_stats' => $registrationStats,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+    }
+    
     private function generateAIInsights($type, $primaryData, $secondaryData) {
         error_log("[{$this->requestId}] Generating AI insights for {$type}");
         
@@ -339,10 +390,44 @@ private function getMembershipTrends() {
                     : []
             ];
         }
+        elseif ($type === 'registration') {
+            // Calculate metrics from raw data
+            $totalRegistrations = 0;
+            $recentRegistrations = 0;
+            $memberCount = 0;
+            $coachCount = 0;
+
+            if (!empty($primaryData['daily_registrations'])) {
+                foreach ($primaryData['daily_registrations'] as $reg) {
+                    $totalRegistrations += $reg['total_registrations'];
+                    
+                    // Consider the last 7 days as recent
+                    $regDate = new DateTime($reg['reg_date']);
+                    $today = new DateTime();
+                    $dayDiff = $today->diff($regDate)->days;
+                    
+                    if ($dayDiff <= 7) {
+                        $recentRegistrations += $reg['total_registrations'];
+                        $memberCount += $reg['members'];
+                        $coachCount += $reg['coaches'];
+                    }
+                }
+            }
+
+            // Structure data for AI
+            $context = [
+                'total_registrations' => $totalRegistrations,
+                'recent_registrations' => $recentRegistrations,
+                'recent_member_registrations' => $memberCount,
+                'recent_coach_registrations' => $coachCount,
+                'registration_stats' => isset($primaryData['registration_stats']) ? $primaryData['registration_stats'] : [],
+                'timeframe' => '30 days',
+                'data_type' => 'registration'
+            ];
+        }
         
         return $context;
-    }
-      private function buildSystemPrompt($type) {
+    }    private function buildSystemPrompt($type) {
         // Create system prompts based on prediction type
         if ($type === 'membership') {
             return 'You are a data-driven membership growth analyst for a fitness gym in the Philippines. Analyze the data and provide exactly 3 concise, actionable insights about membership trends and retention. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious. Use Philippine Peso (₱) for all currency amounts.';
@@ -350,15 +435,19 @@ private function getMembershipTrends() {
         elseif ($type === 'revenue') {
             return 'You are a revenue optimization specialist for a fitness gym in the Philippines. Analyze the data and provide exactly 3 concise, actionable insights about revenue patterns and opportunities. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on data patterns that are not immediately obvious. Use Philippine Peso (₱) for all currency amounts.';
         }
-    }
-      private function buildUserPrompt($type, $dataContext) {
+        elseif ($type === 'registration') {
+            return 'You are a registration trend analyst for a fitness gym in the Philippines. Analyze the registration data and provide exactly 3 concise, actionable insights about registration patterns, member vs coach sign-ups, and growth trends. Each insight must be no more than 1-2 sentences. Be specific, unique, and insightful - focus on registration patterns and trends that are not immediately obvious.';
+        }
+    }    private function buildUserPrompt($type, $dataContext) {
         // Format data as stringified JSON for the AI
         $dataJson = json_encode($dataContext, JSON_PRETTY_PRINT);
         
         if ($type === 'membership') {
             return "Based on this membership data from our fitness gym in the Philippines, provide 3 specific insights about membership trends and retention. Be concise and actionable. Use Philippine Peso (₱) for any currency amounts.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for new members next week based on these patterns. Be creative but data-driven.";
-        }        elseif ($type === 'revenue') {
+        } elseif ($type === 'revenue') {
             return "Based on this revenue data from our fitness gym in the Philippines, provide 3 specific insights about revenue patterns and opportunities. Be concise and actionable. Use Philippine Peso (₱) for any currency amounts.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for next week's revenue in Philippine Peso (₱) based on these patterns. Include an exact number. Be creative but data-driven.";
+        } elseif ($type === 'registration') {
+            return "Based on this registration data from our fitness gym in the Philippines, provide 3 specific insights about registration patterns, focusing on member vs coach registrations and any notable trends. Be concise and actionable.\n\nDATA: {$dataJson}\n\nAlso make a specific prediction for next week's total registrations based on these patterns. Break down the prediction into expected member and coach registrations. Be data-driven.";
         }
     }
     

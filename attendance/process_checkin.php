@@ -73,11 +73,14 @@ try {
     
     if (!$member_user_id) {
         throw new Exception("Invalid QR code format. Please generate a new QR code.");
-    }    // Get the member's information
+    }    // Get the member's information including plan details
     $member_stmt = $conn->prepare("
-        SELECT UserID, First_Name, Last_Name, Role, IsActive, account_status 
-        FROM users 
-        WHERE UserID = ?
+        SELECT u.UserID, u.First_Name, u.Last_Name, u.Role, u.IsActive, u.account_status,
+               u.current_sessions_remaining, u.membership_start_date, u.membership_end_date, u.plan_id,
+               mp.plan_type, mp.session_count, mp.duration_months, mp.name as plan_name
+        FROM users u
+        LEFT JOIN membershipplans mp ON u.plan_id = mp.id
+        WHERE u.UserID = ?
     ");
     $member_stmt->execute([$member_user_id]);
     $member = $member_stmt->fetch(PDO::FETCH_ASSOC);
@@ -93,7 +96,44 @@ try {
         $warning = "";
     }
 
-    $member_name = $member['First_Name'] . ' ' . $member['Last_Name'];    // Check if member already checked in today
+    // Validate membership plan and sessions/time
+    $plan_valid = true;
+    $plan_warning = "";
+
+    if ($member['plan_id']) {
+        if ($member['plan_type'] === 'session') {
+            // Session-based plan: check remaining sessions
+            if ($member['current_sessions_remaining'] <= 0) {
+                $plan_valid = false;
+                throw new Exception("No sessions remaining. Please renew your membership or purchase additional sessions.");
+            } elseif ($member['current_sessions_remaining'] <= 5) {
+                $plan_warning = "Low sessions remaining: {$member['current_sessions_remaining']} sessions left.";
+            }
+        } elseif ($member['plan_type'] === 'monthly') {
+            // Monthly plan: check if membership is still valid
+            $today = new DateTime();
+            $end_date = new DateTime($member['membership_end_date']);
+            
+            if ($today > $end_date) {
+                $plan_valid = false;
+                throw new Exception("Membership expired on " . $end_date->format('Y-m-d') . ". Please renew your membership.");
+            } else {
+                $days_remaining = $today->diff($end_date)->days;
+                if ($days_remaining <= 7) {
+                    $plan_warning = "Membership expires in {$days_remaining} days on " . $end_date->format('Y-m-d') . ".";
+                }
+            }
+        }
+    }
+
+    // Combine warnings
+    if (!empty($warning) && !empty($plan_warning)) {
+        $warning .= " " . $plan_warning;
+    } elseif (!empty($plan_warning)) {
+        $warning = $plan_warning;
+    }
+
+    $member_name = $member['First_Name'] . ' ' . $member['Last_Name'];// Check if member already checked in today
     $existing_checkin_stmt = $conn->prepare("
         SELECT id, check_in_time, time_out 
         FROM attendance_records 
@@ -141,9 +181,26 @@ try {
         $scanner_user_id,
         $ip_address,
         $user_agent
-    ]);
+    ]);    $attendance_id = $conn->lastInsertId();
 
-    $attendance_id = $conn->lastInsertId();
+    // Decrement session for session-based plans
+    if ($member['plan_type'] === 'session' && $member['current_sessions_remaining'] > 0) {
+        $update_sessions_stmt = $conn->prepare("
+            UPDATE users 
+            SET current_sessions_remaining = current_sessions_remaining - 1 
+            WHERE UserID = ?
+        ");
+        $update_sessions_stmt->execute([$member_user_id]);
+        
+        $new_sessions_remaining = $member['current_sessions_remaining'] - 1;
+        
+        // Update the response message if sessions are getting low
+        if ($new_sessions_remaining <= 5 && $new_sessions_remaining > 0) {
+            $warning = "Session used. {$new_sessions_remaining} sessions remaining.";
+        } elseif ($new_sessions_remaining == 0) {
+            $warning = "Last session used. Please renew your membership.";
+        }
+    }
 
     // Log to audit trail
     if (function_exists('logAuditTrail')) {

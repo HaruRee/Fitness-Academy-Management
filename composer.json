@@ -1,6 +1,7 @@
 {
     "require": {
         "phpmailer/phpmailer": "^6.9",
-        "luigel/laravel-paymongo": "^2.5"
+        "luigel/laravel-paymongo": "^2.5",
+        "tecnickcom/tcpdf": "^6.6"
     }
 }
