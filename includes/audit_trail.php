@@ -527,9 +527,7 @@ try {
     <aside class="sidebar">
         <div class="sidebar-header">
             <h2>Fitness Academy</h2>
-        </div>
-
-        <nav class="sidebar-menu">
+        </div>        <nav class="sidebar-menu">
             <div class="sidebar-menu-header">Dashboard</div>
             <a href="admin_dashboard.php">
                 <i class="fas fa-home"></i>
@@ -540,36 +538,29 @@ try {
             <a href="manage_users.php">
                 <i class="fas fa-users-cog"></i>
                 <span>Manage Users</span>
-            </a> <a href="member_list.php">
+            </a>
+            <a href="member_list.php">
                 <i class="fas fa-users"></i>
                 <span>Member List</span>
-            </a>            <a href="coach_applications.php">
+            </a>
+            <a href="coach_applications.php">
                 <i class="fas fa-user-tie"></i>
                 <span>Coach Applications</span>
             </a>
-            <a href="employee_list.php">
-                <i class="fas fa-id-card"></i>
-                <span>Employee List</span>
-            </a>            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Check In</span>
-            </a>
-            <a href="../attendance/checkout.php">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Check Out</span>
-            </a>
-            <a href="attendance_dashboard.php">
-                <i class="fas fa-chart-line"></i>
-                <span>Attendance Reports</span>
-            </a>
-
-            <div class="sidebar-menu-header">Content</div>
             <a href="admin_video_approval.php">
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
             </a>
-
+            <a href="employee_list.php">
+                <i class="fas fa-id-card"></i>
+                <span>Employee List</span>
+            </a>
+            
             <div class="sidebar-menu-header">Reports</div>
+            <a href="attendance_dashboard.php">
+                <i class="fas fa-chart-line"></i>
+                <span>Attendance Reports</span>
+            </a>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>
                 <span>Analytics</span>
@@ -577,7 +568,8 @@ try {
             <a href="transaction_history.php">
                 <i class="fas fa-exchange-alt"></i>
                 <span>Transactions</span>
-            </a>            <a href="audit_trail.php" class="active">
+            </a>
+            <a href="audit_trail.php" class="active">
                 <i class="fas fa-history"></i>
                 <span>Audit Trail</span>
             </a>

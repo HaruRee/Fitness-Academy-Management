@@ -125,10 +125,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $lastName = $_POST['lastName'];
     $phone = $_POST['phone'] ?? null;
     $address = $_POST['address'] ?? null;
-    $dob = !empty($_POST['dob']) ? $_POST['dob'] : null;
-    $isActive = isset($_POST['isActive']) ? 1 : 0;
-    $isApproved = isset($_POST['isApproved']) ? 1 : 0;
-    $emailConfirmed = isset($_POST['emailConfirmed']) ? 1 : 0;
+    $dob = !empty($_POST['dob']) ? $_POST['dob'] : null;    // Get current status values from the database since the checkboxes are removed
+    $getStatus = $conn->prepare("SELECT IsActive, is_approved, email_confirmed FROM users WHERE UserID = :userId");
+    $getStatus->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $getStatus->execute();
+    $statusData = $getStatus->fetch(PDO::FETCH_ASSOC);
+    
+    $isActive = $statusData['IsActive'] ?? 1;
+    $isApproved = $statusData['is_approved'] ?? 1;
+    $emailConfirmed = $statusData['email_confirmed'] ?? 0;
 
     try {
         // Check if username already exists (except for current user)

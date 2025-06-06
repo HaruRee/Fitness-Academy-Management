@@ -1372,24 +1372,16 @@ try {
                 <span>Coach Applications</span>                <a href="admin_video_approval.php">
                     <i class="fas fa-video"></i>
                     <span>Video Approval</span>
-                </a>
-            <a href="employee_list.php">
+                </a>            <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>
-            </a>            <div class="sidebar-menu-header">Attendance</div>            <a href="../attendance/checkin.php">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Check In</span>
-            </a>
-            <a href="../attendance/checkout.php">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Check Out</span>
-            </a>
+            </a>            
+            
+            <div class="sidebar-menu-header">Reports</div>
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
             </a>
-
-            <div class="sidebar-menu-header">Reports</div>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>
                 <span>Analytics</span>
@@ -1732,14 +1724,7 @@ try {
                                                             <i class="fas fa-exchange-alt text-info"></i> Change Status
                                                         </a></li>
                                                 </ul>
-                                            </div>
-
-                                            <!-- Delete User Button -->
-                                            <button type="button" class="btn btn-sm btn-delete delete-user"
-                                                data-id="<?php echo $user['UserID']; ?>"
-                                                title="Delete User">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
+                                            </div>                                            <!-- Delete User Button removed as requested -->
                                         </div>
                                     </td>
                                 </tr>
@@ -1906,28 +1891,7 @@ try {
                         <div class="mb-3">
                             <label for="editAddress" class="form-label">Address</label>
                             <textarea class="form-control" id="editAddress" name="address" rows="2"></textarea>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
-                                    <label class="form-check-label" for="editIsActive">Account Active</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="editIsApproved" name="isApproved">
-                                    <label class="form-check-label" for="editIsApproved">Account Approved</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="editEmailConfirmed" name="emailConfirmed">
-                                    <label class="form-check-label" for="editEmailConfirmed">Email Confirmed</label>
-                                </div>
-                            </div>
-                        </div>
+                        </div>                        <!-- Account status options removed as requested -->
 
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -2194,10 +2158,7 @@ try {
                 $("#editFirstName").val($(this).data("firstname"));
                 $("#editLastName").val($(this).data("lastname"));
                 $("#editPhone").val($(this).data("phone"));
-                $("#editAddress").val($(this).data("address"));
-                $("#editDob").val($(this).data("dob"));
-                $("#editIsActive").prop("checked", $(this).data("status") == 1);
-                $("#editIsApproved").prop("checked", $(this).data("approved") == 1);
+                $("#editAddress").val($(this).data("address"));                $("#editDob").val($(this).data("dob"));
             });
 
             // Form validation

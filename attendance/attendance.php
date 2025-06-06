@@ -687,14 +687,13 @@ $scanner_location = $_SESSION['scanner_location'];
                     isScanning = false;
                     scannerOverlay.style.display = 'flex';
                 });
-            }
-
-            function onScanSuccess(decodedText, decodedResult) {
+            }            function onScanSuccess(decodedText, decodedResult) {
                 if (!isScanning) return;
                 
-                stopScanner();
+                // Don't stop the scanner, just pause it temporarily
+                html5QrcodeScanner.pause();
                 processAttendance(decodedText);
-            }            function onScanFailure(error) {
+            }function onScanFailure(error) {
                 // Ignore scan failures - they're too frequent and noisy
             }
 
@@ -736,8 +735,7 @@ $scanner_location = $_SESSION['scanner_location'];
                         
                         // Show warning for inactive accounts
                         if (data.warning) {
-                            showResult(`${successMessage} - ${data.warning}`, 'warning');
-                        } else {
+                            showResult(`${successMessage} - ${data.warning}`, 'warning');                        } else {
                             showResult(successMessage, 'success');
                         }
                           // Add to recent activity
@@ -745,6 +743,13 @@ $scanner_location = $_SESSION['scanner_location'];
                         
                         // Load recent activity
                         setTimeout(() => loadRecentActivity(), 1000);
+                        
+                        // Resume the scanner after a short delay
+                        setTimeout(() => {
+                            if (html5QrcodeScanner) {
+                                html5QrcodeScanner.resume();
+                            }
+                        }, 2000);
                     } else {
                         // Enhanced error messages based on common timeout scenarios
                         let errorMessage = data.message || `Failed to process ${currentMode}`;
@@ -762,13 +767,26 @@ $scanner_location = $_SESSION['scanner_location'];
                         } else if (errorMessage.includes('not currently checked in')) {
                             errorMessage = `❌ ${errorMessage}`;
                             showResult(errorMessage, 'error');
-                        } else {
-                            showResult(errorMessage, 'error');
+                        } else {                            showResult(errorMessage, 'error');
                         }
+                        
+                        // Resume the scanner after a short delay even for errors
+                        setTimeout(() => {
+                            if (html5QrcodeScanner) {
+                                html5QrcodeScanner.resume();
+                            }
+                        }, 2000);
                     }
                 } catch (error) {
                     console.error('Process attendance error:', error);
                     showResult(`🌐 Network error occurred. Please check your connection.`, 'error');
+                    
+                    // Resume the scanner after a short delay even for network errors
+                    setTimeout(() => {
+                        if (html5QrcodeScanner) {
+                            html5QrcodeScanner.resume();
+                        }
+                    }, 2000);
                 }
             }            function addToRecentActivity(userName, action, duration = null, role = null) {
                 const now = new Date();

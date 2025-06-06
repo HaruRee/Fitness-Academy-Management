@@ -877,21 +877,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <span>Employee List</span>
             </a>
 
-            <div class="sidebar-menu-header">Attendance</div>
-            <a href="../attendance/checkin.php">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Check In</span>
-            </a>
-            <a href="../attendance/checkout.php">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Check Out</span>
-            </a>
+            <div class="sidebar-menu-header">Reports</div>
             <a href="attendance_dashboard.php">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
             </a>
-
-            <div class="sidebar-menu-header">Reports</div>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>
                 <span>Analytics</span>

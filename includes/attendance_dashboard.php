@@ -556,24 +556,16 @@ switch ($date_range_filter) {
             <a href="admin_video_approval.php">
                 <i class="fas fa-video"></i>
                 <span>Video Approval</span>
-            </a>
-            <a href="employee_list.php">
+            </a>            <a href="employee_list.php">
                 <i class="fas fa-id-card"></i>
                 <span>Employee List</span>
-            </a>            <div class="sidebar-menu-header">ATTENDANCE</div>            <a href="../attendance/checkin.php">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Check In</span>
-            </a>
-            <a href="../attendance/checkout.php">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Check Out</span>
-            </a>
+            </a>            
+            
+            <div class="sidebar-menu-header">REPORTS</div>
             <a href="attendance_dashboard.php" class="active">
                 <i class="fas fa-chart-line"></i>
                 <span>Attendance Reports</span>
             </a>
-
-            <div class="sidebar-menu-header">REPORTS</div>
             <a href="report_generation.php">
                 <i class="fas fa-chart-bar"></i>
                 <span>Analytics</span>
