@@ -1155,12 +1155,8 @@ try {
                 if (confirm("Are you sure you want to delete this member? This action cannot be undone.")) {
                     window.location.href = "manage_users.php?action=delete&id=" + userId;
                 }
-            });
-
-            // Handle edit member modal data population
+            });            // Handle edit member modal data population
             $(".edit-member").click(function() {
-                // Debug data attributes to console
-                console.log("Member data:", {
                     id: $(this).data("id"),
                     username: $(this).data("username"),
                     email: $(this).data("email"),

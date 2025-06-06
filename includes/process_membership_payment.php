@@ -36,7 +36,8 @@ try {
     // First, check if user already has an active subscription/plan
     $stmt = $conn->prepare("
         SELECT UserID, plan_id, membership_plan, membership_price, 
-               First_Name, Last_Name, Email, Phone 
+               First_Name, Last_Name, Email, Phone,
+               current_sessions_remaining, membership_start_date, membership_end_date
         FROM users 
         WHERE UserID = ?
     ");
@@ -45,8 +46,21 @@ try {
 
     if (!$user) {
         throw new Exception('User not found');
-    }    // Check if user has an active subscription/plan (any of these fields indicate an active plan)
-    if ($user['plan_id'] || $user['membership_plan']) {
+    }    // Check if user has an active subscription/plan using correct logic
+    $hasActivePlan = false;
+    if ($user && (
+        // Session-based membership: has sessions remaining
+        ($user['current_sessions_remaining'] > 0) ||
+        // Time-based membership: has valid dates and membership hasn't expired
+        (!empty($user['membership_start_date']) && 
+         !empty($user['membership_end_date']) && 
+         $user['membership_end_date'] > $user['membership_start_date'] &&
+         $user['membership_end_date'] > date('Y-m-d'))
+    )) {
+        $hasActivePlan = true;
+    }
+    
+    if ($hasActivePlan) {
         throw new Exception('You already have an active membership plan. Please wait for your current plan to expire before purchasing a new one.');
     }
 

@@ -1,6 +1,11 @@
 <?php
 require '../config/database.php';
 require_once '../vendor/autoload.php';
+
+// Set longer session timeout for payment process
+ini_set('session.gc_maxlifetime', 3600); // 1 hour
+session_set_cookie_params(3600); // 1 hour
+
 session_start();
 
 // Function to get correct URL for hosting environment
@@ -22,6 +27,10 @@ require_once __DIR__ . '/../config/api_config.php';
 
 // Check if we have required session data
 if (!isset($_SESSION['user_data']) || !isset($_SESSION['plan_price'])) {
+    error_log('Missing session data in process_payment - user_data: ' . (isset($_SESSION['user_data']) ? 'present' : 'missing'));
+    error_log('Missing session data in process_payment - plan_price: ' . (isset($_SESSION['plan_price']) ? 'present' : 'missing'));
+    error_log('All session keys in process_payment: ' . json_encode(array_keys($_SESSION)));
+    
     $_SESSION['error_message'] = "Missing payment data. Please try again.";
     header("Location: " . getCorrectUrl('includes/register.php'));
     exit;
@@ -145,12 +154,57 @@ try {
     $checkoutData = json_decode($checkoutResponse->getBody(), true);
 
     // Debug - log the response
-    error_log('PayMongo Checkout Response: ' . json_encode($checkoutData));
-
-    // Check if checkout session was created successfully
-    if (isset($checkoutData['data']) && isset($checkoutData['data']['id']) && isset($checkoutData['data']['attributes']['checkout_url'])) {
-        // Save the checkout session ID in session for later verification
+    error_log('PayMongo Checkout Response: ' . json_encode($checkoutData));    // Check if checkout session was created successfully
+    if (isset($checkoutData['data']) && isset($checkoutData['data']['id']) && isset($checkoutData['data']['attributes']['checkout_url'])) {        // Save the checkout session ID in session for later verification
         $_SESSION['paymongo_checkout_id'] = $checkoutData['data']['id'];
+        
+        // Ensure session data persistence by explicitly saving important data
+        $_SESSION['payment_in_progress'] = true;
+        $_SESSION['payment_timestamp'] = time();
+        
+        // Store payment session data in database as backup
+        try {
+            $stmt = $conn->prepare("
+                INSERT INTO payment_sessions (
+                    checkout_id, user_email, user_data, plan_data, created_at
+                ) VALUES (?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE
+                user_data = VALUES(user_data),
+                plan_data = VALUES(plan_data),
+                created_at = NOW()
+            ");
+            
+            $planData = json_encode([
+                'plan_id' => $_SESSION['plan_id'] ?? null,
+                'selected_plan' => $_SESSION['selected_plan'] ?? null,
+                'plan_price' => $_SESSION['plan_price'] ?? null,
+                'plan_type' => $_SESSION['plan_type'] ?? null,
+                'final_amount' => $finalAmount,
+                'discount_applied' => $discountApplied,
+                'discount_type' => $discountType,
+                'discount_amount' => $discountAmount
+            ]);
+            
+            $stmt->execute([
+                $checkoutData['data']['id'],
+                $_SESSION['user_data']['email'],
+                json_encode($_SESSION['user_data']),
+                $planData
+            ]);
+            
+            error_log('Payment session data backed up to database for checkout ID: ' . $checkoutData['data']['id']);
+        } catch (Exception $e) {
+            error_log('Failed to backup payment session data: ' . $e->getMessage());
+            // Don't fail the process if backup fails
+        }
+        
+        // Log session state for debugging
+        error_log('Session data stored for payment: ' . json_encode([
+            'checkout_id' => $_SESSION['paymongo_checkout_id'],
+            'user_email' => $_SESSION['user_data']['email'] ?? 'not set',
+            'plan_price' => $_SESSION['plan_price'] ?? 'not set',
+            'plan_id' => $_SESSION['plan_id'] ?? 'not set'
+        ]));
 
         // Get the checkout URL from the response
         $checkoutUrl = $checkoutData['data']['attributes']['checkout_url'];

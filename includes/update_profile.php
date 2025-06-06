@@ -211,15 +211,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #222 !important;
             color: #bbb !important;
             border: 1px solid #333 !important;
-        }
-
-        .btn {
+        }        .btn {
             display: block;
             margin: 32px auto 0 auto;
             width: 320px;
             max-width: 90%;
             background: #d62328;
-            color: #fff;
+            color: #ffffff;
             padding: 18px 0;
             font-size: 1.2rem;
             border: none;
@@ -229,10 +227,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 1px;
             text-align: center;
             transition: background 0.2s;
-        }
-
-        .btn:hover {
+        }.btn:hover {
             background: #b21e24;
+        }        .btn.btn-save {
+            background: #d62328 !important;
+            color: #ffffff !important;
+            text-transform: uppercase;
+            font-weight: 600;
+            border: 1px solid #d62328 !important;
+            letter-spacing: 1px;
+        }
+        
+        .btn.btn-save:hover {
+            background: #b21e24 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
 
         .error {
@@ -811,7 +820,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <button type="submit" class="btn">Save Information</button>
+                <button type="submit" class="btn btn-save">SAVE INFORMATION</button>
             </form>
         </main>
     </div>

@@ -1,6 +1,11 @@
 <?php
 require '../config/database.php';
 require_once '../vendor/autoload.php';
+
+// Set longer session timeout for payment process
+ini_set('session.gc_maxlifetime', 3600); // 1 hour
+session_set_cookie_params(3600); // 1 hour
+
 session_start();
 
 // Function to get correct URL for hosting environment
@@ -33,9 +38,106 @@ require_once __DIR__ . '/../config/api_config.php';
 
 // Check if we have the checkout session ID and required session data
 if (!isset($_SESSION['paymongo_checkout_id']) || !isset($_SESSION['user_data'])) {
-    $_SESSION['error_message'] = "Missing payment data. Please start over.";
-    header("Location: " . getCorrectUrl('includes/register.php?reset=true'));
-    exit;
+    // Log missing session data for debugging
+    error_log('Missing session data - paymongo_checkout_id: ' . (isset($_SESSION['paymongo_checkout_id']) ? 'present' : 'missing'));
+    error_log('Missing session data - user_data: ' . (isset($_SESSION['user_data']) ? 'present' : 'missing'));
+    error_log('All session keys: ' . json_encode(array_keys($_SESSION)));
+    
+    // Try to get checkout ID from URL parameter as fallback
+    $checkoutIdFromUrl = isset($_GET['checkout_session_id']) ? $_GET['checkout_session_id'] : null;
+    
+    if ($checkoutIdFromUrl && !isset($_SESSION['paymongo_checkout_id'])) {
+        $_SESSION['paymongo_checkout_id'] = $checkoutIdFromUrl;
+        error_log('Recovered checkout ID from URL: ' . $checkoutIdFromUrl);
+    }
+      // If we still don't have the required data, redirect with error
+    if (!isset($_SESSION['paymongo_checkout_id']) || !isset($_SESSION['user_data'])) {        // As a last resort, try to recover data from PayMongo checkout session
+        if (isset($_SESSION['paymongo_checkout_id'])) {
+            try {
+                error_log('Attempting to recover user data from database backup...');
+                
+                // Try to recover from database backup first
+                $stmt = $conn->prepare("
+                    SELECT user_email, user_data, plan_data 
+                    FROM payment_sessions 
+                    WHERE checkout_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR)
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ");
+                $stmt->execute([$_SESSION['paymongo_checkout_id']]);
+                $backupData = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($backupData) {
+                    error_log('Found backup data in database for checkout ID: ' . $_SESSION['paymongo_checkout_id']);
+                    
+                    // Restore session data from backup
+                    $_SESSION['user_data'] = json_decode($backupData['user_data'], true);
+                    $planData = json_decode($backupData['plan_data'], true);
+                    
+                    $_SESSION['plan_id'] = $planData['plan_id'] ?? null;
+                    $_SESSION['selected_plan'] = $planData['selected_plan'] ?? null;
+                    $_SESSION['plan_price'] = $planData['plan_price'] ?? null;
+                    $_SESSION['plan_type'] = $planData['plan_type'] ?? null;
+                    $_SESSION['final_amount'] = $planData['final_amount'] ?? $planData['plan_price'];
+                    
+                    if ($planData['discount_applied'] ?? false) {
+                        $_SESSION['discount_applied'] = true;
+                        $_SESSION['discount_type'] = $planData['discount_type'];
+                        $_SESSION['discount_amount'] = $planData['discount_amount'];
+                        $_SESSION['final_amount'] = $planData['final_amount'];
+                    }
+                    
+                    error_log('Successfully recovered session data from database backup');
+                    
+                    // Clean up the backup record
+                    $stmt = $conn->prepare("DELETE FROM payment_sessions WHERE checkout_id = ?");
+                    $stmt->execute([$_SESSION['paymongo_checkout_id']]);
+                    
+                    // Continue with normal processing - don't redirect
+                } else {
+                    throw new Exception('No backup data found in database');
+                }
+                
+            } catch (Exception $e) {
+                error_log('Failed to recover data from database backup: ' . $e->getMessage());
+                
+                try {
+                    error_log('Attempting to recover user data from PayMongo checkout session...');
+                    $client = new \GuzzleHttp\Client();
+                    $sessionResponse = $client->request('GET', "https://api.paymongo.com/v1/checkout_sessions/{$_SESSION['paymongo_checkout_id']}", [
+                        'headers' => [
+                            'Authorization' => 'Basic ' . base64_encode(PAYMONGO_SECRET_KEY . ':'),
+                        ]
+                    ]);
+                    
+                    $checkoutData = json_decode($sessionResponse->getBody(), true);
+                    $billing = $checkoutData['data']['attributes']['billing'] ?? null;
+                    $metadata = $checkoutData['data']['attributes']['metadata'] ?? null;
+                    
+                    if ($billing && isset($billing['email'])) {
+                        // Try to find an existing pending registration or similar
+                        error_log('Found billing email in checkout session: ' . $billing['email']);
+                        
+                        // For now, we can't fully recover without the original session data
+                        // This is a limitation that we need to handle gracefully
+                        $_SESSION['error_message'] = "Session expired during payment. Please start the registration process again. Your payment may have been processed - please check your email or contact support if charged.";
+                    } else {
+                        $_SESSION['error_message'] = "Missing payment data. Please start over. If this persists, please contact support.";
+                    }
+                } catch (Exception $e2) {
+                    error_log('Failed to recover data from checkout session: ' . $e2->getMessage());
+                    $_SESSION['error_message'] = "Missing payment data. Please start over. If this persists, please contact support.";
+                }
+                
+                header("Location: " . getCorrectUrl('includes/register.php?reset=true'));
+                exit;
+            }
+        } else {
+            $_SESSION['error_message'] = "Missing payment data. Please start over. If this persists, please contact support.";
+            header("Location: " . getCorrectUrl('includes/register.php?reset=true'));
+            exit;
+        }
+    }
 }
 
 try {

@@ -48,21 +48,7 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
-<?php if (isset($_GET['debug'])): ?>
-<div class="container mt-3">
-    <div class="card bg-dark">
-        <div class="card-header bg-danger text-white">
-            Debug Info (Admin Only)
-        </div>
-        <div class="card-body">
-            <h5 class="card-title text-white">User ID: <?php echo $_SESSION['user_id']; ?></h5>
-            <div class="bg-dark text-light p-3" style="overflow-x: auto;">
-                <pre><?php print_r($membership_data); ?></pre>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
+
 
 <div class="container">
     <!-- Membership Status Section -->
@@ -141,16 +127,7 @@ try {
                                     
                                     // Check if today is after end date or the exact same day as end date
                                     $is_expired = $today_normalized >= $end_date_normalized;
-                                    
-                                    // For debugging
-                                    if (isset($_GET['debug'])) {
-                                        echo "<div class='alert alert-info mb-3'>";
-                                        echo "Today: " . $today_normalized->format('Y-m-d') . "<br>";
-                                        echo "End Date: " . $end_date_normalized->format('Y-m-d') . "<br>";
-                                        echo "Days Remaining: " . $days_remaining . "<br>";
-                                        echo "Is Expired: " . ($is_expired ? 'Yes' : 'No') . "<br>";
-                                        echo "</div>";
-                                    }
+  
                                     ?>
                                     <p class="mb-2"><strong>Start Date:</strong> <span class="text-light"><?php echo $start_date->format('M d, Y'); ?></span></p>
                                     <p class="mb-2"><strong>End Date:</strong> <span class="text-light"><?php echo $end_date->format('M d, Y'); ?></span></p>

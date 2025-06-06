@@ -47,47 +47,74 @@ try {    $stmt = $conn->prepare("
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
     try {
         $conn->beginTransaction();
+          // Validate input
+        $paymentType = $_POST['payment_type'] ?? 'membership';
+        $requiredFields = ['customer_name', 'customer_email', 'customer_phone', 'cash_amount'];
         
-        // Validate input
-        $requiredFields = ['customer_name', 'customer_email', 'customer_phone', 'membership_plan_id', 'cash_amount'];
-        foreach ($requiredFields as $field) {
-            if (empty($_POST[$field])) {
-                throw new Exception("All fields are required.");
-            }
+        if ($paymentType === 'membership') {
+            $requiredFields[] = 'membership_plan_id';
+        } elseif ($paymentType === 'custom') {
+            $requiredFields[] = 'custom_description';
+            $requiredFields[] = 'custom_amount';
         }
         
-        $customerName = trim($_POST['customer_name']);
+        foreach ($requiredFields as $field) {
+            if (empty($_POST[$field])) {
+                throw new Exception("All required fields must be filled.");
+            }
+        }
+          $customerName = trim($_POST['customer_name']);
         $customerEmail = trim($_POST['customer_email']);
         $customerPhone = trim($_POST['customer_phone']);
-        $planId = intval($_POST['membership_plan_id']);
         $cashAmount = floatval($_POST['cash_amount']);
         $customerAddress = trim($_POST['customer_address'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
-          // Get membership plan details
-        $planStmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ? AND is_active = 1");
-        $planStmt->execute([$planId]);
-        $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!$plan) {
-            throw new Exception("Invalid membership plan selected.");
-        }
-        
-        $planPrice = floatval($plan['price']);
-        
-        // Calculate membership dates and sessions based on plan type
-        $membershipStartDate = date('Y-m-d');
+        // Initialize variables for both payment types
+        $planId = null;
+        $plan = null;
+        $planPrice = 0;
+        $customDescription = '';
+        $membershipStartDate = null;
         $membershipEndDate = null;
         $sessionsRemaining = null;
         
-        if ($plan['plan_type'] === 'monthly') {
-            // Monthly plan - calculate end date
-            $durationMonths = intval($plan['duration_months']);
-            $membershipEndDate = date('Y-m-d', strtotime("+{$durationMonths} months"));
-        } elseif ($plan['plan_type'] === 'session') {
-            // Session-based plan - set remaining sessions
-            $sessionsRemaining = intval($plan['session_count']);
+        if ($paymentType === 'membership') {
+            $planId = intval($_POST['membership_plan_id']);
+            
+            // Get membership plan details
+            $planStmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ? AND is_active = 1");
+            $planStmt->execute([$planId]);
+            $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$plan) {
+                throw new Exception("Invalid membership plan selected.");
+            }
+            
+            $planPrice = floatval($plan['price']);
+            
+            // Calculate membership dates and sessions based on plan type
+            $membershipStartDate = date('Y-m-d');
+            
+            if ($plan['plan_type'] === 'monthly') {
+                // Monthly plan - calculate end date
+                $durationMonths = intval($plan['duration_months']);
+                $membershipEndDate = date('Y-m-d', strtotime("+{$durationMonths} months"));
+            } elseif ($plan['plan_type'] === 'session') {
+                // Session-based plan - set remaining sessions
+                $sessionsRemaining = intval($plan['session_count']);
+            }
+        } elseif ($paymentType === 'custom') {
+            $customDescription = trim($_POST['custom_description']);
+            $planPrice = floatval($_POST['custom_amount']);
+            
+            if ($planPrice <= 0) {
+                throw new Exception("Custom amount must be greater than 0.");
+            }
         }
-          // Check if user with this email already exists        $existingUserStmt = $conn->prepare("SELECT UserID, membership_plan, plan_id FROM users WHERE Email = ?");
+        
+        // Check if user with this email already exists
+        $existingUserStmt = $conn->prepare("SELECT UserID, membership_plan, plan_id FROM users WHERE Email = ?");
         $existingUserStmt->execute([$customerEmail]);
         $existingUser = $existingUserStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -123,41 +150,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             if ($stmt->fetchColumn() == 0) break;
             $username = $baseUsername . $counter++;
         }
-        
-        // Create payment details JSON
+          // Create payment details JSON
         $paymentDetails = json_encode([
             'customer_name' => $customerName,
             'customer_email' => $customerEmail,
             'customer_phone' => $customerPhone,
             'customer_address' => $customerAddress,
-            'membership_plan' => $plan['name'],
+            'payment_type' => $paymentType,
+            'membership_plan' => $paymentType === 'membership' ? $plan['name'] : null,
+            'custom_description' => $paymentType === 'custom' ? $customDescription : null,
             'plan_id' => $planId,
+            'amount' => $planPrice,
             'cash_received' => $cashAmount,
             'change_given' => $changeAmount,
             'processed_by' => $_SESSION['user_id'],
             'notes' => $notes,
-            'transaction_type' => 'membership_pos',
+            'transaction_type' => $paymentType === 'membership' ? 'membership_pos' : 'custom_pos',
             'username_created' => $username
-        ]);        // Create the member account with new plan type fields
-        $memberSql = "
-            INSERT INTO users (
-                Username, PasswordHash, Email, First_Name, Last_Name,
-                Phone, Address, emergency_contact, Role, RegistrationDate,
-                membership_plan, plan_id, membership_price,
-                membership_start_date, membership_end_date, current_sessions_remaining,
-                IsActive, email_confirmed, account_status, last_activity_date,
-                DateOfBirth
-            ) VALUES (
-                ?, ?, ?, ?, ?,
-                ?, ?, ?, 'Member', NOW(),
-                ?, ?, ?,
-                ?, ?, ?,
-                1, 1, 'active', NOW(),
-                NULL
-            )
-        ";        // Execute member creation
-        $memberStmt = $conn->prepare($memberSql);
-        try {
+        ]);        if ($paymentType === 'membership') {
+            // Create the member account with membership plan
+            $memberSql = "
+                INSERT INTO users (
+                    Username, PasswordHash, Email, First_Name, Last_Name,
+                    Phone, Address, emergency_contact, Role, RegistrationDate,
+                    membership_plan, plan_id, membership_price,
+                    membership_start_date, membership_end_date, current_sessions_remaining,
+                    IsActive, email_confirmed, account_status, last_activity_date,
+                    DateOfBirth
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, 'Member', NOW(),
+                    ?, ?, ?,
+                    ?, ?, ?,
+                    1, 1, 'active', NOW(),
+                    NULL
+                )
+            ";
+            
+            // Execute member creation
+            $memberStmt = $conn->prepare($memberSql);
             $memberStmt->execute([
                 $username,
                 password_hash($tempPassword, PASSWORD_DEFAULT),
@@ -174,54 +205,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
                 $membershipEndDate, // membership_end_date
                 $sessionsRemaining // current_sessions_remaining
             ]);
-        } catch (PDOException $e) {
-            // If UserID field error, try with explicit UserID
-            if (strpos($e->getMessage(), 'UserID') !== false) {
-                // Get next available UserID
-                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
-                $userIdStmt->execute();
-                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];                // Retry with UserID included
-                $memberSqlWithId = "
-                    INSERT INTO users (
-                        UserID, Username, PasswordHash, Email, First_Name, Last_Name,
-                        Phone, Address, emergency_contact, Role, RegistrationDate,
-                        membership_plan, plan_id, membership_price,
-                        membership_start_date, membership_end_date, current_sessions_remaining,
-                        IsActive, email_confirmed, account_status, last_activity_date,
-                        DateOfBirth
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, 'Member', NOW(),
-                        ?, ?, ?,
-                        ?, ?, ?,
-                        1, 1, 'active', NOW(),
-                        NULL
-                    )
-                ";
-                $memberStmtWithId = $conn->prepare($memberSqlWithId);
-                $memberStmtWithId->execute([
-                    $nextUserId,
-                    $username,
-                    password_hash($tempPassword, PASSWORD_DEFAULT),
-                    $customerEmail,
-                    explode(' ', $customerName)[0], // First name
-                    implode(' ', array_slice(explode(' ', $customerName), 1)), // Last name
-                    $customerPhone,
-                    $customerAddress,
-                    $customerPhone, // Using phone as emergency contact
-                    $plan['name'], // membership_plan
-                    $planId, // plan_id
-                    $planPrice, // membership_price
-                    $membershipStartDate, // membership_start_date
-                    $membershipEndDate, // membership_end_date
-                    $sessionsRemaining // current_sessions_remaining
-                ]);
-            } else {
-                throw $e; // Re-throw if it's a different error
-            }
+        } else {
+            // For custom payments, create a basic user account without membership
+            $memberSql = "
+                INSERT INTO users (
+                    Username, PasswordHash, Email, First_Name, Last_Name,
+                    Phone, Address, emergency_contact, Role, RegistrationDate,
+                    IsActive, email_confirmed, account_status, last_activity_date,
+                    DateOfBirth
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, 'Member', NOW(),
+                    1, 1, 'active', NOW(),
+                    NULL
+                )
+            ";
+            
+            // Execute member creation
+            $memberStmt = $conn->prepare($memberSql);
+            $memberStmt->execute([
+                $username,
+                password_hash($tempPassword, PASSWORD_DEFAULT),
+                $customerEmail,
+                explode(' ', $customerName)[0], // First name
+                implode(' ', array_slice(explode(' ', $customerName), 1)), // Last name
+                $customerPhone,
+                $customerAddress,                $customerPhone // Using phone as emergency contact
+            ]);
         }
-        
-        $newMemberId = $conn->lastInsertId();
+          $memberId = $conn->lastInsertId();
         
         // Insert payment record
         $paymentStmt = $conn->prepare("
@@ -234,21 +246,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
         ");
         
         $paymentStmt->execute([
-            $newMemberId,
+            $memberId,
             $planPrice,
             $transactionId,
-            $paymentDetails        ]);
+            $paymentDetails
+        ]);
         
         // Log in audit trail
         $auditSql = "INSERT INTO audit_trail (username, action, timestamp) VALUES (?, ?, NOW())";
         $auditStmt = $conn->prepare($auditSql);
-        $action = "POS Sale: {$plan['name']} to {$customerName} - Amount: ₱{$planPrice} - Transaction: {$transactionId}";
+        
+        if ($paymentType === 'membership') {
+            $action = "POS Sale: {$plan['name']} to {$customerName} - Amount: ₱{$planPrice} - Transaction: {$transactionId}";
+        } else {
+            $action = "POS Custom Sale: {$customDescription} to {$customerName} - Amount: ₱{$planPrice} - Transaction: {$transactionId}";
+        }
+        
         $auditStmt->execute([$_SESSION['user_name'] ?? 'Staff', $action]);
         
         $conn->commit();
-          // Send email receipt with login credentials
+        
+        // Send email receipt with login credentials
         try {
-            $emailSent = sendReceiptEmail($customerEmail, $customerName, $plan, $planPrice, $transactionId, $cashAmount, $changeAmount, $customerEmail, $tempPassword);
+            if ($paymentType === 'membership') {
+                $emailSent = sendReceiptEmail($customerEmail, $customerName, $plan, $planPrice, $transactionId, $cashAmount, $changeAmount, $customerEmail, $tempPassword);
+            } else {
+                $emailSent = sendCustomReceiptEmail($customerEmail, $customerName, $customDescription, $planPrice, $transactionId, $cashAmount, $changeAmount, $customerEmail, $tempPassword);
+            }
             
             // Set success message with transaction details
             $success = "Payment processed successfully! Transaction ID: {$transactionId}";
@@ -429,10 +453,83 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             $mail->AltBody = $receiptAltBody;
             $mail->send();
         }
+          return true;
+    } catch (Exception $e) {
+        error_log("Email receipt error: " . $mail->ErrorInfo);
+        return false;
+    }
+}
+
+// Function to send custom receipt email with account details
+function sendCustomReceiptEmail($email, $customerName, $description, $amount, $transactionId, $cashReceived, $changeGiven, $username = null, $password = null) {
+    require_once 'email_templates.php';
+    
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = SMTP_HOST;
+        $mail->SMTPAuth = true;
+        $mail->Username = SMTP_USERNAME;
+        $mail->Password = SMTP_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = SMTP_PORT;
+
+        // Recipients
+        $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+        $mail->addAddress($email);
+        $mail->addReplyTo(SMTP_FROM_EMAIL, SMTP_FROM_NAME . ' Support');
+
+        // Content
+        $mail->isHTML(true);
+        
+        if ($username && $password) {
+            // Welcome email with credentials for custom payment
+            $mail->Subject = 'Welcome to Fitness Academy - Your Account is Ready!';
+            
+            $customDetails = [
+                'description' => $description,
+                'amount' => $amount
+            ];
+            
+            $mail->Body = EmailTemplates::welcomeWithCredentials($customerName, $email, $password, $customDetails);
+            $mail->AltBody = EmailTemplates::getPlainTextVersion(
+                "Welcome to Fitness Academy! Your account details: Email: {$email}, Temporary Password: {$password}. Please log in and change your password immediately.",
+                'Welcome to Fitness Academy'
+            );
+        }
+        
+        // Send receipt email for custom payment
+        $transactionDetails = [
+            'id' => $transactionId,
+            'service' => $description,
+            'amount' => $amount,
+            'method' => 'Cash',
+            'cash_received' => $cashReceived,
+            'change' => $changeGiven
+        ];
+        
+        $receiptBody = EmailTemplates::customPaymentReceipt($customerName, $transactionDetails);
+        $receiptAltBody = EmailTemplates::getPlainTextVersion(
+            "Payment Receipt - Transaction ID: {$transactionId}, Service: {$description}, Amount: ₱" . number_format($amount, 2) . ", Payment Method: Cash",
+            'Payment Receipt'
+        );
+        
+        // Send the main email (welcome or receipt)
+        $mail->send();
+        
+        // If it was a welcome email, send a separate receipt email
+        if ($username && $password) {
+            $mail->clearAddresses();
+            $mail->addAddress($email);
+            $mail->Subject = 'Payment Receipt - Fitness Academy';
+            $mail->Body = $receiptBody;
+            $mail->AltBody = $receiptAltBody;
+            $mail->send();
+        }
         
         return true;
     } catch (Exception $e) {
-        error_log("Email receipt error: " . $mail->ErrorInfo);
+        error_log("Custom email receipt error: " . $mail->ErrorInfo);
         return false;
     }
 }
@@ -828,11 +925,48 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             padding: 1rem 2rem;
             font-size: 1.125rem;
             font-weight: 600;
+        }        .btn i {
+            margin-right: 0.5rem;
         }
 
-        .btn i {
-            margin-right: 0.5rem;
-        }        /* Calculation Display */
+        /* Payment Type Toggle */
+        .payment-type-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-toggle {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            background: white;
+            color: var(--gray-color);
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-toggle:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-toggle.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-toggle i {
+            margin-right: 0;
+        }/* Calculation Display */
         .calculation-display {
             background: #f9fafb;
             border-radius: 8px;
@@ -1144,9 +1278,22 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
                         <div class="card-header">
                             <h3 class="card-title">Process Payment</h3>
                         </div>
-                        <div class="card-body">
-                            <form method="POST" id="paymentForm">
+                        <div class="card-body">                            <form method="POST" id="paymentForm">
                                 <input type="hidden" id="membership_plan_id" name="membership_plan_id" value="">
+                                <input type="hidden" id="payment_type" name="payment_type" value="membership">
+                                
+                                <!-- Payment Type Toggle -->
+                                <div class="form-group">
+                                    <label class="form-label">Payment Type</label>
+                                    <div class="payment-type-toggle">
+                                        <button type="button" class="btn btn-toggle active" id="membershipToggle" onclick="togglePaymentType('membership')">
+                                            <i class="fas fa-id-card"></i> Membership Plan
+                                        </button>
+                                        <button type="button" class="btn btn-toggle" id="customToggle" onclick="togglePaymentType('custom')">
+                                            <i class="fas fa-calculator"></i> Custom Amount
+                                        </button>
+                                    </div>
+                                </div>
                                 
                                 <div class="form-group">
                                     <label class="form-label">Customer Name <span class="required">*</span></label>
@@ -1159,11 +1306,22 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
                                 </div>                                <div class="form-group">
                                     <label class="form-label">Phone Number <span class="required">*</span></label>
                                     <input type="tel" class="form-control" name="customer_phone" required placeholder="e.g., 09123456789">
-                                </div>
-
-                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                </div>                                <div class="form-group" style="margin-bottom: 0.5rem;">
                                     <label class="form-label">Address</label>
                                     <input type="text" class="form-control" name="customer_address" placeholder="Customer address">
+                                </div>
+
+                                <!-- Custom Amount Section -->
+                                <div id="customAmountSection" style="display: none;">
+                                    <div class="form-group">
+                                        <label class="form-label">Service/Product Description <span class="required">*</span></label>
+                                        <input type="text" class="form-control" name="custom_description" id="customDescription" placeholder="e.g., Personal Training Session, Equipment Rental, etc.">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Amount <span class="required">*</span></label>
+                                        <input type="number" class="form-control" name="custom_amount" id="customAmount" 
+                                               step="0.01" min="0" placeholder="0.00" oninput="updateCustomAmount()">
+                                    </div>
                                 </div>
 
                                 <div id="selectedPlanDisplay" style="display: none;">
@@ -1177,9 +1335,7 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
                                             <span class="calc-value" id="displayPlanPrice">₱0.00</span>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="form-group">
+                                </div>                                <div class="form-group">
                                     <label class="form-label">Cash Amount <span class="required">*</span></label>
                                     <input type="number" class="form-control large" name="cash_amount" id="cashAmount" 
                                            step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
@@ -1286,16 +1442,23 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             
             // Enable process button if form is valid
             checkFormValidity();
-        }
-
-        function calculateChange() {
-            if (selectedPlanPrice <= 0) return;
+        }        function calculateChange() {
+            const paymentType = document.getElementById('payment_type').value;
+            let totalAmount = 0;
+            
+            if (paymentType === 'membership' && selectedPlanPrice > 0) {
+                totalAmount = selectedPlanPrice;
+            } else if (paymentType === 'custom') {
+                totalAmount = parseFloat(document.getElementById('customAmount').value) || 0;
+            }
+            
+            if (totalAmount <= 0) return;
             
             const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
-            const change = cashAmount - selectedPlanPrice;
+            const change = cashAmount - totalAmount;
             
             // Update display
-            document.getElementById('totalAmount').textContent = '₱' + selectedPlanPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('totalAmount').textContent = '₱' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
             document.getElementById('cashReceived').textContent = '₱' + cashAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
             document.getElementById('changeAmount').textContent = '₱' + change.toLocaleString('en-US', {minimumFractionDigits: 2});
             
@@ -1315,44 +1478,137 @@ function sendReceiptEmail($email, $customerName, $plan, $amount, $transactionId,
             }
             
             checkFormValidity();
-        }
-
-        function checkFormValidity() {
+        }function checkFormValidity() {
             const form = document.getElementById('paymentForm');
             const processBtn = document.getElementById('processBtn');
             const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+            const paymentType = document.getElementById('payment_type').value;
             
-            const isValid = selectedPlanId && 
+            let isValid = false;
+            
+            if (paymentType === 'membership') {
+                isValid = selectedPlanId && 
                           form.customer_name.value.trim() && 
                           form.customer_email.value.trim() && 
                           form.customer_phone.value.trim() && 
                           cashAmount >= selectedPlanPrice;
+            } else if (paymentType === 'custom') {
+                const customAmount = parseFloat(document.getElementById('customAmount').value) || 0;
+                isValid = form.customer_name.value.trim() && 
+                          form.customer_email.value.trim() && 
+                          form.customer_phone.value.trim() && 
+                          document.getElementById('customDescription').value.trim() &&
+                          customAmount > 0 &&
+                          cashAmount >= customAmount;
+            }
             
             processBtn.disabled = !isValid;
         }
 
-        // Add event listeners to form fields
+        function togglePaymentType(type) {
+            const membershipToggle = document.getElementById('membershipToggle');
+            const customToggle = document.getElementById('customToggle');
+            const customSection = document.getElementById('customAmountSection');
+            const selectedPlanDisplay = document.getElementById('selectedPlanDisplay');
+            const changeDisplay = document.getElementById('changeDisplay');
+            const paymentTypeInput = document.getElementById('payment_type');
+            
+            // Reset form state
+            document.getElementById('cashAmount').value = '';
+            changeDisplay.style.display = 'none';
+            
+            if (type === 'custom') {
+                // Switch to custom mode
+                membershipToggle.classList.remove('active');
+                customToggle.classList.add('active');
+                customSection.style.display = 'block';
+                selectedPlanDisplay.style.display = 'none';
+                paymentTypeInput.value = 'custom';
+                
+                // Clear plan selection
+                document.querySelectorAll('.plan-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                selectedPlanId = null;
+                selectedPlanPrice = 0;
+                document.getElementById('membership_plan_id').value = '';
+                
+            } else {
+                // Switch to membership mode
+                customToggle.classList.remove('active');
+                membershipToggle.classList.add('active');
+                customSection.style.display = 'none';
+                paymentTypeInput.value = 'membership';
+                
+                // Clear custom fields
+                document.getElementById('customDescription').value = '';
+                document.getElementById('customAmount').value = '';
+            }
+            
+            checkFormValidity();
+        }
+
+        function updateCustomAmount() {
+            const customAmount = parseFloat(document.getElementById('customAmount').value) || 0;
+            const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+            
+            if (customAmount > 0) {
+                const change = cashAmount - customAmount;
+                
+                // Update display
+                document.getElementById('totalAmount').textContent = '₱' + customAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('cashReceived').textContent = '₱' + cashAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('changeAmount').textContent = '₱' + change.toLocaleString('en-US', {minimumFractionDigits: 2});
+                
+                // Show change display if cash amount is entered
+                if (cashAmount > 0) {
+                    document.getElementById('changeDisplay').style.display = 'block';
+                } else {
+                    document.getElementById('changeDisplay').style.display = 'none';
+                }
+                
+                // Color code the change amount
+                const changeEl = document.getElementById('changeAmount');
+                if (change < 0) {
+                    changeEl.style.color = 'var(--danger-color)';
+                } else {
+                    changeEl.style.color = 'var(--success-color)';
+                }
+            } else {
+                document.getElementById('changeDisplay').style.display = 'none';
+            }
+            
+            checkFormValidity();
+        }        // Add event listeners to form fields
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('paymentForm');
-            const inputs = form.querySelectorAll('input[required]');
+            const inputs = form.querySelectorAll('input[required], #customDescription, #customAmount');
             
             inputs.forEach(input => {
                 input.addEventListener('input', checkFormValidity);
             });
+            
+            // Add specific listeners for custom amount calculations
+            document.getElementById('customAmount').addEventListener('input', updateCustomAmount);
+            document.getElementById('cashAmount').addEventListener('input', calculateChange);
         });
 
         // Auto-focus first input
         document.querySelector('input[name="customer_name"]').focus();
-        
-        // Clear form after successful payment
+          // Clear form after successful payment
         <?php if ($success): ?>
         setTimeout(function() {
             document.getElementById('paymentForm').reset();
             document.getElementById('selectedPlanDisplay').style.display = 'none';
             document.getElementById('changeDisplay').style.display = 'none';
+            document.getElementById('customAmountSection').style.display = 'none';
             document.querySelectorAll('.plan-card').forEach(card => {
                 card.classList.remove('selected');
             });
+            // Reset to membership mode
+            document.getElementById('membershipToggle').classList.add('active');
+            document.getElementById('customToggle').classList.remove('active');
+            document.getElementById('payment_type').value = 'membership';
             selectedPlanId = null;
             selectedPlanPrice = 0;
             document.getElementById('processBtn').disabled = true;

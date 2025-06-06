@@ -23,13 +23,18 @@ try {
     ");
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);    // Check if user has an active subscription/plan
-    // Any of these fields being set indicates an active plan
+    // User has active plan if:
+    // 1. They have sessions remaining (current_sessions_remaining > 0), OR
+    // 2. They have a time-based membership that hasn't expired yet
     if ($user && (
-        !empty($user['plan_id']) || 
-        !empty($user['membership_plan']) ||
-        !empty($user['membership_price'])
-    )) {
-        $hasActivePlan = true;        $activePlan = [
+        // Session-based membership: has sessions remaining
+        ($user['current_sessions_remaining'] > 0) ||        // Time-based membership: has valid dates and membership hasn't expired
+        (!empty($user['membership_start_date']) && 
+         !empty($user['membership_end_date']) && 
+         $user['membership_end_date'] > $user['membership_start_date'] &&
+         $user['membership_end_date'] > date('Y-m-d'))    )) {
+        $hasActivePlan = true;
+        $activePlan = [
             'plan_name' => $user['membership_plan'] ?? ($user['plan_name'] ?? 'Active Plan'),
             'price' => $user['membership_price'] ?? ($user['price'] ?? 0),
             'features' => $user['features'] ?? ''

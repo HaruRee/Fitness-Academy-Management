@@ -639,12 +639,7 @@ include '../assets/format/member_header.php';
                         'Content-Type': 'application/json',
                         'Cache-Control': 'no-cache',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                // Log response details for debugging
-                console.log('AI API Response Status:', response.status);
-                console.log('AI API Response Headers:', [...response.headers.entries()]);
+                    }                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

@@ -56,37 +56,57 @@ try {
     $membershipData = $_SESSION['membership_payment'];
     $userId = $_SESSION['user_id'];
     $planId = $membershipData['plan_id'];
-    $amount = $membershipData['amount'];
-
-    // Double-check user doesn't already have an active plan (security measure)
+    $amount = $membershipData['amount'];    // Double-check user doesn't already have an active plan (security measure)
     $stmt = $conn->prepare("
-        SELECT plan_id, membership_plan, membership_price 
+        SELECT plan_id, membership_plan, membership_price,
+               current_sessions_remaining, membership_start_date, membership_end_date
         FROM users 
         WHERE UserID = ?
     ");
     $stmt->execute([$userId]);
     $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Check if user has an active plan using consistent logic
+    $hasActivePlan = false;
     if ($existingUser && (
-        $existingUser['plan_id'] || 
-        $existingUser['membership_plan'] ||
-        $existingUser['membership_price']
+        // Session-based membership: has sessions remaining
+        ($existingUser['current_sessions_remaining'] > 0) ||
+        // Time-based membership: has valid dates and membership hasn't expired
+        (!empty($existingUser['membership_start_date']) && 
+         !empty($existingUser['membership_end_date']) && 
+         $existingUser['membership_end_date'] > $existingUser['membership_start_date'] &&
+         $existingUser['membership_end_date'] > date('Y-m-d'))
     )) {
+        $hasActivePlan = true;
+    }
+    
+    if ($hasActivePlan) {
         throw new Exception('User already has an active membership plan. Cannot process duplicate payment.');
     }
 
     // Calculate membership duration based on plan
     $stmt = $conn->prepare("SELECT * FROM membershipplans WHERE id = ?");
     $stmt->execute([$planId]);
-    $plan = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // Extract duration from plan name (assuming format like "3 Months Unlimited Access")
-    preg_match('/(\d+)\s*(?:Month|Months|Session|Sessions)/', $plan['name'], $matches);
-    $duration = isset($matches[1]) ? intval($matches[1]) : 1; // Default to 1 if not found
-
-    // Set start and end dates
+    $plan = $stmt->fetch(PDO::FETCH_ASSOC);    // Set start date and handle plan type-specific logic
     $startDate = date('Y-m-d');
-    $endDate = date('Y-m-d', strtotime("+{$duration} months"));
+    $endDate = null;
+    $sessionsRemaining = null;
+    
+    if ($plan['plan_type'] === 'monthly') {
+        // For monthly plans, use duration_months field
+        $duration = intval($plan['duration_months']);
+        $endDate = date('Y-m-d', strtotime("+{$duration} months"));
+    } elseif ($plan['plan_type'] === 'session') {
+        // For session plans, set sessions_remaining
+        $sessionsRemaining = intval($plan['session_count']);
+        // Setting a default end date of 1 year for session-based plans
+        $endDate = date('Y-m-d', strtotime("+12 months"));
+    } else {
+        // Fallback to extracting duration from plan name (legacy support)
+        preg_match('/(\d+)\s*(?:Month|Months)/', $plan['name'], $matches);
+        $duration = isset($matches[1]) ? intval($matches[1]) : 1; // Default to 1 month
+        $endDate = date('Y-m-d', strtotime("+{$duration} months"));
+    }
 
     // Insert into memberships table
     $stmt = $conn->prepare("
@@ -105,23 +125,33 @@ try {
         $amount,
         $sessionData['data']['attributes']['payment_method_used'] ?? 'online',
         $checkoutSessionId
-    ]);
-
-    // Update user's membership details
+    ]);    // Update user's membership details with correct start and end dates
     $stmt = $conn->prepare("
         UPDATE users SET 
         membership_plan = ?,
         membership_price = ?,
-        plan_id = ?
+        plan_id = ?,
+        membership_start_date = ?,
+        membership_end_date = ?,
+        current_sessions_remaining = ?
         WHERE UserID = ?
     ");
+
+    // Set sessions remaining if it's a session-based plan
+    $sessionsRemaining = null;
+    if ($plan['plan_type'] === 'session') {
+        $sessionsRemaining = intval($plan['session_count']);
+    }
 
     $stmt->execute([
         $plan['name'],
         $amount,
         $planId,
+        $startDate,
+        $endDate,
+        $sessionsRemaining,
         $userId
-    ]);    // Insert into payments table
+    ]);// Insert into payments table
     $stmt = $conn->prepare("
         INSERT INTO payments (
             user_id, amount, payment_date, payment_method,
