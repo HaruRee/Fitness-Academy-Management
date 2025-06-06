@@ -1192,13 +1192,25 @@ function sendVerificationEmail($email, $verification_code)
         }
 
         .password-requirements {
-            font-size: 0.8rem;
-            padding: 10px;
+            font-size: 0.75rem;
+            padding: 8px;
             margin-top: 5px;
         }
 
+        .password-requirements .mt-2 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-top: 0.3rem;
+        }
+
         .password-requirements .req {
-            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 4px;
+            font-size: 0.7rem;
+            margin-bottom: 0;
         }
 
         .text-danger {
@@ -1213,20 +1225,15 @@ function sendVerificationEmail($email, $verification_code)
             color: #28a745;
         }
 
-        /* Password strength meter styles */
+        /* Password strength meter styles - more subtle version */
         .password-strength-meter {
-            margin-top: 10px;
-        }
-
-        .strength-label {
-            font-size: 0.85rem;
-            margin-bottom: 5px;
+            margin-top: 6px;
         }
 
         .strength-meter {
-            height: 5px;
+            height: 4px;
             background-color: #e9ecef;
-            border-radius: 3px;
+            border-radius: 2px;
             overflow: hidden;
         }
 
@@ -1561,19 +1568,19 @@ function sendVerificationEmail($email, $verification_code)
                             <!-- Empty column to maintain grid layout -->
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-column">
+                    <div class="form-row">                        <div class="form-column">
                             <div class="form-group">
                                 <label for="password">Password <span style="color: #e41e26;">*</span></label>
                                 <div class="password-input-wrapper" style="position: relative;">
                                     <input type="password" id="password" name="password" class="form-control" required
                                         value="<?php echo isset($_POST['password']) ? htmlspecialchars($_POST['password']) : ''; ?>">
                                 </div>
+                                <div class="checkbox-group" style="margin-top: 8px; margin-bottom: 10px;">
+                                    <input type="checkbox" id="show_password" onclick="togglePassword()" style="cursor: pointer;">
+                                    <label for="show_password" style="cursor: pointer;">Show password</label>
+                                </div>
                                 <small class="form-text text-muted">
                                     Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols.
-                                    <span class="d-block mt-1" style="font-style: italic; color: #666;">
-                                        Password strength will be shown as you type
-                                    </span>
                                 </small>
                             </div>
                         </div>
@@ -1586,16 +1593,14 @@ function sendVerificationEmail($email, $verification_code)
                                         value="<?php echo isset($_POST['confirm_password']) ? htmlspecialchars($_POST['confirm_password']) : ''; ?>">
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="form-group" style="margin-top: 15px;">
-                        <div class="checkbox-group" style="margin-bottom: 10px;">
-                            <input type="checkbox" id="show_password" onclick="togglePassword()" style="cursor: pointer;">
-                            <label for="show_password" style="cursor: pointer;">Show password</label>
-                        </div>
-                        <div class="checkbox-group">
+                        </div>                    </div>
+                    
+                    <div class="form-group" style="margin-top: 18px;">
+                        <div class="checkbox-group" style="display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" id="terms" name="terms" required>
-                            <label for="terms">I agree to the <a href="#" style="color: #e41e26;" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a></label>
+                            <label for="terms" style="margin: 0; cursor: pointer;">
+                                I agree to the <a href="#" style="color: #e41e26;" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                            </label>
                         </div>
                     </div>
 
@@ -1755,178 +1760,9 @@ function sendVerificationEmail($email, $verification_code)
                 </div>
             </div>
         </div>
-    </div>
-
-    <script>
+    </div>    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Password validation feedback
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('confirm_password');
-            const passwordFeedback = document.createElement('div');
-            passwordFeedback.className = 'password-requirements';
-            passwordFeedback.innerHTML = `
-        <div class="mt-2">
-            <div class="req length">8+ characters <i class="fas fa-times text-danger"></i></div>
-            <div class="req uppercase">Uppercase letter <i class="fas fa-times text-danger"></i></div>
-            <div class="req lowercase">Lowercase letter <i class="fas fa-times text-danger"></i></div>
-            <div class="req number">Number <i class="fas fa-times text-danger"></i></div>
-            <div class="req symbol">Symbol <i class="fas fa-times text-danger"></i></div>
-            <div class="req match">Passwords match <i class="fas fa-times text-danger"></i></div>
-        </div>
-          <!-- Compact password strength indicator -->
-        <div class="password-strength-meter mt-2">
-            <div class="strength-meter">
-                <div id="strength-bar"></div>
-            </div>
-        </div>
-    `;
-
-            // Insert after the password field's current helper text
-            const passwordField = passwordInput.closest('.form-group');
-            const existingHelperText = passwordField.querySelector('.form-text');
-            if (existingHelperText) {
-                existingHelperText.insertAdjacentElement('afterend', passwordFeedback);
-            } else {
-                passwordField.appendChild(passwordFeedback);
-            }
-
-            // Style the requirements
-            const style = document.createElement('style');
-            style.textContent = `
-        .password-requirements {
-            font-size: 0.8rem;
-            padding: 10px;
-            margin-top: 5px;
-        }
-        .password-requirements .req {
-            margin-bottom: 2px;
-        }
-        .text-danger { color: #dc3545; }
-        .text-success { color: #28a745; }
-        .password-requirements .fa-check { color: #28a745; }
-          /* Password strength meter styles - more subtle version */
-        .password-strength-meter {
-            margin-top: 6px;
-        }
-        .strength-meter {
-            height: 4px;
-            background-color: #e9ecef;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        #strength-bar {
-            height: 100%;
-            width: 0;
-            transition: width 0.3s, background-color 0.3s;
-        }
-        .strength-weak { width: 25%; background-color: #dc3545; }
-        .strength-fair { width: 50%; background-color: #ffc107; }
-        .strength-good { width: 75%; background-color: #17a2b8; }
-        .strength-strong { width: 100%; background-color: #28a745; }
-        .mt-2 { margin-top: 0.5rem; }
-    `;
-            document.head.appendChild(style);
-
-            // Function to validate password and update UI
-            function validatePassword() {
-                const password = passwordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
-
-                // Update requirements display
-                const lengthReq = passwordFeedback.querySelector('.req.length i');
-                const upperReq = passwordFeedback.querySelector('.req.uppercase i');
-                const lowerReq = passwordFeedback.querySelector('.req.lowercase i');
-                const numberReq = passwordFeedback.querySelector('.req.number i');
-                const symbolReq = passwordFeedback.querySelector('.req.symbol i');
-                const matchReq = passwordFeedback.querySelector('.req.match i');
-
-                // Check each requirement
-                if (password.length >= 8) {
-                    lengthReq.className = 'fas fa-check text-success';
-                } else {
-                    lengthReq.className = 'fas fa-times text-danger';
-                }
-
-                if (/[A-Z]/.test(password)) {
-                    upperReq.className = 'fas fa-check text-success';
-                } else {
-                    upperReq.className = 'fas fa-times text-danger';
-                }
-
-                if (/[a-z]/.test(password)) {
-                    lowerReq.className = 'fas fa-check text-success';
-                } else {
-                    lowerReq.className = 'fas fa-times text-danger';
-                }
-
-                if (/[0-9]/.test(password)) {
-                    numberReq.className = 'fas fa-check text-success';
-                } else {
-                    numberReq.className = 'fas fa-times text-danger';
-                }
-
-                if (/[\W_]/.test(password)) {
-                    symbolReq.className = 'fas fa-check text-success';
-                } else {
-                    symbolReq.className = 'fas fa-times text-danger';
-                }
-
-                if (password && confirmPassword && password === confirmPassword) {
-                    matchReq.className = 'fas fa-check text-success';
-                } else {
-                    matchReq.className = 'fas fa-times text-danger';
-                }
-
-                // Update password strength meter
-                updatePasswordStrength(password);
-            }
-            // Function to update password strength meter - simplified
-            function updatePasswordStrength(password) {
-                const strengthBar = document.getElementById('strength-bar');
-
-                // Remove existing strength classes
-                strengthBar.className = '';
-
-                // Calculate password strength
-                let strength = 0;
-                if (password.length > 0) {
-                    // Basic checks
-                    if (password.length >= 8) strength += 1;
-                    if (/[A-Z]/.test(password)) strength += 1;
-                    if (/[a-z]/.test(password)) strength += 1;
-                    if (/[0-9]/.test(password)) strength += 1;
-                    if (/[\W_]/.test(password)) strength += 1;
-
-                    // Additional complexity checks
-                    if (password.length >= 12) strength += 1;
-                    if (/[0-9].*[0-9]/.test(password)) strength += 1; // At least 2 numbers
-                    if (/[\W_].*[\W_]/.test(password)) strength += 1; // At least 2 special chars
-                }
-
-                // Set strength level
-                let strengthClass;
-                if (password.length === 0) {
-                    strengthClass = '';
-                } else if (strength < 3) {
-                    strengthClass = 'strength-weak';
-                } else if (strength < 5) {
-                    strengthClass = 'strength-fair';
-                } else if (strength < 7) {
-                    strengthClass = 'strength-good';
-                } else {
-                    strengthClass = 'strength-strong';
-                }
-
-                // Update UI - only the bar, no text
-                strengthBar.className = strengthClass;
-            }
-
-            // Add event listeners
-            passwordInput.addEventListener('input', validatePassword);
-            confirmPasswordInput.addEventListener('input', validatePassword);
-
-            // Initial validation when the page loads (in case of form errors with pre-filled values)
-            validatePassword();
+            // Only keep the show/hide password functionality
         });
 
         // Function to toggle password visibility
