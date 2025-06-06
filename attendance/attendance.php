@@ -24,10 +24,12 @@ $scanner_location = $_SESSION['scanner_location'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GYM ATTENDANCE - Check-in/Check-out Scanner</title>
+    <title>FITNESS ACADEMY - Attendance System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="../assets/js/success-sound.js"></script>    <style>
+    <script src="../assets/js/success-sound.js"></script>
+
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -35,31 +37,28 @@ $scanner_location = $_SESSION['scanner_location'];
         }
 
         :root {
-            --primary-color: #6366f1;
-            --secondary-color: #8b5cf6;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --bg-light: #f8fafc;
-            --bg-dark: #0f172a;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --checkin-gradient: linear-gradient(135deg, #10b981, #059669);
-            --checkout-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+            --primary-red: #d32f2f;
+            --dark-red: #b71c1c;
+            --light-red: #f44336;
+            --black: #1a1a1a;
+            --dark-gray: #2d2d2d;
+            --light-gray: #424242;
+            --white: #ffffff;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+            --glass-bg: rgba(26, 26, 26, 0.85);
+            --glass-border: rgba(211, 47, 47, 0.3);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #424242 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
-            color: white;
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
         }
 
@@ -76,116 +75,101 @@ $scanner_location = $_SESSION['scanner_location'];
 
         .particle {
             position: absolute;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(211, 47, 47, 0.4);
             border-radius: 50%;
-            animation: float 20s infinite linear;
+            animation: float 8s ease-in-out infinite;
         }
 
         @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+            33% { transform: translateY(-40px) rotate(120deg); opacity: 0.3; }
+            66% { transform: translateY(-80px) rotate(240deg); opacity: 0.1; }
         }
 
         /* Main container */
         .attendance-container {
-            position: relative;
-            z-index: 10;
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2rem;
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin: 1rem;
+            max-width: 420px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 1;
             transition: all 0.3s ease;
         }
 
         .attendance-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            border-color: var(--primary-red);
         }
 
         /* Header */
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .gym-logo {
-            width: 60px;
-            height: 60px;
-            background: var(--checkin-gradient);
-            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 24px;
-            animation: pulse-glow 3s ease-in-out infinite;
+            margin: 0 auto 0.8rem;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+            border: 1px solid rgba(211, 47, 47, 0.5);
         }
 
         @keyframes pulse-glow {
-            0%, 100% {
-                box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-            }
-            50% {
-                box-shadow: 0 0 40px rgba(16, 185, 129, 0.8);
-            }
+            from { box-shadow: 0 0 15px rgba(211, 47, 47, 0.5); }
+            to { box-shadow: 0 0 25px rgba(211, 47, 47, 0.8); }
         }
 
         .title {
-            font-size: 2rem;
+            font-size: 1.6rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ffffff, #e2e8f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
+            color: var(--white);
+            margin-bottom: 0.3rem;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         }
 
         .subtitle {
+            font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
+            font-weight: 400;
         }
 
         /* Mode toggle */
         .mode-toggle {
+            margin-bottom: 1.5rem;
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 1rem;
-            margin: 2rem 0;
         }
 
         .toggle-container {
             position: relative;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50px;
-            padding: 6px;
+            background: rgba(45, 45, 45, 0.8);
+            border-radius: 25px;
+            padding: 3px;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(211, 47, 47, 0.3);
         }
 
         .toggle-switch {
             display: flex;
             position: relative;
             width: 200px;
-            height: 50px;
-            background: transparent;
-            border-radius: 25px;
-            overflow: hidden;
+            height: 40px;
         }
 
         .toggle-option {
@@ -193,35 +177,38 @@ $scanner_location = $_SESSION['scanner_location'];
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            gap: 0.4rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            font-size: 0.9rem;
+            cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
+            border-radius: 22px;
             z-index: 2;
+            position: relative;
         }
 
         .toggle-slider {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 50%;
-            height: 100%;
-            background: var(--checkin-gradient);
-            border-radius: 25px;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            top: 3px;
+            left: 3px;
+            width: calc(50% - 3px);
+            height: calc(100% - 6px);
+            background: linear-gradient(135deg, var(--success-color), #66bb6a);
+            border-radius: 19px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1;
+            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.4);
         }
 
         .toggle-container.checkout .toggle-slider {
             transform: translateX(100%);
-            background: var(--checkout-gradient);
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+            background: linear-gradient(135deg, var(--warning-color), #ffb74d);
+            box-shadow: 0 3px 10px rgba(255, 152, 0, 0.4);
         }
 
         .toggle-option.active {
             color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .toggle-option:not(.active) {
@@ -230,72 +217,80 @@ $scanner_location = $_SESSION['scanner_location'];
 
         /* Scanner section */
         .scanner-section {
-            margin: 2rem 0;
+            margin-bottom: 1rem;
         }
 
         .scanner-container {
             position: relative;
-            margin: 1.5rem 0;
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(211, 47, 47, 0.3);
+            transition: all 0.3s ease;
         }
 
         #scanner {
             width: 100%;
-            height: 280px;
-            border-radius: 16px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
+            height: 220px;
+            border-radius: 13px;
         }
 
         #scanner:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            border-color: var(--primary-red);
         }
 
         .scanner-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: rgba(255, 255, 255, 0.8);
-            pointer-events: none;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            backdrop-filter: blur(5px);
         }
 
         .scanner-overlay i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.6;
+            margin-bottom: 0.5rem;
+            opacity: 0.7;
+            color: var(--primary-red);
+        }
+
+        .scanner-overlay p {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         /* Controls */
         .controls {
             display: flex;
-            gap: 1rem;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
             justify-content: center;
-            margin: 1.5rem 0;
         }
 
         .btn {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
             color: white;
-            padding: 0.8rem 1.5rem;
             border: none;
-            border-radius: 50px;
-            font-size: 0.9rem;
+            border-radius: 25px;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
             position: relative;
             overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(211, 47, 47, 0.4);
         }
 
         .btn::before {
@@ -314,26 +309,25 @@ $scanner_location = $_SESSION['scanner_location'];
         }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4);
         }
 
         .btn:active {
-            transform: translateY(-1px);
+            transform: translateY(0);
         }
 
         .btn.stop {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+            background: linear-gradient(135deg, var(--light-gray), var(--dark-gray));
         }
 
         .btn.stop:hover {
-            box-shadow: 0 12px 35px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 8px 20px rgba(66, 66, 66, 0.4);
         }
 
         /* Manual input */
         .manual-input {
-            margin: 1.5rem 0;
+            margin-bottom: 1rem;
         }
 
         .input-group {
@@ -342,15 +336,14 @@ $scanner_location = $_SESSION['scanner_location'];
 
         .manual-input input {
             width: 100%;
-            padding: 1rem 1.5rem;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 0.6rem 0.8rem 0.6rem 2.2rem;
+            background: rgba(45, 45, 45, 0.8);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            border-radius: 25px;
             color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s ease;
+            font-size: 0.8rem;
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
         .manual-input input::placeholder {
@@ -358,101 +351,106 @@ $scanner_location = $_SESSION['scanner_location'];
         }
 
         .manual-input input:focus {
-            border-color: var(--primary-color);
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+            outline: none;
+            border-color: var(--primary-red);
+            box-shadow: 0 0 15px rgba(211, 47, 47, 0.3);
+            transform: translateY(-1px);
         }
 
         .input-icon {
             position: absolute;
-            right: 1.5rem;
+            left: 0.8rem;
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
         }
 
         /* Status message */
         .status-message {
-            padding: 1rem 1.5rem;
-            border-radius: 16px;
-            margin: 1.5rem 0;
-            font-size: 0.95rem;
-            font-weight: 500;
-            text-align: center;
-            min-height: 60px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid transparent;
             transition: all 0.3s ease;
+            margin-bottom: 1rem;
         }
 
         .status-message.loading {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 146, 60, 0.2));
-            border-color: rgba(245, 158, 11, 0.3);
-            animation: loading-pulse 2s ease-in-out infinite;
+            background: linear-gradient(135deg, rgba(211, 47, 47, 0.2), rgba(183, 28, 28, 0.2));
+            border-color: rgba(211, 47, 47, 0.4);
+            animation: loading-pulse 1.5s ease-in-out infinite;
         }
 
         .status-message.success {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2));
-            border-color: rgba(16, 185, 129, 0.3);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(102, 187, 106, 0.2));
+            border-color: rgba(76, 175, 80, 0.4);
             animation: success-bounce 0.5s ease-out;
         }
 
         .status-message.error {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.2));
-            border-color: rgba(239, 68, 68, 0.3);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(239, 83, 80, 0.2));
+            border-color: rgba(244, 67, 54, 0.4);
             animation: error-shake 0.5s ease-out;
         }
 
+        .status-message.warning {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 183, 77, 0.2));
+            border-color: rgba(255, 152, 0, 0.4);
+            animation: error-shake 0.3s ease-out;
+        }
+
         .status-message.ready {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(45, 45, 45, 0.6);
+            border-color: rgba(211, 47, 47, 0.3);
         }
 
         @keyframes loading-pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.02); }
+            50% { opacity: 0.8; transform: scale(1.01); }
         }
 
         @keyframes success-bounce {
-            0% { transform: scale(0.9); }
-            50% { transform: scale(1.05); }
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
 
         @keyframes error-shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
         }
 
-        /* Recent activity */
+        /* Recent activity - more compact */
         .recent-activity {
-            margin-top: 2rem;
+            margin-top: 1rem;
         }
 
         .activity-header {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 1rem;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
         }
 
         .activity-list {
-            max-height: 200px;
+            max-height: 150px;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            scrollbar-color: rgba(211, 47, 47, 0.4) transparent;
         }
 
         .activity-list::-webkit-scrollbar {
-            width: 4px;
+            width: 3px;
         }
 
         .activity-list::-webkit-scrollbar-track {
@@ -460,24 +458,26 @@ $scanner_location = $_SESSION['scanner_location'];
         }
 
         .activity-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(211, 47, 47, 0.4);
             border-radius: 2px;
         }
 
         .activity-item {
-            background: rgba(255, 255, 255, 0.08);
-            padding: 0.8rem 1rem;
-            margin: 0.5rem 0;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            border-left: 4px solid var(--success-color);
+            background: rgba(45, 45, 45, 0.6);
+            padding: 0.6rem 0.8rem;
+            margin: 0.3rem 0;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            border-left: 3px solid var(--success-color);
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(211, 47, 47, 0.2);
         }
 
         .activity-item:hover {
-            background: rgba(255, 255, 255, 0.12);
-            transform: translateX(5px);
+            background: rgba(45, 45, 45, 0.8);
+            transform: translateX(3px);
+            border-color: var(--primary-red);
         }
 
         .activity-item.checkout {
@@ -485,43 +485,44 @@ $scanner_location = $_SESSION['scanner_location'];
         }
 
         .activity-time {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 0.2rem;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.1rem;
         }
 
         /* Time display */
         .time-display {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            top: 0.8rem;
+            right: 0.8rem;
+            background: rgba(45, 45, 45, 0.8);
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            color: var(--primary-red);
         }
 
         /* Responsive design */
         @media (max-width: 640px) {
             .attendance-container {
-                margin: 1rem;
-                padding: 1.5rem;
+                margin: 0.5rem;
+                padding: 1.2rem;
             }
             
             .title {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
             }
             
             .toggle-switch {
                 width: 180px;
-                height: 45px;
+                height: 38px;
             }
             
             #scanner {
-                height: 240px;
+                height: 200px;
             }
             
             .controls {
@@ -542,7 +543,7 @@ $scanner_location = $_SESSION['scanner_location'];
             
             .toggle-switch {
                 width: 160px;
-                height: 40px;
+                height: 36px;
             }
         }
     </style>
@@ -558,8 +559,6 @@ $scanner_location = $_SESSION['scanner_location'];
         <div class="particle" style="left: 50%; animation-delay: 8s; width: 4px; height: 4px;"></div>
         <div class="particle" style="left: 60%; animation-delay: 10s; width: 6px; height: 6px;"></div>
         <div class="particle" style="left: 70%; animation-delay: 12s; width: 3px; height: 3px;"></div>
-        <div class="particle" style="left: 80%; animation-delay: 14s; width: 5px; height: 5px;"></div>
-        <div class="particle" style="left: 90%; animation-delay: 16s; width: 4px; height: 4px;"></div>
     </div>
 
     <!-- Main container -->
@@ -570,7 +569,7 @@ $scanner_location = $_SESSION['scanner_location'];
         <!-- Header -->
         <div class="header">
             <div class="gym-logo">
-                <i class="fas fa-dumbbell"></i>
+                FA
             </div>
             <h1 class="title">Fitness Academy</h1>
             <p class="subtitle">Attendance Management System</p>
@@ -637,7 +636,9 @@ $scanner_location = $_SESSION['scanner_location'];
                 <!-- Activity items will be loaded here -->
             </div>
         </div>
-    </div>    <script>
+    </div>
+
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             let html5QrcodeScanner = null;
             let isScanning = false;
@@ -700,7 +701,8 @@ $scanner_location = $_SESSION['scanner_location'];
                     ready: 'fas fa-info-circle',
                     loading: 'fas fa-spinner fa-spin',
                     success: 'fas fa-check-circle',
-                    error: 'fas fa-exclamation-circle'
+                    error: 'fas fa-exclamation-circle',
+                    warning: 'fas fa-exclamation-triangle'
                 };
                 
                 statusMessage.innerHTML = `
@@ -713,10 +715,10 @@ $scanner_location = $_SESSION['scanner_location'];
             function showResult(message, type = 'loading') {
                 updateStatus(message, type);
                 
-                if (type === 'success' || type === 'error') {
+                if (type === 'success' || type === 'error' || type === 'warning') {
                     setTimeout(() => {
                         updateStatus(`Ready to scan QR codes for ${currentMode.toUpperCase()}`, 'ready');
-                    }, 3000);
+                    }, 4000);
                 }
             }
 
@@ -728,7 +730,7 @@ $scanner_location = $_SESSION['scanner_location'];
                 
                 const config = {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    qrbox: { width: 220, height: 220 },
                     aspectRatio: 1.0,
                     disableFlip: false,
                     videoConstraints: {
@@ -822,23 +824,53 @@ $scanner_location = $_SESSION['scanner_location'];
                         }
                         
                         const actionText = currentMode === 'checkin' ? 'Check-in' : 'Check-out';
-                        showResult(`${actionText} successful: ${data.user_name}`, 'success');
+                        let successMessage = `${actionText} successful: ${data.user_name}`;
+                        
+                        // Add duration for checkout
+                        if (currentMode === 'checkout' && data.duration) {
+                            successMessage += ` (Duration: ${data.duration})`;
+                        }
+                        
+                        // Show warning for inactive accounts
+                        if (data.warning) {
+                            showResult(`${successMessage} - ${data.warning}`, 'warning');
+                        } else {
+                            showResult(successMessage, 'success');
+                        }
                         
                         // Add to recent activity
-                        addToRecentActivity(data.user_name, currentMode);
+                        addToRecentActivity(data.user_name, currentMode, data.duration);
                         
                         // Load recent activity
                         setTimeout(() => loadRecentActivity(), 1000);
                     } else {
-                        showResult(`${data.message || 'Failed to process ' + currentMode}`, 'error');
+                        // Enhanced error messages based on common timeout scenarios
+                        let errorMessage = data.message || `Failed to process ${currentMode}`;
+                        
+                        // Check for timeout-related errors
+                        if (errorMessage.includes('Minimum stay time not met')) {
+                            errorMessage = `⏱️ ${errorMessage}`;
+                            showResult(errorMessage, 'warning');
+                        } else if (errorMessage.includes('checked out recently') || errorMessage.includes('wait')) {
+                            errorMessage = `⏱️ ${errorMessage}`;
+                            showResult(errorMessage, 'warning');
+                        } else if (errorMessage.includes('already checked in')) {
+                            errorMessage = `🚫 ${errorMessage}`;
+                            showResult(errorMessage, 'error');
+                        } else if (errorMessage.includes('not currently checked in')) {
+                            errorMessage = `❌ ${errorMessage}`;
+                            showResult(errorMessage, 'error');
+                        } else {
+                            showResult(errorMessage, 'error');
+                        }
                     }
                 } catch (error) {
                     console.error('Process attendance error:', error);
-                    showResult(`Network error occurred`, 'error');
+                    showResult(`🌐 Network error occurred. Please check your connection.`, 'error');
                 }
             }
 
-            function addToRecentActivity(userName, action) {
+            function addToRecentActivity(userName, action, duration = null) {
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('en-US', { 
                     hour: '2-digit', 
@@ -848,17 +880,27 @@ $scanner_location = $_SESSION['scanner_location'];
                 
                 const activityItem = document.createElement('div');
                 activityItem.className = `activity-item ${action}`;
-                activityItem.innerHTML = `
+                
+                let content = `
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <strong>${userName}</strong>
-                            <span style="margin-left: 0.5rem; font-size: 0.75rem; opacity: 0.8;">
+                            <span style="margin-left: 0.5rem; font-size: 0.7rem; opacity: 0.8;">
                                 ${action.toUpperCase()}
                             </span>
+                `;
+                
+                if (duration && action === 'checkout') {
+                    content += `<span style="margin-left: 0.5rem; font-size: 0.7rem; color: #ff9800;">(${duration})</span>`;
+                }
+                
+                content += `
                         </div>
                         <div class="activity-time">${timeString}</div>
                     </div>
                 `;
+                
+                activityItem.innerHTML = content;
                 
                 recentActivity.insertBefore(activityItem, recentActivity.firstChild);
                 
@@ -882,15 +924,34 @@ $scanner_location = $_SESSION['scanner_location'];
                     recentActivity.innerHTML = '';
                     
                     // Combine and sort by timestamp
-                    const allActivity = [
-                        ...checkinData.map(item => ({...item, action: 'checkin'})),
-                        ...checkoutData.map(item => ({...item, action: 'checkout'}))
-                    ].sort((a, b) => new Date(b.check_in_time || b.check_out_time) - new Date(a.check_in_time || a.check_out_time))
-                     .slice(0, 5);
+                    const allActivity = [];
                     
-                    allActivity.forEach(item => {
-                        const time = new Date(item.check_in_time || item.check_out_time);
-                        const timeString = time.toLocaleTimeString('en-US', { 
+                    // Add checkins
+                    if (checkinData.success && checkinData.checkins) {
+                        checkinData.checkins.forEach(item => {
+                            allActivity.push({
+                                ...item,
+                                action: 'checkin',
+                                timestamp: new Date(item.check_in_time)
+                            });
+                        });
+                    }
+                    
+                    // Add checkouts
+                    if (checkoutData.success && checkoutData.checkouts) {
+                        checkoutData.checkouts.forEach(item => {
+                            allActivity.push({
+                                ...item,
+                                action: 'checkout',
+                                timestamp: new Date(item.check_out_time)
+                            });
+                        });
+                    }
+                    
+                    // Sort by timestamp (newest first) and take first 5
+                    allActivity.sort((a, b) => b.timestamp - a.timestamp);
+                    allActivity.slice(0, 5).forEach(item => {
+                        const timeString = item.timestamp.toLocaleTimeString('en-US', { 
                             hour: '2-digit', 
                             minute: '2-digit',
                             hour12: true 
@@ -898,34 +959,43 @@ $scanner_location = $_SESSION['scanner_location'];
                         
                         const activityItem = document.createElement('div');
                         activityItem.className = `activity-item ${item.action}`;
-                        activityItem.innerHTML = `
+                        
+                        let content = `
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <strong>${item.first_name} ${item.last_name}</strong>
-                                    <span style="margin-left: 0.5rem; font-size: 0.75rem; opacity: 0.8;">
+                                    <strong>${item.user_name}</strong>
+                                    <span style="margin-left: 0.5rem; font-size: 0.7rem; opacity: 0.8;">
                                         ${item.action.toUpperCase()}
                                     </span>
+                        `;
+                        
+                        if (item.duration && item.action === 'checkout') {
+                            content += `<span style="margin-left: 0.5rem; font-size: 0.7rem; color: #ff9800;">(${item.duration})</span>`;
+                        }
+                        
+                        content += `
                                 </div>
                                 <div class="activity-time">${timeString}</div>
                             </div>
                         `;
                         
+                        activityItem.innerHTML = content;
                         recentActivity.appendChild(activityItem);
                     });
 
                     // Show message if no activity
                     if (allActivity.length === 0) {
                         recentActivity.innerHTML = `
-                            <div style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 1rem; font-size: 0.85rem;">
-                                <i class="fas fa-inbox" style="margin-bottom: 0.5rem; display: block; font-size: 1.5rem;"></i>
-                                No recent activity
+                            <div style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 1rem; font-size: 0.8rem;">
+                                <i class="fas fa-inbox" style="margin-bottom: 0.5rem; display: block; font-size: 1.2rem;"></i>
+                                No recent activity today
                             </div>
                         `;
                     }
                 } catch (error) {
                     console.error('Failed to load recent activity:', error);
                     recentActivity.innerHTML = `
-                        <div style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 1rem; font-size: 0.85rem;">
+                        <div style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 1rem; font-size: 0.8rem;">
                             <i class="fas fa-exclamation-triangle" style="margin-bottom: 0.5rem; display: block;"></i>
                             Failed to load activity
                         </div>
