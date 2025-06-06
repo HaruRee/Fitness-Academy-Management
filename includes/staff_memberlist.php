@@ -448,12 +448,14 @@ try {
             <a href="staff_dashboard.php">
                 <i class="fas fa-home"></i>
                 <span>Overview</span>
+            </a>            <div class="sidebar-menu-header">Attendance</div>
+            <a href="../attendance/attendance.php">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scanner</span>
             </a>
-
-            <div class="sidebar-menu-header">Attendance</div>
             <a href="staff_attendance.php">
                 <i class="fas fa-user-check"></i>
-                <span>Attendance</span>
+                <span>Attendance Reports</span>
             </a>
 
             <div class="sidebar-menu-header">Members</div>
