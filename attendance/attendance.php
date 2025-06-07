@@ -825,16 +825,27 @@ $scanner_location = $_SESSION['scanner_location'];
                     profileDuration.style.display = 'block';
                 } else {
                     profileDuration.style.display = 'none';
-                }
-
-                // Handle profile image
+                }                // Handle profile image
                 if (userData.profile_image && userData.profile_image.trim() !== '') {
-                    profileImage.src = `../uploads/profile_images/${userData.profile_image}`;
+                    let imageSrc;
+                    // Check if the image path already includes the full path
+                    if (userData.profile_image.startsWith('../uploads/')) {
+                        imageSrc = userData.profile_image;
+                    } else if (userData.profile_image.startsWith('profile_')) {
+                        // New format: profile_XX_timestamp.jpg -> goes in profile_images folder
+                        imageSrc = `../uploads/profile_images/${userData.profile_image}`;
+                    } else {
+                        // Old format: timestamp_filename.jpg -> goes directly in uploads folder
+                        imageSrc = `../uploads/${userData.profile_image}`;
+                    }
+                    
+                    profileImage.src = imageSrc;
                     profileImage.style.display = 'block';
                     noProfileImage.style.display = 'none';
                     
                     // Handle image load error
                     profileImage.onerror = function() {
+                        console.log('Failed to load profile image:', imageSrc);
                         profileImage.style.display = 'none';
                         noProfileImage.style.display = 'flex';
                     };
