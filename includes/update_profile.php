@@ -70,27 +70,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
         $file = $_FILES['profile_image'];
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        
         if ($file['error'] === UPLOAD_ERR_OK) {
-            if (!in_array($file['type'], $allowedTypes)) {
+            // Get actual MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $actualMimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+            
+            if (!in_array($actualMimeType, $allowedTypes)) {
                 $errors[] = "Only JPG, PNG and GIF images are allowed.";
             } elseif ($file['size'] > 2 * 1024 * 1024) {
                 $errors[] = "Profile image size should not exceed 2MB.";
             } else {
                 $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-                $newFileName = 'profile_' . $userId . '_' . time() . '.' . $ext;
+                $newFileName = 'profile_' . uniqid() . '_' . time() . '.' . $ext;
                 $uploadDir = '../uploads/profile_images/';
+                
+                // Create directory if it doesn't exist
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
+                
                 $targetFile = $uploadDir . $newFileName;
                 if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+                    // Delete old profile image if it exists
+                    if ($user['ProfileImage'] && file_exists($uploadDir . $user['ProfileImage'])) {
+                        unlink($uploadDir . $user['ProfileImage']);
+                    }
                     $profileImageName = $newFileName;
                 } else {
-                    $errors[] = "Failed to upload profile image.";
+                    $errors[] = "Failed to upload profile image. Please check file permissions.";
                 }
             }
         } else {
-            $errors[] = "Error uploading profile image.";
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE => 'File too large (exceeds server limit)',
+                UPLOAD_ERR_FORM_SIZE => 'File too large (exceeds form limit)', 
+                UPLOAD_ERR_PARTIAL => 'File upload incomplete',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'Upload blocked by PHP extension'
+            ];
+            $errorMsg = $uploadErrors[$file['error']] ?? 'Unknown upload error';
+            $errors[] = "Error uploading profile image: " . $errorMsg;
         }
     }
 
