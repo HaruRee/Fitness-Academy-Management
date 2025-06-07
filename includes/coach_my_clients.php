@@ -281,12 +281,11 @@ $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if (count($clients) > 0): ?>
                 <div class="client-list">
                     <?php foreach ($clients as $client): ?>
-                        <div class="client-card" tabindex="0">
-                            <div class="client-avatar">
+                        <div class="client-card" tabindex="0">                            <div class="client-avatar">
                                 <?php if (!empty($client['ProfileImage'])): ?>
-                                    <img src="<?= htmlspecialchars($client['ProfileImage']) ?>" alt="Profile Image" />
+                                    <img src="../uploads/profile_images/<?= htmlspecialchars($client['ProfileImage']) ?>" alt="Profile Image" />
                                 <?php else: ?>
-                                    <i class="fas fa-user"></i>
+                                    <img src="../assets/images/avatar.jpg" alt="Default Avatar" />
                                 <?php endif; ?>
                             </div>
                             <div class="client-info">

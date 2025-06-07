@@ -883,10 +883,16 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
 
                 <div class="header-right">
                     <div class="user-dropdown">
-                        <div class="user-info">
-                            <div class="user-image">
-                                <?php if (!empty($coach['ProfileImage'])): ?>
-                                    <img src="<?= htmlspecialchars($coach['ProfileImage']) ?>" alt="Profile">
+                        <div class="user-info">                            <div class="user-image">                                <?php if (!empty($coach['ProfileImage'])): ?>
+                                    <?php
+                                    // Handle both path formats - full path for coaches, filename only for members
+                                    $profileImageSrc = $coach['ProfileImage'];
+                                    if (strpos($profileImageSrc, '../') !== 0) {
+                                        // If it doesn't start with ../, assume it's just a filename and add the path
+                                        $profileImageSrc = '../uploads/' . $profileImageSrc;
+                                    }
+                                    ?>
+                                    <img src="<?= htmlspecialchars($profileImageSrc) ?>" alt="Profile">
                                 <?php else: ?>
                                     <img src="../assets/images/avatar.jpg" alt="Profile">
                                 <?php endif; ?>
@@ -1115,9 +1121,8 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                                     <p>No upcoming classes scheduled</p>
                                 </div>
                             <?php endif; ?>
-                        </div>
-                        <div class="card-footer">
-                            <a href="my_classes.php" class="btn btn-outline">View All Classes</a>
+                        </div>                        <div class="card-footer">
+                            <a href="coach_my_classes.php" class="btn btn-outline">View All Classes</a>
                         </div>
                     </div>
                 </div>
@@ -1137,10 +1142,9 @@ function getClassStatusLabel($classDate, $startTime, $endTime)
                                     $recentClients = array_slice($clients, 0, 6);
                                     foreach ($recentClients as $client):
                                     ?>
-                                        <div class="client-card">
-                                            <div class="client-avatar">
+                                        <div class="client-card">                                            <div class="client-avatar">
                                                 <?php if (!empty($client['ProfileImage'])): ?>
-                                                    <img src="<?= htmlspecialchars($client['ProfileImage']) ?>" alt="<?= htmlspecialchars($client['First_Name']) ?>">
+                                                    <img src="../uploads/profile_images/<?= htmlspecialchars($client['ProfileImage']) ?>" alt="<?= htmlspecialchars($client['First_Name']) ?>">
                                                 <?php else: ?>
                                                     <img src="../assets/images/avatar.jpg" alt="<?= htmlspecialchars($client['First_Name']) ?>">
                                                 <?php endif; ?>
