@@ -28,7 +28,7 @@ try {
     if (!$user) {
         die("User not found.");
     }
-    
+
     // Get membership data
     if ($user['plan_id']) {
         $planStmt = $conn->prepare("SELECT plan_type, name, description FROM membershipplans WHERE id = ?");
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<pre style='background: #333; color: #fff; padding: 20px; margin: 20px;'>";
         echo "POST Data:\n";
         print_r($_POST);
-        echo "\nFILES Data:\n"; 
+        echo "\nFILES Data:\n";
         print_r($_FILES);
         echo "\nHeaders:\n";
         print_r(getallheaders());
@@ -70,13 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
         $file = $_FILES['profile_image'];
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        
+
         if ($file['error'] === UPLOAD_ERR_OK) {
             // Get actual MIME type
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $actualMimeType = finfo_file($finfo, $file['tmp_name']);
             finfo_close($finfo);
-            
+
             if (!in_array($actualMimeType, $allowedTypes)) {
                 $errors[] = "Only JPG, PNG and GIF images are allowed.";
             } elseif ($file['size'] > 2 * 1024 * 1024) {
@@ -85,12 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
                 $newFileName = 'profile_' . uniqid() . '_' . time() . '.' . $ext;
                 $uploadDir = '../uploads/profile_images/';
-                
+
                 // Create directory if it doesn't exist
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
-                
+
                 $targetFile = $uploadDir . $newFileName;
                 if (move_uploaded_file($file['tmp_name'], $targetFile)) {
                     // Delete old profile image if it exists
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $uploadErrors = [
                 UPLOAD_ERR_INI_SIZE => 'File too large (exceeds server limit)',
-                UPLOAD_ERR_FORM_SIZE => 'File too large (exceeds form limit)', 
+                UPLOAD_ERR_FORM_SIZE => 'File too large (exceeds form limit)',
                 UPLOAD_ERR_PARTIAL => 'File upload incomplete',
                 UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
                 UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
@@ -245,7 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #222 !important;
             color: #bbb !important;
             border: 1px solid #333 !important;
-        }        .btn {
+        }
+
+        .btn {
             display: block;
             margin: 32px auto 0 auto;
             width: 320px;
@@ -261,9 +263,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 1px;
             text-align: center;
             transition: background 0.2s;
-        }.btn:hover {
+        }
+
+        .btn:hover {
             background: #b21e24;
-        }        .btn.btn-save {
+        }
+
+        .btn.btn-save {
             background: #d62328 !important;
             color: #ffffff !important;
             text-transform: uppercase;
@@ -271,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #d62328 !important;
             letter-spacing: 1px;
         }
-        
+
         .btn.btn-save:hover {
             background: #b21e24 !important;
             color: #ffffff !important;
@@ -756,7 +762,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 margin-bottom: 8px;
             }
 
-            .profile-summary-row > div {
+            .profile-summary-row>div {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 4px;
@@ -772,7 +778,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 gap: 16px;
             }
 
-            .profile-details-grid > div {
+            .profile-details-grid>div {
                 padding: 16px;
             }
 
@@ -786,7 +792,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             input[type="date"],
             input[type="tel"],
             input[type="password"] {
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
+                /* Prevents zoom on iOS */
                 padding: 14px;
                 -webkit-appearance: none;
                 border-radius: 8px;
@@ -860,7 +867,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding: 12px;
             }
 
-            .profile-details-grid > div {
+            .profile-details-grid>div {
                 padding: 12px;
             }
 
@@ -869,7 +876,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             input[type="text"],
-            input[type="date"], 
+            input[type="date"],
             input[type="tel"],
             input[type="password"] {
                 font-size: 16px;
@@ -934,7 +941,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="success">
                     <?= htmlspecialchars($success) ?>
                 </div>
-            <?php endif; ?>            <!-- Profile Summary Card -->
+            <?php endif; ?> <!-- Profile Summary Card -->
             <div class="profile-summary-card">
                 <div class="profile-summary-row">
                     <div>
@@ -946,16 +953,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span>************</span>
                         <a href="#change-password" class="edit-icon" title="Change Password"><i class="fa fa-pen-to-square"></i></a>
                     </div>
-                </div>                <div class="profile-summary-row">
+                </div>
+                <div class="profile-summary-row">
                     <div>
                         <span class="summary-label">Member since</span>
                         <span><?= htmlspecialchars(date('F j, Y', strtotime($user['membership_start_date'] ?? $user['RegistrationDate']))) ?></span>
                     </div>
                     <?php if (!empty($user['membership_plan'])): ?>
-                    <div>
-                        <span class="summary-label">Current Plan</span>
-                        <span><?= htmlspecialchars($user['membership_plan']) ?></span>
-                    </div>
+                        <div>
+                            <span class="summary-label">Current Plan</span>
+                            <span><?= htmlspecialchars($user['membership_plan']) ?></span>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -987,13 +995,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label>Address 🔒</label>
                             <p class="address-paragraph"><?= nl2br(htmlspecialchars($user['Address'] ?? '')) ?></p>
                         </div>
-                    </div>                    <div class="profile-image-section">
+                    </div>
+                    <div class="profile-image-section">
                         <label>Profile Image</label>
                         <div class="profile-image-upload" id="profileImageDrop">
                             <span class="upload-icon"><i class="fa fa-camera"></i></span>
                             <span class="upload-text">Tap to select your profile image</span>
                             <div class="or-divider">OR</div>
-                            <button type="button" class="browse-btn" onclick="document.getElementById('profile_image').click();">Choose Image</button>
+                            <button type="button" class="browse-btn">Choose Image</button>
                             <input type="file" id="profile_image" name="profile_image" accept="image/*" capture="user" />
                             <small style="color: #bbb; font-size: 0.8rem; margin-top: 8px; display: block;">
                                 Supported: JPG, PNG, GIF (Max: 2MB)
@@ -1037,7 +1046,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
     </div>
 
-    <?php include '../assets/format/member_footer.php'; ?>    <script>
+    <?php include '../assets/format/member_footer.php'; ?> <script>
         document.addEventListener("DOMContentLoaded", function() {
             const menuToggle = document.querySelector(".menu-toggle");
             const navLinks = document.querySelector("nav");
@@ -1134,7 +1143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Show preview
                 showPreview(file);
-                
+
                 // Create a new FileList with the selected file
                 const dt = new DataTransfer();
                 dt.items.add(file);
@@ -1143,7 +1152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             function showPreview(file) {
                 if (!file.type.startsWith('image/')) return;
-                
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     if (previewImg) {
@@ -1176,7 +1185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     toggle.addEventListener(eventType, function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        
+
                         const targetId = this.getAttribute('data-target');
                         const input = document.getElementById(targetId);
                         if (input) {
@@ -1198,7 +1207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 form.addEventListener('submit', function(e) {
                     const phoneInput = document.querySelector('input[name="phone"]');
                     const profileImageInput = document.getElementById('profile_image');
-                    
+
                     // Basic phone validation
                     if (phoneInput && phoneInput.value.trim()) {
                         const phonePattern = /^[\+]?[0-9\s\-\(\)]+$/;
@@ -1242,6 +1251,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 });
+            }
+
+            // Profile image upload handling
+            console.log('Initializing profile image upload functionality...');
+            const profileImageInput = document.getElementById('profile_image');
+            const profileImagePreview = document.getElementById('profileImagePreview');
+            const profileImageDrop = document.getElementById('profileImageDrop');
+
+            console.log('Elements found:', {
+                profileImageInput: !!profileImageInput,
+                profileImagePreview: !!profileImagePreview,
+                profileImageDrop: !!profileImageDrop
+            });
+
+            if (profileImageInput && profileImagePreview) {
+                console.log('Setting up file input change listener...');
+                // Handle file selection
+                profileImageInput.addEventListener('change', function(e) {
+                    console.log('File input changed:', e.target.files);
+                    const file = e.target.files[0];
+                    if (file) {
+                        console.log('File selected:', file.name, file.type, file.size);
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        const fileType = file.type.toLowerCase();
+                        
+                        if (!allowedTypes.includes(fileType)) {
+                            alert('Please select a valid image file (JPG, PNG, or GIF).');
+                            this.value = '';
+                            return;
+                        }
+                        
+                        // Validate file size (2MB)
+                        if (file.size > 2 * 1024 * 1024) {
+                            alert('Image size should not exceed 2MB.');
+                            this.value = '';
+                            return;
+                        }
+                        
+                        console.log('File validation passed, creating preview...');
+                        // Preview the image
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            console.log('FileReader loaded, updating preview...');
+                            profileImagePreview.src = e.target.result;
+                            profileImagePreview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Handle drag and drop
+                if (profileImageDrop) {
+                    console.log('Setting up drag and drop functionality...');
+                    profileImageDrop.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.style.borderColor = '#d62328';
+                        this.style.backgroundColor = 'rgba(214, 35, 40, 0.1)';
+                    });
+
+                    profileImageDrop.addEventListener('dragleave', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.style.borderColor = '#444';
+                        this.style.backgroundColor = '';
+                    });
+
+                    profileImageDrop.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.style.borderColor = '#444';
+                        this.style.backgroundColor = '';
+                        
+                        const files = e.dataTransfer.files;
+                        if (files.length > 0) {
+                            profileImageInput.files = files;
+                            profileImageInput.dispatchEvent(new Event('change'));
+                        }
+                    });
+
+                    // Click to select file
+                    profileImageDrop.addEventListener('click', function(e) {
+                        console.log('Profile image drop clicked:', e.target);
+                        if (e.target !== profileImageInput && !e.target.classList.contains('browse-btn')) {
+                            console.log('Triggering file input click...');
+                            profileImageInput.click();
+                        }
+                    });
+                }
+
+                // Also add click handler to the browse button specifically
+                const browseBtn = document.querySelector('.browse-btn');
+                if (browseBtn) {
+                    console.log('Setting up browse button click handler...');
+                    browseBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Browse button clicked, opening file dialog...');
+                        profileImageInput.click();
+                    });
+                }
+            } else {
+                console.error('Profile image elements not found!');
             }
 
             // Prevent zoom on iOS for input focus
