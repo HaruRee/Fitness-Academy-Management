@@ -269,10 +269,10 @@ try {
 
         // Insert user into database
         $stmt = $conn->prepare("INSERT INTO users (            Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
-            Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
+            Phone, Address, emergency_contact, ProfileImage, is_approved, email_confirmed, email_token, 
             membership_plan, membership_price, plan_id, current_sessions_remaining, 
             membership_start_date, membership_end_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
 
         try {
             $stmt->execute([
@@ -286,6 +286,7 @@ try {
                 $userData['phone'],
                 $userData['address'],
                 $userData['emergency_contact'],
+                $userData['profile_image'] ?? null,
                 $email_token,
                 $_SESSION['selected_plan'],
                 $_SESSION['plan_price'],
@@ -308,10 +309,10 @@ try {
                 
                 $stmtWithId = $conn->prepare("INSERT INTO users (
                     UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
-                    Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
+                    Phone, Address, emergency_contact, ProfileImage, is_approved, email_confirmed, email_token, 
                     membership_plan, membership_price, plan_id, current_sessions_remaining, 
                     membership_start_date, membership_end_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?, ?)");
 
                 $stmtWithId->execute([
                     $nextUserId,
@@ -325,6 +326,7 @@ try {
                     $userData['phone'],
                     $userData['address'],
                     $userData['emergency_contact'],
+                    $userData['profile_image'] ?? null,
                     $email_token,
                     $_SESSION['selected_plan'],
                     $_SESSION['plan_price'],
