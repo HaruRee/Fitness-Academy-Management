@@ -75,7 +75,7 @@ try {
         throw new Exception("Invalid QR code format. Please generate a new QR code.");
     }    // Get the member's information
     $member_stmt = $conn->prepare("
-        SELECT UserID, First_Name, Last_Name, Role, IsActive, account_status 
+        SELECT UserID, First_Name, Last_Name, Role, IsActive, account_status, ProfileImage 
         FROM users 
         WHERE UserID = ?
     ");
@@ -166,7 +166,8 @@ try {
         'timestamp' => date('Y-m-d H:i:s'),
         'attendance_id' => $active_checkin['id'],
         'warning' => $warning ?? "",
-        'is_active' => ($member['IsActive'] == 1 && $member['account_status'] == 'active')
+        'is_active' => ($member['IsActive'] == 1 && $member['account_status'] == 'active'),
+        'profile_image' => $member['ProfileImage'] ?? null
     ]);
 
 } catch (Exception $e) {

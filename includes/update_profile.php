@@ -45,6 +45,18 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Debug mode for troubleshooting (remove in production)
+    if (isset($_GET['debug'])) {
+        echo "<pre style='background: #333; color: #fff; padding: 20px; margin: 20px;'>";
+        echo "POST Data:\n";
+        print_r($_POST);
+        echo "\nFILES Data:\n"; 
+        print_r($_FILES);
+        echo "\nHeaders:\n";
+        print_r(getallheaders());
+        echo "</pre>";
+    }
+
     // Sanitize inputs
     $phone = sanitize($_POST['phone'] ?? '');
     $oldPassword = $_POST['old_password'] ?? '';
@@ -700,6 +712,182 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 max-width: 100% !important;
             }
         }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .page-wrapper {
+                padding: 10px;
+            }
+
+            main {
+                padding: 0 10px 32px 10px;
+            }
+
+            .profile-summary-card {
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+
+            .profile-summary-row {
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+
+            .profile-summary-row > div {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .summary-label {
+                min-width: auto;
+                font-size: 0.9rem;
+            }
+
+            .profile-details-grid {
+                grid-template-columns: 1fr !important;
+                gap: 16px;
+            }
+
+            .profile-details-grid > div {
+                padding: 16px;
+            }
+
+            .password-section {
+                padding: 16px;
+                margin: 0 0 20px 0 !important;
+                grid-column: 1;
+            }
+
+            input[type="text"],
+            input[type="date"],
+            input[type="tel"],
+            input[type="password"] {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 14px;
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 100%;
+                padding: 16px;
+                font-size: 1.1rem;
+                margin: 20px 0 0 0;
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+
+            .profile-image-upload {
+                padding: 16px;
+                min-height: 120px;
+            }
+
+            .profile-image-upload .upload-text {
+                font-size: 0.9rem;
+                text-align: center;
+            }
+
+            .profile-image-upload .browse-btn {
+                padding: 14px 24px;
+                font-size: 1rem;
+                width: 100%;
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+
+            .profile-image-preview {
+                max-width: 100px;
+                max-height: 100px;
+            }
+
+            .password-input-wrapper {
+                position: relative;
+            }
+
+            .password-input-wrapper input {
+                padding-right: 50px;
+            }
+
+            .toggle-password {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                padding: 8px;
+                min-width: 40px;
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-wrapper {
+                padding: 5px;
+            }
+
+            main {
+                padding: 0 5px 20px 5px;
+            }
+
+            .profile-summary-card {
+                padding: 12px;
+            }
+
+            .profile-details-grid > div {
+                padding: 12px;
+            }
+
+            .password-section {
+                padding: 12px;
+            }
+
+            input[type="text"],
+            input[type="date"], 
+            input[type="tel"],
+            input[type="password"] {
+                font-size: 16px;
+                padding: 12px;
+            }
+
+            .btn {
+                padding: 14px;
+                font-size: 1rem;
+            }
+
+            .profile-image-upload .browse-btn {
+                padding: 12px 20px;
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .profile-image-upload {
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(214, 35, 40, 0.1);
+            }
+
+            .browse-btn {
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(214, 35, 40, 0.1);
+            }
+
+            .toggle-password {
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(214, 35, 40, 0.1);
+            }
+
+            /* Larger touch targets */
+            .toggle-password {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
     </style>
 </head>
 
@@ -777,15 +965,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label>Address 🔒</label>
                             <p class="address-paragraph"><?= nl2br(htmlspecialchars($user['Address'] ?? '')) ?></p>
                         </div>
-                    </div>
-                    <div class="profile-image-section">
+                    </div>                    <div class="profile-image-section">
                         <label>Profile Image</label>
                         <div class="profile-image-upload" id="profileImageDrop">
-                            <span class="upload-icon"><i class="fa fa-folder"></i></span>
-                            <span class="upload-text">Drag your documents, photos, or videos here to start uploading.</span>
+                            <span class="upload-icon"><i class="fa fa-camera"></i></span>
+                            <span class="upload-text">Tap to select your profile image</span>
                             <div class="or-divider">OR</div>
-                            <button type="button" class="browse-btn" onclick="document.getElementById('profile_image').click();">Browse files</button>
-                            <input type="file" id="profile_image" name="profile_image" accept="image/*" />
+                            <button type="button" class="browse-btn" onclick="document.getElementById('profile_image').click();">Choose Image</button>
+                            <input type="file" id="profile_image" name="profile_image" accept="image/*" capture="user" />
+                            <small style="color: #bbb; font-size: 0.8rem; margin-top: 8px; display: block;">
+                                Supported: JPG, PNG, GIF (Max: 2MB)
+                            </small>
                         </div>
                         <?php if ($user['ProfileImage']): ?>
                             <img src="../uploads/profile_images/<?= htmlspecialchars($user['ProfileImage']) ?>" alt="Profile Image" class="profile-image-preview" id="profileImagePreview" />
@@ -825,64 +1015,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
     </div>
 
-    <?php include '../assets/format/member_footer.php'; ?>
-
-    <script>
+    <?php include '../assets/format/member_footer.php'; ?>    <script>
         document.addEventListener("DOMContentLoaded", function() {
             const menuToggle = document.querySelector(".menu-toggle");
             const navLinks = document.querySelector("nav");
 
-            menuToggle.addEventListener("click", () => {
-                navLinks.classList.toggle("active");
-            });
+            if (menuToggle) {
+                menuToggle.addEventListener("click", () => {
+                    navLinks.classList.toggle("active");
+                });
+            }
 
-            // Drag & drop for profile image
+            // Enhanced profile image handling with mobile support
             const dropArea = document.getElementById('profileImageDrop');
             const fileInput = document.getElementById('profile_image');
             const previewImg = document.getElementById('profileImagePreview');
+            const browseBtn = document.querySelector('.browse-btn');
 
-            // Highlight drop area on drag
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropArea.classList.add('dragover');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropArea.classList.remove('dragover');
-                }, false);
-            });
-
-            // Handle drop
-            dropArea.addEventListener('drop', function(e) {
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    fileInput.files = e.dataTransfer.files;
-                    showPreview(e.dataTransfer.files[0]);
-                }
-            });
-
-            // Handle click to open file dialog
-            dropArea.addEventListener('click', function() {
+            // Mobile-friendly file selection
+            function openFileDialog(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 fileInput.click();
-            });
+            }
+
+            // Improved drag & drop (works better on mobile browsers that support it)
+            if (dropArea) {
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                // Highlight drop area on drag (desktop)
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, () => {
+                        dropArea.classList.add('dragover');
+                    }, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, () => {
+                        dropArea.classList.remove('dragover');
+                    }, false);
+                });
+
+                // Handle drop
+                dropArea.addEventListener('drop', function(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    if (files && files[0]) {
+                        handleFileSelection(files[0]);
+                    }
+                });
+
+                // Handle click/tap for file selection
+                dropArea.addEventListener('click', openFileDialog);
+                dropArea.addEventListener('touchend', openFileDialog);
+            }
+
+            // Browse button click handler
+            if (browseBtn) {
+                browseBtn.addEventListener('click', openFileDialog);
+                browseBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    openFileDialog(e);
+                });
+            }
 
             // Handle file input change
-            fileInput.addEventListener('change', function() {
-                if (fileInput.files && fileInput.files[0]) {
-                    showPreview(fileInput.files[0]);
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    if (fileInput.files && fileInput.files[0]) {
+                        handleFileSelection(fileInput.files[0]);
+                    }
+                });
+            }
+
+            function handleFileSelection(file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file (JPG, PNG, or GIF).');
+                    return;
                 }
-            });
+
+                // Validate file size (2MB limit)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Image size should not exceed 2MB.');
+                    return;
+                }
+
+                // Show preview
+                showPreview(file);
+                
+                // Create a new FileList with the selected file
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            }
 
             function showPreview(file) {
                 if (!file.type.startsWith('image/')) return;
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    previewImg.src = e.target.result;
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                    }
+                };
+                reader.onerror = function() {
+                    alert('Error reading the selected file.');
                 };
                 reader.readAsDataURL(file);
             }
@@ -900,24 +1147,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // Toggle password visibility
+            // Enhanced password visibility toggle with better mobile support
             document.querySelectorAll('.toggle-password').forEach(function(toggle) {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const targetId = this.getAttribute('data-target');
-                    const input = document.getElementById(targetId);
-                    if (input) {
-                        if (input.type === 'password') {
-                            input.type = 'text';
-                            this.innerHTML = '<i class="fa fa-eye-slash"></i>';
-                        } else {
-                            input.type = 'password';
-                            this.innerHTML = '<i class="fa fa-eye"></i>';
+                // Handle both click and touch events
+                ['click', 'touchend'].forEach(eventType => {
+                    toggle.addEventListener(eventType, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const targetId = this.getAttribute('data-target');
+                        const input = document.getElementById(targetId);
+                        if (input) {
+                            if (input.type === 'password') {
+                                input.type = 'text';
+                                this.innerHTML = '<i class="fa fa-eye-slash"></i>';
+                            } else {
+                                input.type = 'password';
+                                this.innerHTML = '<i class="fa fa-eye"></i>';
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Form validation with mobile-friendly alerts
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const phoneInput = document.querySelector('input[name="phone"]');
+                    const profileImageInput = document.getElementById('profile_image');
+                    
+                    // Basic phone validation
+                    if (phoneInput && phoneInput.value.trim()) {
+                        const phonePattern = /^[\+]?[0-9\s\-\(\)]+$/;
+                        if (!phonePattern.test(phoneInput.value.trim())) {
+                            e.preventDefault();
+                            alert('Please enter a valid phone number.');
+                            phoneInput.focus();
+                            return;
+                        }
+                    }
+
+                    // Password validation
+                    const oldPassword = document.getElementById('old_password');
+                    const newPassword = document.getElementById('new_password');
+                    const confirmPassword = document.getElementById('confirm_password');
+
+                    if (oldPassword && (oldPassword.value || newPassword.value || confirmPassword.value)) {
+                        if (!oldPassword.value) {
+                            e.preventDefault();
+                            alert('Old password is required to change password.');
+                            oldPassword.focus();
+                            return;
+                        }
+                        if (!newPassword.value) {
+                            e.preventDefault();
+                            alert('New password cannot be empty.');
+                            newPassword.focus();
+                            return;
+                        }
+                        if (newPassword.value !== confirmPassword.value) {
+                            e.preventDefault();
+                            alert('New password and confirm password do not match.');
+                            confirmPassword.focus();
+                            return;
+                        }
+                        if (newPassword.value.length < 6) {
+                            e.preventDefault();
+                            alert('New password should be at least 6 characters long.');
+                            newPassword.focus();
+                            return;
                         }
                     }
                 });
-            });
+            }
+
+            // Prevent zoom on iOS for input focus
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.querySelectorAll('input[type="text"], input[type="tel"], input[type="password"]').forEach(input => {
+                    input.addEventListener('focus', function() {
+                        this.style.fontSize = '16px';
+                    });
+                    input.addEventListener('blur', function() {
+                        this.style.fontSize = '';
+                    });
+                });
+            }
         });
     </script>
 

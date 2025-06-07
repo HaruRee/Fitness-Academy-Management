@@ -214,6 +214,8 @@ try {
         'success' => true,
         'message' => 'Check-in successful' . (!empty($warning) ? " - $warning" : ""),
         'user_name' => $member_name,
+        'user_id' => $member_user_id,
+        'profile_image' => $member['ProfileImage'] ?? null,
         'type' => 'checkin',
         'location' => $location,
         'timestamp' => date('Y-m-d H:i:s'),

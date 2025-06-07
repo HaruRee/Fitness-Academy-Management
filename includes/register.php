@@ -148,49 +148,86 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
     $email = $_SESSION['email']; // From verified email
     $role = 'Member';
 
-    if (!preg_match("/^[a-zA-Z\s'-]+$/", $first_name)) {
-        $error_message = "Invalid first name. Only letters, spaces, hyphens, and apostrophes are allowed.";
-    } elseif (!preg_match("/^[a-zA-Z\s'-]+$/", $last_name)) {
-        $error_message = "Invalid last name. Only letters, spaces, hyphens, and apostrophes are allowed.";
-    } elseif (!preg_match("/^[a-zA-Z0-9_]{3,20}$/", $username)) {
-        $error_message = "Username must be 3-20 characters and contain only letters, numbers, and underscores.";
-    } elseif (!strtotime($date_of_birth)) {
-        $error_message = "Invalid date of birth.";
-    } elseif (!empty($phone) && !preg_match("/^[0-9+\-\s]{7,20}$/", $phone)) {
-        $error_message = "Invalid phone number format.";
-    } elseif (!preg_match("/^[0-9+\-\s]{7,20}$/", $emergency_contact)) {
-        $error_message = "Invalid emergency contact number.";    // Address field is now optional, so we removed the empty check
-    } elseif (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[\W_]/', $password)) {
-        $error_message = "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols.";
-    } elseif ($password !== $confirm_password) {
-        $error_message = "Passwords do not match.";
-    } else {
-        try {
-            // Check if username exists
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
-            $stmt->execute([$username]);
-            if ($stmt->fetchColumn() > 0) {
-                throw new Exception("Username already exists.");
-            }            // Store user data in session for later use after payment
-            $_SESSION['user_data'] = [
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'username' => $username,
-                'password' => $password,
-                'date_of_birth' => $date_of_birth,
-                'phone' => $phone,
-                'address' => $address,
-                'emergency_contact' => $emergency_contact,
-                'email' => $email,
-                'role' => $role
-            ];
+    // Handle profile image upload
+    $profile_image_name = null;
+    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $file = $_FILES['profile_image'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if ($file['error'] === UPLOAD_ERR_OK) {
+            if (!in_array($file['type'], $allowedTypes)) {
+                $error_message = "Only JPG, PNG and GIF images are allowed for profile image.";
+            } elseif ($file['size'] > 2 * 1024 * 1024) {
+                $error_message = "Profile image size should not exceed 2MB.";
+            } else {
+                $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $profile_image_name = 'profile_' . uniqid() . '_' . time() . '.' . $ext;
+                $uploadDir = '../uploads/profile_images/';
+                
+                // Create directory if it doesn't exist
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $targetFile = $uploadDir . $profile_image_name;
+                if (!move_uploaded_file($file['tmp_name'], $targetFile)) {
+                    $error_message = "Failed to upload profile image.";
+                    $profile_image_name = null;
+                }
+            }
+        } else {
+            $error_message = "Error uploading profile image.";
+        }
+    }
 
-            // Proceed to payment step
-            $_SESSION['registration_step'] = 4;
-            header('Location: register.php');
-            exit;
-        } catch (Exception $e) {
-            $error_message = "Error: " . $e->getMessage();
+    if (empty($error_message)) {
+        if (!preg_match("/^[a-zA-Z\s'-]+$/", $first_name)) {
+            $error_message = "Invalid first name. Only letters, spaces, hyphens, and apostrophes are allowed.";
+        } elseif (!preg_match("/^[a-zA-Z\s'-]+$/", $last_name)) {
+            $error_message = "Invalid last name. Only letters, spaces, hyphens, and apostrophes are allowed.";
+        } elseif (!preg_match("/^[a-zA-Z0-9_]{3,20}$/", $username)) {
+            $error_message = "Username must be 3-20 characters and contain only letters, numbers, and underscores.";
+        } elseif (!strtotime($date_of_birth)) {
+            $error_message = "Invalid date of birth.";
+        } elseif (!empty($phone) && !preg_match("/^[0-9+\-\s]{7,20}$/", $phone)) {
+            $error_message = "Invalid phone number format.";
+        } elseif (!preg_match("/^[0-9+\-\s]{7,20}$/", $emergency_contact)) {
+            $error_message = "Invalid emergency contact number.";
+        } elseif (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[\W_]/', $password)) {
+            $error_message = "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols.";
+        } elseif ($password !== $confirm_password) {
+            $error_message = "Passwords do not match.";
+        } else {
+            try {
+                // Check if username exists
+                $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+                $stmt->execute([$username]);
+                if ($stmt->fetchColumn() > 0) {
+                    throw new Exception("Username already exists.");
+                }
+
+                // Store user data in session for later use after payment
+                $_SESSION['user_data'] = [
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'username' => $username,
+                    'password' => $password,
+                    'date_of_birth' => $date_of_birth,
+                    'phone' => $phone,
+                    'address' => $address,
+                    'emergency_contact' => $emergency_contact,
+                    'email' => $email,
+                    'role' => $role,
+                    'profile_image' => $profile_image_name
+                ];
+
+                // Proceed to payment step
+                $_SESSION['registration_step'] = 4;
+                header('Location: register.php');
+                exit;
+            } catch (Exception $e) {
+                $error_message = "Error: " . $e->getMessage();
+            }
         }
     }
 }
@@ -1551,7 +1588,7 @@ function sendVerificationEmail($email, $verification_code)
             <div class="registration-container">
                 <h1 class="heading">2 - ENTER YOUR DETAILS</h1>
                 <!-- Personal info form with added fields -->
-                <form method="POST" action="register.php" class="personal-info-form">
+                <form method="POST" action="register.php" class="personal-info-form" enctype="multipart/form-data">
                     <div class="form-row">
                         <div class="form-column">
                             <div class="form-group">
@@ -1602,9 +1639,7 @@ function sendVerificationEmail($email, $verification_code)
                                     value="<?php echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : ''; ?>">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="form-row">
+                    </div>                    <div class="form-row">
                         <div class="form-column">
                             <div class="form-group">
                                 <label for="emergency_contact">Emergency Contact Number <span style="color: #e41e26;">*</span></label>
@@ -1614,7 +1649,12 @@ function sendVerificationEmail($email, $verification_code)
                         </div>
 
                         <div class="form-column">
-                            <!-- Empty column to maintain grid layout -->
+                            <div class="form-group">
+                                <label for="profile_image">Profile Image (Your Face) <span style="color: #666;">(Optional)</span></label>
+                                <input type="file" id="profile_image" name="profile_image" class="form-control" accept="image/*"
+                                    style="padding: 8px; border: 2px dashed #ddd; background: #f9f9f9;">
+                                <small class="form-text text-muted">Upload your photo (JPG, PNG, GIF - Max 2MB)</small>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">                        <div class="form-column">

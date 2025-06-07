@@ -181,9 +181,8 @@ try {
             <p class="text-center text-light mb-4 lead">
                 Generate your personal QR code for gym attendance. Show this QR code at the gym entrance/exit scanners.
             </p>
-            
-            <div class="text-center mb-4">
-                <button onclick="generateMemberQR()" class="btn btn-primary btn-lg px-5 py-3 shadow">
+              <div class="text-center mb-4">
+                <button onclick="generateMemberQR()" class="btn btn-primary btn-lg px-5 py-3 shadow" id="qrGenerateBtn">
                     <i class="fas fa-qrcode me-2"></i>
                     Generate My QR Code
                 </button>
@@ -423,49 +422,224 @@ try {
 
 <?php include '../assets/format/member_footer.php'; ?>
 
-<script>    // Member Static QR Generation Functions
+<script>
+    // Member Static QR Generation Functions
+    let qrGenerationInProgress = false;
+    let currentQRData = null;
+    let lastQRGenerationTime = 0;
+    
     async function generateMemberQR() {
+        // Prevent multiple simultaneous requests
+        if (qrGenerationInProgress) {
+            console.log('QR generation already in progress...');
+            return;
+        }
+        
+        // Debounce rapid clicks (2 second minimum between requests)
+        const now = Date.now();
+        if (now - lastQRGenerationTime < 2000) {
+            console.log('QR generation rate limited, please wait...');
+            return;
+        }
+        lastQRGenerationTime = now;
+          qrGenerationInProgress = true;
+        
+        // Show loading state
+        const button = document.getElementById('qrGenerateBtn');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+        button.disabled = true;
+        
         try {
             const response = await fetch('../attendance/generate_static_qr.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },                cache: 'no-cache'  // Prevent caching issues
             });
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    throw new Error('Please wait before generating another QR code');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const data = await response.json();
 
             if (data.success) {
-                displayMemberQRCode(data.qr_code_url, data.user_name, data.instructions);
+                currentQRData = data;
+                displayMemberQRCode(data.qr_code_url, data.user_name, data.instructions, data);
             } else {
-                alert('Failed to generate QR code: ' + data.message);
+                throw new Error(data.message || 'Failed to generate QR code');
             }
         } catch (error) {
             console.error('Error generating QR code:', error);
-            alert('Failed to generate QR code. Please try again.');
+            showQRError('Failed to generate QR code. Please try again.', error.message);
+        } finally {
+            // Reset button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+            qrGenerationInProgress = false;
         }
-    }    function displayMemberQRCode(qrImageUrl, userName, instructions) {
+    }
+    
+    function displayMemberQRCode(qrImageUrl, userName, instructions, qrData) {
         // Clear previous QR code if any
         const qrContainer = document.getElementById('memberQrCodeContainer');
         qrContainer.innerHTML = '';
 
         // Create QR code image element
         const qrImage = document.createElement('img');
-        qrImage.src = qrImageUrl;
         qrImage.style.width = '200px';
         qrImage.style.height = '200px';
         qrImage.style.border = '3px solid #1e40af';
         qrImage.style.borderRadius = '10px';
         qrImage.alt = 'Your Attendance QR Code';
+        qrImage.crossOrigin = 'anonymous';  // Help with CORS if needed
         
-        qrContainer.appendChild(qrImage);
+        // Add loading indicator
+        qrContainer.innerHTML = `
+            <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; border: 3px solid #1e40af; border-radius: 10px; background: #f8f9fa;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #1e40af;"></i>
+            </div>
+        `;
+        
+        // Add error handling for QR image loading
+        qrImage.onerror = function() {
+            console.warn('Primary QR URL failed, trying alternative...');
+            tryAlternativeQR(qrContainer, userName, instructions, qrData);
+        };
+        
+        qrImage.onload = function() {
+            // Replace loading indicator with actual QR code
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(qrImage);
+        };
+        
+        // Set the source to start loading
+        qrImage.src = qrImageUrl;
 
         // Show QR display container
         document.getElementById('memberQrDisplay').style.display = 'block';
         document.getElementById('memberQrMessage').innerHTML = `
             <strong>${userName}'s Attendance QR Code</strong><br>
             <small style="color: #666;">${instructions}</small>
-        `;    }
+        `;
+    }
+    
+    function tryAlternativeQR(container, userName, instructions, qrData) {
+        if (!qrData) {
+            showQRError('QR data not available for alternative generation');
+            return;
+        }
+        
+        // Try the alternative URL first
+        if (qrData.qr_code_url_alt) {
+            const altImage = document.createElement('img');
+            altImage.style.width = '200px';
+            altImage.style.height = '200px';
+            altImage.style.border = '3px solid #1e40af';
+            altImage.style.borderRadius = '10px';
+            altImage.alt = 'Your Attendance QR Code';
+            altImage.crossOrigin = 'anonymous';
+            
+            altImage.onerror = function() {
+                console.warn('Alternative QR URL also failed, trying fallback...');
+                // Try the second fallback
+                if (qrData.qr_code_url_fallback) {
+                    tryFallbackQR(container, userName, instructions, qrData);
+                } else {
+                    showQRError('All QR generation services failed');
+                }
+            };
+            
+            altImage.onload = function() {
+                container.innerHTML = '';
+                container.appendChild(altImage);
+            };
+            
+            altImage.src = qrData.qr_code_url_alt;
+        } else {
+            showQRError('No alternative QR URL available');
+        }
+    }
+    
+    function tryFallbackQR(container, userName, instructions, qrData) {
+        const fallbackImage = document.createElement('img');
+        fallbackImage.style.width = '200px';
+        fallbackImage.style.height = '200px';
+        fallbackImage.style.border = '3px solid #1e40af';
+        fallbackImage.style.borderRadius = '10px';
+        fallbackImage.alt = 'Your Attendance QR Code';
+        fallbackImage.crossOrigin = 'anonymous';
+        
+        fallbackImage.onerror = function() {
+            showQRError('All QR generation services failed');
+        };
+        
+        fallbackImage.onload = function() {
+            container.innerHTML = '';
+            container.appendChild(fallbackImage);
+        };
+        
+        fallbackImage.src = qrData.qr_code_url_fallback;
+    }
+    
+    function showQRError(message, details = null) {
+        const container = document.getElementById('memberQrCodeContainer');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px; border: 2px dashed #ccc; border-radius: 10px; width: 200px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 32px; color: #f39c12; margin-bottom: 10px;"></i>
+                <p style="margin: 0; font-size: 14px;">${message}</p>
+                ${details ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">${details}</p>` : ''}
+                <button onclick="generateMemberQR()" style="margin-top: 10px; padding: 6px 12px; background: #1e40af; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+
+    async function regenerateQRWithFallback(container, userName, instructions) {
+        try {
+            const response = await fetch('../attendance/generate_static_qr.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                cache: 'no-cache'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.qr_code_url_alt) {
+                const fallbackImage = document.createElement('img');
+                fallbackImage.src = data.qr_code_url_alt;
+                fallbackImage.style.width = '200px';
+                fallbackImage.style.height = '200px';
+                fallbackImage.style.border = '3px solid #1e40af';
+                fallbackImage.style.borderRadius = '10px';
+                fallbackImage.alt = 'Your Attendance QR Code';
+                
+                fallbackImage.onerror = function() {
+                    showQRError('Unable to generate QR code', 'All services temporarily unavailable');
+                };
+                
+                fallbackImage.onload = function() {
+                    container.innerHTML = '';
+                    container.appendChild(fallbackImage);
+                };
+            } else {
+                throw new Error('Fallback QR generation failed');
+            }        } catch (error) {
+            console.error('Fallback QR generation failed:', error);
+            showQRError('Unable to generate QR code', 'Service temporarily unavailable');
+        }
+    }
     
     function hideMemberQRDisplay() {
         document.getElementById('memberQrDisplay').style.display = 'none';

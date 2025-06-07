@@ -51,9 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             exit;
         }        // Hash the password
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Get next available UserID first
-        $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+          // Get next available UserID first (ensure it's never 0)
+        $userIdStmt = $conn->prepare("SELECT GREATEST(COALESCE(MAX(UserID), 0) + 1, 1) as next_id FROM users");
         $userIdStmt->execute();
         $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
         

@@ -67,9 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                         ]);
                     } catch (PDOException $e) {
                         // If UserID field error, try with explicit UserID
-                        if (strpos($e->getMessage(), 'UserID') !== false) {
-                            // Get next available UserID
-                            $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                        if (strpos($e->getMessage(), 'UserID') !== false) {                            // Get next available UserID (ensure it's never 0)
+                            $userIdStmt = $conn->prepare("SELECT GREATEST(COALESCE(MAX(UserID), 0) + 1, 1) as next_id FROM users");
                             $userIdStmt->execute();
                             $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
                             

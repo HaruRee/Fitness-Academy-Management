@@ -434,7 +434,115 @@ $scanner_location = $_SESSION['scanner_location'];
             color: var(--primary-red);
         }
 
-        /* Responsive design */        @media (max-width: 640px) {
+        /* Profile Image Display */
+        .profile-image-overlay {
+            position: fixed;
+            top: 50%;
+            right: 2rem;
+            transform: translateY(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 280px;
+            text-align: center;
+        }
+
+        .profile-image-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .profile-image-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .profile-image-container img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-red);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .profile-image-container .no-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--text-muted);
+            border: 4px solid var(--glass-border);
+        }
+
+        .profile-image-info {
+            color: var(--text-primary);
+        }
+
+        .profile-image-info h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--white);
+        }
+
+        .profile-image-info p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0.25rem 0;
+        }
+
+        .profile-action-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+
+        .profile-action-badge.checkin {
+            background: linear-gradient(135deg, var(--success-color), #66bb6a);
+            color: white;
+        }
+
+        .profile-action-badge.checkout {
+            background: linear-gradient(135deg, var(--warning-color), #ffb74d);
+            color: white;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .profile-image-overlay {
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+                width: auto;
+            }
+            
+            .profile-image-container img,
+            .profile-image-container .no-image {
+                width: 120px;
+                height: 120px;
+            }        }
+
+        /* Responsive design */
+        @media (max-width: 640px) {
             .attendance-container {
                 margin: 0.5rem;
                 padding: 1.2rem;
@@ -457,7 +565,9 @@ $scanner_location = $_SESSION['scanner_location'];
                 grid-template-columns: 1fr auto 90px;
                 gap: 0.4rem;
             }
-        }@media (max-width: 480px) {
+        }
+        
+        @media (max-width: 480px) {
             .attendance-container {
                 padding: 1rem;
             }
@@ -565,6 +675,47 @@ $scanner_location = $_SESSION['scanner_location'];
                 <!-- Activity items will be loaded here -->
             </div>
         </div>
+
+        <!-- Test button for profile image (remove in production) -->
+        <div style="text-align: center; margin: 1rem 0;">
+            <button id="testProfileBtn" style="
+                background: var(--primary-red);
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                display: none;
+            ">Test Profile Display</button>
+            <button id="testCameraBtn" style="
+                background: var(--success-color);
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                margin-left: 0.5rem;
+                display: none;
+            ">Test Camera</button>
+        </div>
+    </div>
+
+    <!-- Profile Image Overlay -->
+    <div class="profile-image-overlay" id="profileImageOverlay">
+        <div class="profile-image-container">
+            <img id="profileImage" src="" alt="Member Photo" style="display: none;">
+            <div class="no-image" id="noProfileImage" style="display: none;">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+        <div class="profile-image-info">
+            <h3 id="profileUserName"></h3>
+            <p id="profileAction"></p>
+            <p id="profileDuration" style="display: none;"></p>
+            <div class="profile-action-badge" id="profileActionBadge"></div>
+        </div>
     </div>
 
     <script>
@@ -578,22 +729,132 @@ $scanner_location = $_SESSION['scanner_location'];
             const statusMessage = document.getElementById('statusMessage');
             const recentActivity = document.getElementById('recentActivity');
             const scannerOverlay = document.getElementById('scannerOverlay');
-            
-            // Update current time
+            const testProfileBtn = document.getElementById('testProfileBtn');
+            const testCameraBtn = document.getElementById('testCameraBtn');
+              // Update current time
             function updateTime() {
                 const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { 
+                const timeString = now.toLocaleTimeString('en-PH', { 
                     hour: '2-digit', 
                     minute: '2-digit',
-                    hour12: true 
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
                 });
                 document.getElementById('currentTime').textContent = timeString;
             }
+            // Test button functionality (for development)
+            const testBtn = document.getElementById('testProfileBtn');
+            if (testBtn) {
+                testBtn.style.display = 'block'; // Show test button
+                testBtn.addEventListener('click', function() {
+                    // Test with sample data
+                    const testData = {
+                        user_name: 'John Doe',
+                        profile_image: null, // Test with no image first
+                        duration: '45 minutes',
+                        type: currentMode
+                    };
+                    showProfileImage(testData);
+                });
+            }
+
+            // Camera test functionality
+            if (testCameraBtn) {
+                testCameraBtn.style.display = 'inline-block'; // Show test button
+                testCameraBtn.addEventListener('click', function() {
+                    testCameraPermissions();
+                });
+            }
             
-            // Update time every minute
+            // Test camera permissions
+            async function testCameraPermissions() {
+                try {
+                    updateStatus('Testing camera access...', 'loading');
+                    statusMessage.style.display = 'block';
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "environment" } 
+                    });
+                    
+                    updateStatus('Camera access granted! Scanner should work.', 'success');
+                    
+                    // Stop the test stream
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Try to restart the scanner
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                        if (!isScanning) {
+                            startScanner();
+                        }
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Camera test error:', error);
+                    updateStatus(`Camera error: ${error.message}. Please allow camera permissions.`, 'error');
+                }
+            }
+
+            // Profile image display function
+            function showProfileImage(userData) {
+                const overlay = document.getElementById('profileImageOverlay');
+                const profileImage = document.getElementById('profileImage');
+                const noProfileImage = document.getElementById('noProfileImage');
+                const profileUserName = document.getElementById('profileUserName');
+                const profileAction = document.getElementById('profileAction');
+                const profileDuration = document.getElementById('profileDuration');
+                const profileActionBadge = document.getElementById('profileActionBadge');
+
+                // Set user name
+                profileUserName.textContent = userData.user_name;                // Set action info
+                const actionText = currentMode === 'checkin' ? 'Checked In' : 'Checked Out';
+                profileAction.textContent = actionText + ' • ' + new Date().toLocaleTimeString('en-PH', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
+                });
+
+                // Set action badge
+                profileActionBadge.textContent = actionText;
+                profileActionBadge.className = `profile-action-badge ${currentMode}`;
+
+                // Handle duration for checkout
+                if (currentMode === 'checkout' && userData.duration) {
+                    profileDuration.textContent = `Duration: ${userData.duration}`;
+                    profileDuration.style.display = 'block';
+                } else {
+                    profileDuration.style.display = 'none';
+                }
+
+                // Handle profile image
+                if (userData.profile_image && userData.profile_image.trim() !== '') {
+                    profileImage.src = `../uploads/profile_images/${userData.profile_image}`;
+                    profileImage.style.display = 'block';
+                    noProfileImage.style.display = 'none';
+                    
+                    // Handle image load error
+                    profileImage.onerror = function() {
+                        profileImage.style.display = 'none';
+                        noProfileImage.style.display = 'flex';
+                    };
+                } else {
+                    profileImage.style.display = 'none';
+                    noProfileImage.style.display = 'flex';
+                }
+
+                // Show overlay
+                overlay.classList.add('show');
+
+                // Hide after 4 seconds
+                setTimeout(() => {
+                    overlay.classList.remove('show');
+                }, 4000);
+            }            // Update time every minute
             updateTime();
             setInterval(updateTime, 60000);
-              // Toggle mode change handler
+
+            // Toggle mode change handler
             toggleOptions.forEach(option => {
                 option.addEventListener('click', function() {
                     const mode = this.dataset.mode;
@@ -621,7 +882,9 @@ $scanner_location = $_SESSION['scanner_location'];
                         startScanner();
                     }
                 });
-            });            function updateStatus(message, type = 'loading') {
+            });
+
+            function updateStatus(message, type = 'loading') {
                 const icons = {
                     loading: 'fas fa-spinner fa-spin',
                     success: 'fas fa-check-circle',
@@ -634,9 +897,7 @@ $scanner_location = $_SESSION['scanner_location'];
                     <span>${message}</span>
                 `;
                 statusMessage.className = `status-message ${type}`;
-            }
-
-            function showResult(message, type = 'loading') {
+            }            function showResult(message, type = 'loading') {
                 updateStatus(message, type);
                 
                 if (type === 'success' || type === 'error' || type === 'warning') {
@@ -648,6 +909,8 @@ $scanner_location = $_SESSION['scanner_location'];
 
             function startScanner() {
                 if (isScanning) return;
+                
+                console.log('Starting scanner...');
                 
                 // Hide overlay
                 scannerOverlay.style.display = 'none';
@@ -663,19 +926,28 @@ $scanner_location = $_SESSION['scanner_location'];
                 };
 
                 html5QrcodeScanner = new Html5Qrcode("scanner");
-                  html5QrcodeScanner.start(
+                
+                // Show loading status
+                updateStatus('Starting camera...', 'loading');
+                statusMessage.style.display = 'block';
+                
+                html5QrcodeScanner.start(
                     { facingMode: "environment" },
                     config,
                     onScanSuccess,
-                    onScanFailure                ).then(() => {
+                    onScanFailure
+                ).then(() => {
+                    console.log('Scanner started successfully');
                     isScanning = true;
                     statusMessage.style.display = 'none';
                 }).catch(err => {
-                    console.error('Scanner start error:', err);
-                    updateStatus('Failed to start camera. Please check permissions.', 'error');
+                    console.error('Scanner start error:', err);                    updateStatus('Failed to start camera. Please check permissions and try again.', 'error');
+                    statusMessage.style.display = 'block';
                     scannerOverlay.style.display = 'flex';
                 });
-            }            function stopScanner() {
+            }
+
+            function stopScanner() {
                 if (!isScanning || !html5QrcodeScanner) return;
                 
                 html5QrcodeScanner.stop().then(() => {
@@ -687,13 +959,17 @@ $scanner_location = $_SESSION['scanner_location'];
                     isScanning = false;
                     scannerOverlay.style.display = 'flex';
                 });
-            }            function onScanSuccess(decodedText, decodedResult) {
+            }
+
+            function onScanSuccess(decodedText, decodedResult) {
                 if (!isScanning) return;
                 
                 // Don't stop the scanner, just pause it temporarily
                 html5QrcodeScanner.pause();
                 processAttendance(decodedText);
-            }function onScanFailure(error) {
+            }
+
+            function onScanFailure(error) {
                 // Ignore scan failures - they're too frequent and noisy
             }
 
@@ -718,8 +994,7 @@ $scanner_location = $_SESSION['scanner_location'];
                     });
 
                     const data = await response.json();
-                    
-                    if (data.success) {
+                      if (data.success) {
                         // Play success sound
                         if (window.successSound) {
                             window.successSound.playSuccess();
@@ -735,10 +1010,15 @@ $scanner_location = $_SESSION['scanner_location'];
                         
                         // Show warning for inactive accounts
                         if (data.warning) {
-                            showResult(`${successMessage} - ${data.warning}`, 'warning');                        } else {
+                            showResult(`${successMessage} - ${data.warning}`, 'warning');
+                        } else {
                             showResult(successMessage, 'success');
                         }
-                          // Add to recent activity
+                        
+                        // Show profile image overlay
+                        showProfileImage(data);
+                        
+                        // Add to recent activity
                         addToRecentActivity(data.user_name, currentMode, data.duration, data.role);
                         
                         // Load recent activity
@@ -790,10 +1070,11 @@ $scanner_location = $_SESSION['scanner_location'];
                 }
             }            function addToRecentActivity(userName, action, duration = null, role = null) {
                 const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { 
+                const timeString = now.toLocaleTimeString('en-PH', { 
                     hour: '2-digit', 
                     minute: '2-digit',
-                    hour12: true 
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
                 });
                 
                 const activityItem = document.createElement('div');
@@ -827,9 +1108,8 @@ $scanner_location = $_SESSION['scanner_location'];
                 while (recentActivity.children.length > 5) {
                     recentActivity.removeChild(recentActivity.lastChild);
                 }
-            }
-
-            async function loadRecentActivity() {
+            }            async function loadRecentActivity() {
+                console.log('Loading recent activity...');
                 try {
                     const [checkinResponse, checkoutResponse] = await Promise.all([
                         fetch('get_recent_checkins.php'),
@@ -839,41 +1119,46 @@ $scanner_location = $_SESSION['scanner_location'];
                     const checkinData = await checkinResponse.json();
                     const checkoutData = await checkoutResponse.json();
                     
+                    console.log('Checkin data:', checkinData);
+                    console.log('Checkout data:', checkoutData);
+                    
                     // Clear current activity
                     recentActivity.innerHTML = '';
                     
                     // Combine and sort by timestamp
                     const allActivity = [];
-                    
-                    // Add checkins
+                      // Add checkins
                     if (checkinData.success && checkinData.checkins) {
                         checkinData.checkins.forEach(item => {
+                            // Parse timestamp and ensure it's treated as Manila time
+                            const timestamp = new Date(item.check_in_time + ' GMT+0800');
                             allActivity.push({
                                 ...item,
                                 action: 'checkin',
-                                timestamp: new Date(item.check_in_time)
+                                timestamp: timestamp
                             });
                         });
                     }
-                    
-                    // Add checkouts
+                      // Add checkouts
                     if (checkoutData.success && checkoutData.checkouts) {
                         checkoutData.checkouts.forEach(item => {
+                            // Parse timestamp and ensure it's treated as Manila time
+                            const timestamp = new Date(item.check_out_time + ' GMT+0800');
                             allActivity.push({
                                 ...item,
                                 action: 'checkout',
-                                timestamp: new Date(item.check_out_time)
+                                timestamp: timestamp
                             });
                         });
                     }
                     
                     // Sort by timestamp (newest first) and take first 5
-                    allActivity.sort((a, b) => b.timestamp - a.timestamp);
-                    allActivity.slice(0, 5).forEach(item => {
-                        const timeString = item.timestamp.toLocaleTimeString('en-US', { 
+                    allActivity.sort((a, b) => b.timestamp - a.timestamp);                    allActivity.slice(0, 5).forEach(item => {
+                        const timeString = item.timestamp.toLocaleTimeString('en-PH', { 
                             hour: '2-digit', 
                             minute: '2-digit',
-                            hour12: true 
+                            hour12: true,
+                            timeZone: 'Asia/Manila'
                         });
                           const activityItem = document.createElement('div');
                         activityItem.className = `activity-item ${item.action}`;
@@ -897,10 +1182,11 @@ $scanner_location = $_SESSION['scanner_location'];
                                 <div class="activity-action ${item.action}">${item.action.toUpperCase()}</div>
                             </div>
                         `;
-                        
-                        activityItem.innerHTML = content;
+                          activityItem.innerHTML = content;
                         recentActivity.appendChild(activityItem);
-                    });                    // Show message if no activity
+                    });
+
+                    // Show message if no activity
                     if (allActivity.length === 0) {
                         recentActivity.innerHTML = `
                             <div style="text-align: center; color: var(--text-muted); padding: 1rem; font-size: 0.8rem;">
@@ -908,8 +1194,7 @@ $scanner_location = $_SESSION['scanner_location'];
                                 No recent activity today
                             </div>
                         `;
-                    }
-                } catch (error) {
+                    }                } catch (error) {
                     console.error('Failed to load recent activity:', error);
                     recentActivity.innerHTML = `
                         <div style="text-align: center; color: var(--text-muted); padding: 1rem; font-size: 0.8rem;">
@@ -918,14 +1203,37 @@ $scanner_location = $_SESSION['scanner_location'];
                         </div>
                     `;
                 }
-            }            // Auto-start scanner when page loads
-            startScanner();
+            }            // Check if Html5Qrcode library is loaded
+            function checkLibraryAndStart() {
+                console.log('Checking library and starting scanner...');
+                if (typeof Html5Qrcode === 'undefined') {
+                    console.error('Html5Qrcode library not loaded');
+                    updateStatus('QR Scanner library not loaded. Please refresh the page.', 'error');
+                    statusMessage.style.display = 'block';
+                    return;
+                }
+                
+                console.log('Html5Qrcode library loaded successfully');
+                // Auto-start scanner when page loads
+                startScanner();
+            }
 
-            // Initial load
+            // Auto-start scanner when page loads
+            setTimeout(checkLibraryAndStart, 100);            // Initial load
             loadRecentActivity();
             
             // Auto-refresh recent activity every 30 seconds
             setInterval(loadRecentActivity, 30000);
+
+            // Test button click handler
+            testProfileBtn.addEventListener('click', function() {
+                const testUserData = {
+                    user_name: 'John Doe',
+                    profile_image: 'john_doe.jpg',
+                    duration: '1 hour'
+                };
+                showProfileImage(testUserData);
+            });
         });
     </script>
 </body>

@@ -293,14 +293,20 @@ try {
                 $currentSessionsRemaining,
                 $membershipStartDate,
                 $membershipEndDate
-            ]);
-        } catch (PDOException $e) {
+            ]);        } catch (PDOException $e) {
             // If UserID field error, try with explicit UserID
             if (strpos($e->getMessage(), 'UserID') !== false) {
-                // Get next available UserID
-                $userIdStmt = $conn->prepare("SELECT COALESCE(MAX(UserID), 0) + 1 as next_id FROM users");
+                // Get next available UserID (ensure it's never 0)
+                $userIdStmt = $conn->prepare("SELECT GREATEST(COALESCE(MAX(UserID), 0) + 1, 1) as next_id FROM users");
                 $userIdStmt->execute();
-                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];                $stmtWithId = $conn->prepare("INSERT INTO users (
+                $nextUserId = $userIdStmt->fetch(PDO::FETCH_ASSOC)['next_id'];
+                
+                // Double check that UserID is not 0
+                if ($nextUserId <= 0) {
+                    $nextUserId = 1;
+                }
+                
+                $stmtWithId = $conn->prepare("INSERT INTO users (
                     UserID, Username, PasswordHash, Role, First_Name, Last_Name, Email, DateOfBirth, 
                     Phone, Address, emergency_contact, is_approved, email_confirmed, email_token, 
                     membership_plan, membership_price, plan_id, current_sessions_remaining, 
@@ -325,8 +331,7 @@ try {
                     $_SESSION['plan_id'],
                     $currentSessionsRemaining,
                     $membershipStartDate,
-                    $membershipEndDate
-                ]);
+                    $membershipEndDate                ]);
             } else {
                 throw $e; // Re-throw if it's a different error
             }
